@@ -1,0 +1,224 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1100" font-family="-apple-system, 'SF Pro Display', 'Segoe UI', sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0b1020"/>
+      <stop offset="1" stop-color="#111933"/>
+    </linearGradient>
+    <linearGradient id="core" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e2a4a"/>
+      <stop offset="1" stop-color="#26345a"/>
+    </linearGradient>
+    <linearGradient id="integrity" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f59e0b"/>
+      <stop offset="1" stop-color="#ef4444"/>
+    </linearGradient>
+    <linearGradient id="layer1" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#065f46"/>
+      <stop offset="1" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="layer2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0c4a6e"/>
+      <stop offset="1" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <linearGradient id="layer3" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4c1d95"/>
+      <stop offset="1" stop-color="#a855f7"/>
+    </linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <rect width="1600" height="1100" fill="url(#bg)"/>
+
+  <!-- ── TITLE ─────────────────────────────────────────── -->
+  <text x="60" y="70" font-size="48" font-weight="800" fill="#f8fafc">Smriti</text>
+  <text x="215" y="70" font-size="22" fill="#94a3b8">स्मृति · memory</text>
+  <text x="60" y="108" font-size="22" fill="#cbd5e1">
+    Git for LLM wikis — a self-hosted knowledge graph + agent memory layer.
+    <tspan fill="#fbbf24" font-weight="600">One Rust binary. One SQLite file. Zero cloud.</tspan>
+  </text>
+
+  <text x="1540" y="52" font-size="14" fill="#64748b" text-anchor="end">v0.2 · April 2026</text>
+  <text x="1540" y="74" font-size="14" fill="#64748b" text-anchor="end">github.com/Smriti-AA/smriti</text>
+  <text x="1540" y="96" font-size="14" fill="#64748b" text-anchor="end">crates.io/crates/smriti</text>
+
+  <line x1="60" y1="130" x2="1540" y2="130" stroke="#1e293b" stroke-width="1"/>
+
+  <!-- ── LEFT: ARCHITECTURE STACK ────────────────────────── -->
+  <text x="60" y="170" font-size="20" font-weight="700" fill="#f8fafc">Architecture stack</text>
+  <text x="60" y="192" font-size="13" fill="#64748b">Bottom up — every layer is in a single binary</text>
+
+  <!-- Layer 0 storage -->
+  <rect x="60" y="210" width="540" height="68" rx="8" fill="url(#layer1)" opacity="0.9"/>
+  <text x="80" y="240" font-size="17" font-weight="700" fill="#ecfeff">SQLite + FTS5 + sqlite-vec (WAL)</text>
+  <text x="80" y="262" font-size="12" fill="#d1fae5">notes · tags · links · sources · claim_spans · events · wiki_transactions</text>
+
+  <!-- Layer 1 graph -->
+  <rect x="60" y="290" width="540" height="68" rx="8" fill="url(#layer2)" opacity="0.9"/>
+  <text x="80" y="320" font-size="17" font-weight="700" fill="#ecfeff">petgraph DiGraph + GraphCache (Arc&lt;RwLock&gt;)</text>
+  <text x="80" y="342" font-size="12" fill="#bae6fd">Typed edges: wikilink · semantic · causal · temporal · treats · contraindicts</text>
+
+  <!-- Layer 2 integrity (HIGHLIGHTED) -->
+  <rect x="60" y="370" width="540" height="90" rx="8" fill="url(#integrity)" opacity="0.95"/>
+  <text x="80" y="400" font-size="17" font-weight="800" fill="#1a1a1a">★ INTEGRITY LAYER (v0.2)</text>
+  <text x="80" y="422" font-size="12" fill="#1f2937">Provenance verification · SAVEPOINT transactions</text>
+  <text x="80" y="440" font-size="12" fill="#1f2937">Event log hash chain · Contradiction inbox</text>
+  <text x="80" y="458" font-size="11" fill="#450a0a" font-style="italic">FACTUM 2601.05866 · Zep 2501.13956 · MemoTime 2510.13614 · A-MEM 2502.12110</text>
+
+  <!-- Layer 3 interfaces -->
+  <rect x="60" y="472" width="540" height="68" rx="8" fill="url(#layer3)" opacity="0.9"/>
+  <text x="80" y="502" font-size="17" font-weight="700" fill="#ecfeff">MCP (stdio) · REST (Axum) · CLI (clap)</text>
+  <text x="80" y="524" font-size="12" fill="#e9d5ff">15 MCP tools · full HTTP API · interactive TUI</text>
+
+  <!-- Layer 4 features -->
+  <rect x="60" y="552" width="540" height="68" rx="8" fill="url(#core)" opacity="0.9"/>
+  <text x="80" y="582" font-size="17" font-weight="700" fill="#ecfeff">Agents · smriti verify · sync · RAG · Ollama</text>
+  <text x="80" y="604" font-size="12" fill="#94a3b8">Any MCP-capable model (Claude, GPT-4, Gemini, local)</text>
+
+  <!-- Perf callout box -->
+  <rect x="60" y="650" width="540" height="150" rx="10" fill="#0f172a" stroke="#1e293b" stroke-width="1"/>
+  <text x="80" y="680" font-size="15" font-weight="700" fill="#fbbf24">Performance (Apple Silicon, criterion)</text>
+  <text x="80" y="708" font-size="13" fill="#cbd5e1"><tspan font-family="monospace" fill="#10b981">2.48 µs</tspan>  memory_kv retrieve (hit)</text>
+  <text x="80" y="730" font-size="13" fill="#cbd5e1"><tspan font-family="monospace" fill="#10b981"> 235 ns</tspan>  graph BFS depth-2</text>
+  <text x="80" y="752" font-size="13" fill="#cbd5e1"><tspan font-family="monospace" fill="#10b981"> 331 µs</tspan>  FTS5 search (1k notes)</text>
+  <text x="80" y="774" font-size="13" fill="#cbd5e1"><tspan font-family="monospace" fill="#10b981">32.5 µs</tspan>  insert single note</text>
+
+  <!-- ── MIDDLE: FOUR INTEGRITY PRIMITIVES ─────────────── -->
+  <text x="640" y="170" font-size="20" font-weight="700" fill="#f8fafc">The four write-time invariants</text>
+  <text x="640" y="192" font-size="13" fill="#64748b">What makes Smriti different from Obsidian, Zep, Mem0, Letta, Neo4j</text>
+
+  <!-- 1. Provenance -->
+  <rect x="640" y="210" width="440" height="130" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+  <text x="660" y="240" font-size="16" font-weight="700" fill="#fbbf24">1 · Enforced provenance</text>
+  <text x="660" y="262" font-size="12" fill="#cbd5e1">Every claim carries a source span. Overlap verifier</text>
+  <text x="660" y="278" font-size="12" fill="#cbd5e1">(literal + token-Jaccard + trigram) rejects fabrication</text>
+  <text x="660" y="294" font-size="12" fill="#cbd5e1">at write time — no post-hoc audit.</text>
+  <text x="660" y="318" font-size="11" fill="#64748b" font-style="italic">FACTUM 2601.05866 · Citation-Grounded 2512.12117</text>
+
+  <!-- 2. Atomic transactions -->
+  <rect x="1100" y="210" width="440" height="130" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+  <text x="1120" y="240" font-size="16" font-weight="700" fill="#fbbf24">2 · Atomic multi-write (SAVEPOINT)</text>
+  <text x="1120" y="262" font-size="12" fill="#cbd5e1">Create entity + update index + append log + backlinks</text>
+  <text x="1120" y="278" font-size="12" fill="#cbd5e1">— all or nothing. Pending mode = human review inbox.</text>
+  <text x="1120" y="294" font-size="12" fill="#cbd5e1">This is the moat: nobody else ships it in a single file.</text>
+  <text x="1120" y="318" font-size="11" fill="#64748b" font-style="italic">Enabled by single-binary SQLite architecture</text>
+
+  <!-- 3. Event log -->
+  <rect x="640" y="360" width="440" height="130" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+  <text x="660" y="390" font-size="16" font-weight="700" fill="#fbbf24">3 · Append-only event log (T / T′)</text>
+  <text x="660" y="412" font-size="12" fill="#cbd5e1">Bi-temporal: event_time + ingestion_time + SHA-256</text>
+  <text x="660" y="428" font-size="12" fill="#cbd5e1">hash chain. Every mutation is tamper-evident.</text>
+  <text x="660" y="444" font-size="12" fill="#cbd5e1">smriti verify walks the chain end-to-end.</text>
+  <text x="660" y="468" font-size="11" fill="#64748b" font-style="italic">Zep/Graphiti 2501.13956</text>
+
+  <!-- 4. Contradiction inbox -->
+  <rect x="1100" y="360" width="440" height="130" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+  <text x="1120" y="390" font-size="16" font-weight="700" fill="#fbbf24">4 · Contradiction inbox</text>
+  <text x="1120" y="412" font-size="12" fill="#cbd5e1">Weighted scoring: w₁·semantic + w₂·recency + w₃·authority.</text>
+  <text x="1120" y="428" font-size="12" fill="#cbd5e1">Candidates surface for human review — Smriti never</text>
+  <text x="1120" y="444" font-size="12" fill="#cbd5e1">auto-resolves. Respects epistemic humility.</text>
+  <text x="1120" y="468" font-size="11" fill="#64748b" font-style="italic">MemoTime 2510.13614 · AGM 2603.17244</text>
+
+  <!-- Flow arrow from stack → integrity -->
+  <path d="M 600 415 Q 620 415 640 415" fill="none" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+
+  <!-- ── RIGHT: USE CASES ─────────────────────────────── -->
+  <text x="640" y="540" font-size="20" font-weight="700" fill="#f8fafc">Use cases</text>
+  <text x="640" y="562" font-size="13" fill="#64748b">Three concrete workflows — every example below runs against a real smriti binary</text>
+
+  <!-- UC 1 healthcare -->
+  <rect x="640" y="580" width="290" height="220" rx="10" fill="#0f172a" stroke="#10b981" stroke-width="2"/>
+  <text x="660" y="608" font-size="15" font-weight="700" fill="#10b981">Healthcare knowledge graph</text>
+  <text x="660" y="628" font-size="11" fill="#94a3b8">Typed edges enforce clinical semantics</text>
+  <rect x="656" y="640" width="258" height="148" rx="6" fill="#020617"/>
+  <text x="668" y="662" font-size="10.5" font-family="monospace" fill="#10b981">$ smriti create "Lisinopril" \</text>
+  <text x="668" y="678" font-size="10.5" font-family="monospace" fill="#10b981">    -c "ACE inhibitor."</text>
+  <text x="668" y="700" font-size="10.5" font-family="monospace" fill="#60a5fa">$ smriti link Lisinopril \</text>
+  <text x="668" y="716" font-size="10.5" font-family="monospace" fill="#60a5fa">    Hypertension --type treats</text>
+  <text x="668" y="738" font-size="10.5" font-family="monospace" fill="#60a5fa">$ smriti link Aspirin Warfarin \</text>
+  <text x="668" y="754" font-size="10.5" font-family="monospace" fill="#60a5fa">    --type interacts</text>
+  <text x="668" y="776" font-size="10.5" font-family="monospace" fill="#fbbf24">$ smriti graph --format dot</text>
+
+  <!-- UC 2 agent memory -->
+  <rect x="940" y="580" width="290" height="220" rx="10" fill="#0f172a" stroke="#0ea5e9" stroke-width="2"/>
+  <text x="960" y="608" font-size="15" font-weight="700" fill="#0ea5e9">Agent memory (MCP)</text>
+  <text x="960" y="628" font-size="11" fill="#94a3b8">Claude / GPT writes via JSON-RPC</text>
+  <rect x="956" y="640" width="258" height="148" rx="6" fill="#020617"/>
+  <text x="968" y="662" font-size="10" font-family="monospace" fill="#0ea5e9">// tools/call wiki_transaction_submit</text>
+  <text x="968" y="678" font-size="10" font-family="monospace" fill="#cbd5e1">{ "agent_id": "claude-4.6",</text>
+  <text x="968" y="694" font-size="10" font-family="monospace" fill="#cbd5e1">  "operations": [</text>
+  <text x="968" y="710" font-size="10" font-family="monospace" fill="#cbd5e1">    { "op":"create_note",</text>
+  <text x="968" y="726" font-size="10" font-family="monospace" fill="#cbd5e1">      "title":"Acme Q2 review",</text>
+  <text x="968" y="742" font-size="10" font-family="monospace" fill="#cbd5e1">      "claims":[{...}] }],</text>
+  <text x="968" y="758" font-size="10" font-family="monospace" fill="#fbbf24">  "pending": true  // inbox</text>
+  <text x="968" y="774" font-size="10" font-family="monospace" fill="#cbd5e1">}  → require_provenance ✓</text>
+
+  <!-- UC 3 research vault -->
+  <rect x="1240" y="580" width="300" height="220" rx="10" fill="#0f172a" stroke="#a855f7" stroke-width="2"/>
+  <text x="1260" y="608" font-size="15" font-weight="700" fill="#a855f7">Research vault w/ integrity</text>
+  <text x="1260" y="628" font-size="11" fill="#94a3b8">Every claim traceable to a PDF span</text>
+  <rect x="1256" y="640" width="268" height="148" rx="6" fill="#020617"/>
+  <text x="1268" y="662" font-size="10.5" font-family="monospace" fill="#a855f7">$ smriti verify</text>
+  <text x="1268" y="682" font-size="10.5" font-family="monospace" fill="#10b981">smriti verify: OK</text>
+  <text x="1268" y="698" font-size="10.5" font-family="monospace" fill="#cbd5e1">  notes=412  sources=89</text>
+  <text x="1268" y="714" font-size="10.5" font-family="monospace" fill="#cbd5e1">  claim_spans=1,204</text>
+  <text x="1268" y="730" font-size="10.5" font-family="monospace" fill="#cbd5e1">  events=3,712  grounded=398</text>
+  <text x="1268" y="752" font-size="10.5" font-family="monospace" fill="#fbbf24">$ smriti detect-contradictions</text>
+  <text x="1268" y="768" font-size="10.5" font-family="monospace" fill="#ef4444">  0.82  noteA ↔ noteB</text>
+  <text x="1268" y="784" font-size="10.5" font-family="monospace" fill="#94a3b8">  → review inbox</text>
+
+  <!-- ── BOTTOM: COMPARISON + TAGLINE ─────────────────── -->
+  <rect x="60" y="840" width="1480" height="200" rx="12" fill="#0f172a" stroke="#1e293b"/>
+  <text x="80" y="872" font-size="18" font-weight="700" fill="#f8fafc">How Smriti is different</text>
+
+  <!-- header row -->
+  <text x="600" y="898" font-size="12" font-weight="700" fill="#94a3b8" text-anchor="middle">Obsidian</text>
+  <text x="740" y="898" font-size="12" font-weight="700" fill="#94a3b8" text-anchor="middle">Zep</text>
+  <text x="880" y="898" font-size="12" font-weight="700" fill="#94a3b8" text-anchor="middle">Mem0/Letta</text>
+  <text x="1030" y="898" font-size="12" font-weight="700" fill="#94a3b8" text-anchor="middle">Neo4j/Graphiti</text>
+  <text x="1200" y="898" font-size="13" font-weight="800" fill="#fbbf24" text-anchor="middle">Smriti</text>
+
+  <!-- rows -->
+  <text x="80" y="928" font-size="12" fill="#cbd5e1">Single binary, local-first, offline</text>
+  <text x="600" y="928" font-size="14" fill="#10b981" text-anchor="middle">✓*</text>
+  <text x="740" y="928" font-size="14" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="880" y="928" font-size="14" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="1030" y="928" font-size="14" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="1200" y="928" font-size="14" fill="#10b981" text-anchor="middle">✓</text>
+
+  <text x="80" y="950" font-size="12" fill="#cbd5e1">Bi-temporal edges (valid_from/until)</text>
+  <text x="600" y="950" font-size="14" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="740" y="950" font-size="14" fill="#10b981" text-anchor="middle">✓</text>
+  <text x="880" y="950" font-size="14" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="1030" y="950" font-size="14" fill="#10b981" text-anchor="middle">✓</text>
+  <text x="1200" y="950" font-size="14" fill="#10b981" text-anchor="middle">✓</text>
+
+  <text x="80" y="972" font-size="12" fill="#cbd5e1">Atomic multi-write transactions</text>
+  <text x="600" y="972" font-size="14" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="740" y="972" font-size="14" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="880" y="972" font-size="14" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="1030" y="972" font-size="14" fill="#fbbf24" text-anchor="middle">server</text>
+  <text x="1200" y="972" font-size="14" font-weight="800" fill="#10b981" text-anchor="middle">✓</text>
+
+  <text x="80" y="994" font-size="12" fill="#cbd5e1">Enforced provenance on every claim</text>
+  <text x="600" y="994" font-size="14" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="740" y="994" font-size="14" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="880" y="994" font-size="14" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="1030" y="994" font-size="14" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="1200" y="994" font-size="14" font-weight="800" fill="#10b981" text-anchor="middle">✓</text>
+
+  <text x="80" y="1016" font-size="12" fill="#cbd5e1">smriti verify integrity sweep + hash chain</text>
+  <text x="600" y="1016" font-size="14" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="740" y="1016" font-size="14" fill="#fbbf24" text-anchor="middle">partial</text>
+  <text x="880" y="1016" font-size="14" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="1030" y="1016" font-size="14" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="1200" y="1016" font-size="14" font-weight="800" fill="#10b981" text-anchor="middle">✓</text>
+
+  <text x="1530" y="1016" font-size="10" fill="#475569" text-anchor="end">* Obsidian is a filesystem with no transactional guarantees</text>
+
+  <!-- Tagline bottom -->
+  <text x="800" y="1075" font-size="14" fill="#64748b" text-anchor="middle" font-style="italic">
+    The write-time discipline of a database. The distribution model of a .txt file. The memory of an agent that never forgets — and never fabricates.
+  </text>
+</svg>

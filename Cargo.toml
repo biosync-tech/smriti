@@ -1,0 +1,100 @@
+[package]
+name = "smriti"
+version = "0.2.0"
+edition = "2021"
+description = "A lightning-fast, self-hosted knowledge store and memory layer for AI agents. MCP server, knowledge graph, wiki-links, full-text search — built in Rust."
+license = "MIT"
+authors = ["Biosync"]
+repository = "https://github.com/biosync-tech/smriti"
+homepage = "https://github.com/biosync-tech/smriti"
+keywords = ["ai", "agents", "mcp", "knowledge-graph", "memory"]
+categories = ["command-line-utilities", "database", "text-processing"]
+readme = "README.md"
+
+[[bin]]
+name = "smriti"
+path = "src/main.rs"
+
+[dependencies]
+# Web framework & async
+axum = { version = "0.7", features = ["json", "query"] }
+tokio = { version = "1", features = ["full"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+
+# Database
+rusqlite = { version = "0.31", features = ["bundled", "vtab"] }
+sqlite-vec = "0.1"
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+clap_complete = "4"
+
+# Interactive CLI (optional, on by default)
+dialoguer = { version = "0.11", features = ["fuzzy-select"], optional = true }
+# 0.18 drops the unmaintained `number_prefix` dep (RUSTSEC-2025-0119)
+indicatif = { version = "0.18", optional = true }
+console = { version = "0.15", optional = true }
+
+# Web UI backend (optional, on by default)
+include_dir = { version = "0.7", optional = true }
+mime_guess = { version = "2", optional = true }
+
+# Knowledge graph
+petgraph = "0.6"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+
+# Utilities
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+regex = "1"
+thiserror = "1"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Sync engine
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+sha2 = "0.10"
+base64 = "0.22"
+
+# MCP / JSON-RPC
+async-trait = "0.1"
+
+# System info
+hostname = "0.4"
+
+# Vector byte casting
+zerocopy = "0.8"
+
+# Local LLM inference (Gemma 4 via GGUF) — optional, feature-gated
+llama-gguf = { version = "0.14", optional = true }
+
+[features]
+default = ["interactive", "webui"]
+interactive = ["dep:dialoguer", "dep:indicatif", "dep:console"]
+webui = ["dep:include_dir", "dep:mime_guess"]
+gemma = ["dep:llama-gguf"]
+
+[dev-dependencies]
+tokio-test = "0.4"
+tempfile = "3"
+criterion = { version = "0.5", features = ["html_reports"] }
+axum-test = "15"
+
+[[bench]]
+name = "smriti_bench"
+harness = false
+
+[[bench]]
+name = "audit_overhead"
+harness = false
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true

@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smriti — Senescence Biomarker Consolidation Demo</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%231F4D3A%27/%3E%3Ctext x=%2732%27 y=%2742%27 font-family=%27Georgia,serif%27 font-style=%27italic%27 font-size=%2730%27 fill=%27%23FBFAF7%27 text-anchor=%27middle%27%3ES.%3C/text%3E%3C/svg%3E" />
+<meta name="description" content="Three IPF cohorts independently cite the same senescence markers. Watch Smriti's consolidation engine promote the replicated pattern into a schema, lineage intact, disputed marker flagged — not deleted." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #141b2e;
+    --surface2: #1e2742;
+    --border: rgba(255,255,255,0.08);
+    --amber: #f0b546;
+    --amber-bri: #f7c948;
+    --cyan: #60a5fa;
+    --green: #3ecf8e;
+    --red: #ef4444;
+    --text: #f1f5f9;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --font: 'Space Grotesk', system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand {
+    font-family: var(--mono); font-size: 14px; font-weight: 600;
+    color: var(--amber); letter-spacing: 2px; text-transform: lowercase;
+  }
+  .back {
+    font-family: var(--mono); font-size: 12px;
+    color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase;
+    transition: color 0.15s;
+  }
+  .back:hover { color: var(--text); }
+  main {
+    flex: 1;
+    max-width: 960px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 48px 28px 32px;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    color: var(--amber); letter-spacing: 3px; text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-size: clamp(1.8rem, 3.5vw, 2.4rem); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15;
+    margin-bottom: 14px;
+  }
+  h1 em { color: var(--amber-bri); font-style: italic; }
+  .lede {
+    color: var(--text2); font-size: 1.05rem; max-width: 680px;
+    margin-bottom: 36px;
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+  }
+  .panel-label {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    color: var(--text3); letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .input-row {
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch;
+    margin-bottom: 22px;
+  }
+  .ep-btn {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex: 1;
+    min-width: 150px;
+    text-align: left;
+  }
+  .ep-btn:hover { color: var(--text); border-color: var(--amber); }
+  .ep-btn.active {
+    background: var(--surface2);
+    color: var(--amber);
+    border-color: var(--amber);
+  }
+  .ep-btn .label {
+    display: block; font-size: 14px; margin-bottom: 4px;
+  }
+  .ep-btn .sub {
+    display: block; font-size: 9px; color: var(--text3);
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+  .cluster {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 22px;
+  }
+  .cluster-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .cluster-row:last-child { border-bottom: none; }
+  .marker-name {
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    min-width: 92px;
+  }
+  .marker-name.disputed { color: var(--cyan); }
+  .marker-name.kept { color: var(--green); }
+  .bar-track {
+    flex: 1;
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s cubic-bezier(.4,.2,.2,1);
+  }
+  .bar-fill.kept { background: var(--green); }
+  .bar-fill.disputed { background: var(--cyan); }
+  .marker-score {
+    font-family: var(--mono); font-size: 11px; color: var(--text3);
+    min-width: 76px; text-align: right;
+  }
+  .result {
+    background: var(--surface2);
+    border: 1px solid var(--green);
+    border-radius: 10px;
+    padding: 18px 22px;
+    display: none;
+  }
+  .result.show { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .result-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .check {
+    width: 22px; height: 22px;
+    background: var(--green);
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px; color: var(--bg); font-weight: 700;
+    flex-shrink: 0;
+  }
+  .check.warn { background: var(--cyan); }
+  .result-title { font-size: 1.05rem; font-weight: 600; }
+  .result-title em { color: var(--green); font-style: normal; }
+  .result-title em.warn { color: var(--cyan); }
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 22px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .result-cell .k {
+    font-family: var(--mono); font-size: 10px; color: var(--text3);
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px;
+  }
+  .result-cell .v {
+    font-family: var(--mono); font-size: 13px; color: var(--text);
+  }
+  .result-cell .v.ok { color: var(--green); }
+  .result-cell .v.warn { color: var(--cyan); }
+  .result-cell .v.muted { color: var(--text2); }
+  .cta-strip {
+    margin-top: 28px;
+    padding: 18px 22px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: linear-gradient(180deg, var(--surface) 0%, transparent 100%);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .cta-strip .ct { color: var(--text2); font-size: 0.95rem; }
+  .cta-strip .ct strong { color: var(--text); }
+  .cta-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--amber); color: var(--bg);
+    padding: 10px 18px; border-radius: 8px;
+    font-weight: 600; font-size: 13px;
+    letter-spacing: 1px; text-transform: uppercase;
+    transition: transform 0.15s;
+  }
+  .cta-btn:hover { transform: translateY(-1px); }
+  footer {
+    text-align: center; padding: 20px;
+    font-family: var(--mono); font-size: 11px; color: var(--text3);
+    letter-spacing: 1px;
+  }
+  @media (max-width: 600px) {
+    .result-grid { grid-template-columns: 1fr; }
+    .ep-btn { flex-basis: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/" class="brand">smriti</a>
+  <a href="/" class="back">← Back to site</a>
+</div>
+
+<main>
+  <div class="eyebrow">Live demo · Memory consolidation · Senescence biomarker panel</div>
+  <h1>When does a biomarker note become <em>durable science?</em></h1>
+  <p class="lede">Three independent IPF cohorts each cite overlapping senescence markers. Pick a cohort to see its own episode note, or view the consolidated schema Smriti forms once replay, context diversity, and recency clear the threshold — with the disputed marker flagged, never deleted.</p>
+
+  <div class="panel">
+    <div class="panel-label">Choose a view</div>
+    <div class="input-row">
+      <button class="ep-btn" data-view="a">
+        <span class="label">Cohort A</span>
+        <span class="sub">Mayo IPF Registry · 2024</span>
+      </button>
+      <button class="ep-btn" data-view="b">
+        <span class="label">Cohort B</span>
+        <span class="sub">UCSF Aging Lung Cohort · 2025</span>
+      </button>
+      <button class="ep-btn" data-view="c">
+        <span class="label">Cohort C</span>
+        <span class="sub">Multi-center validation · 2026</span>
+      </button>
+      <button class="ep-btn active" data-view="schema">
+        <span class="label">Consolidated schema</span>
+        <span class="sub">All 3 episodes · promoted</span>
+      </button>
+    </div>
+
+    <div class="cluster" id="cluster">
+      <div class="cluster-row">
+        <span class="marker-name kept">p16INK4a</span>
+        <div class="bar-track"><div class="bar-fill kept" id="bar-p16" style="width: 71%;"></div></div>
+        <span class="marker-score" id="score-p16">0.71 · replicated</span>
+      </div>
+      <div class="cluster-row">
+        <span class="marker-name kept">MMP-7</span>
+        <div class="bar-track"><div class="bar-fill kept" id="bar-mmp7" style="width: 64%;"></div></div>
+        <span class="marker-score" id="score-mmp7">0.64 · replicated</span>
+      </div>
+      <div class="cluster-row">
+        <span class="marker-name disputed">IL-6</span>
+        <div class="bar-track"><div class="bar-fill disputed" id="bar-il6" style="width: 68%;"></div></div>
+        <span class="marker-score" id="score-il6">0.68 · disputed</span>
+      </div>
+    </div>
+
+    <div class="result show" id="result">
+      <div class="result-head">
+        <span class="check" id="resultCheck">✓</span>
+        <div class="result-title" id="resultTitle">Verdict: <em>Promoted to schema_ipf_panel_v1</em></div>
+      </div>
+      <div class="result-grid" id="resultGrid">
+        <div class="result-cell">
+          <div class="k">Source episodes</div>
+          <div class="v" id="sourceDoc">n_ipf_cohortA, n_ipf_cohortB, n_ipf_cohortC</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Consolidation score</div>
+          <div class="v ok" id="consolScore">0.00 → 0.79 · promoted</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Cluster similarity</div>
+          <div class="v muted" id="similarity">0.86 across 3 episodes</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Contradiction</div>
+          <div class="v warn" id="contradiction">IL-6 flagged — confounded by infection (Cohort C)</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Policy</div>
+          <div class="v ok" id="policy">Conservative — flag only, human review required</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Audit event</div>
+          <div class="v ok" id="auditEvent">promoted_to_schema · consolidation_events row written</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta-strip">
+    <div class="ct">Every schema your agent forms should point back to the exact evidence — and never silently erase a dissenting result. <strong>Smriti makes that the default.</strong></div>
+    <a class="cta-btn" href="mailto:hello@bio-sync.tech?subject=Smriti%20discovery%20call%20%E2%80%94%20consolidation">Book a 20-min call →</a>
+  </div>
+</main>
+
+<footer>smriti — audit-ready knowledge for AI-driven clinical &amp; biomedical work</footer>
+
+<script>
+  const views = {
+    a: {
+      title: 'Episode: <em>n_ipf_cohortA</em> — not yet consolidated',
+      check: '✓', checkClass: 'check',
+      bars: { p16: 45, mmp7: 0, il6: 40 },
+      scores: { p16: '0.45 · single episode', mmp7: '— · not cited', il6: '0.40 · single episode' },
+      source: 'Mayo IPF Registry, 2024 — n=182',
+      consol: '0.00 · episode, unreviewed',
+      similarity: 'n/a — single source',
+      contradiction: 'None observed yet',
+      contraClass: 'v muted',
+      policy: 'Conservative — awaiting replication',
+      audit: 'note_access_log · 4 reads logged',
+    },
+    b: {
+      title: 'Episode: <em>n_ipf_cohortB</em> — replicates Cohort A',
+      check: '✓', checkClass: 'check',
+      bars: { p16: 58, mmp7: 52, il6: 0 },
+      scores: { p16: '0.58 · 2 episodes agree', mmp7: '0.52 · new marker added', il6: '— · not cited' },
+      source: 'UCSF Aging Lung Cohort, 2025 — n=97',
+      consol: '0.00 · episode, unreviewed',
+      similarity: '0.91 vs. Cohort A on p16INK4a',
+      contradiction: 'None observed yet',
+      contraClass: 'v muted',
+      policy: 'Conservative — awaiting replication',
+      audit: 'note_access_log · 6 reads logged',
+    },
+    c: {
+      title: 'Episode: <em class="warn">n_ipf_cohortC</em> — disputes IL-6 specificity',
+      check: '!', checkClass: 'check warn',
+      bars: { p16: 63, mmp7: 60, il6: 68 },
+      scores: { p16: '0.63 · 3 episodes agree', mmp7: '0.60 · 3 episodes agree', il6: '0.68 · disputed here' },
+      source: 'Multi-center validation, 2026 — n=311',
+      consol: '0.00 · episode, unreviewed',
+      similarity: '0.86 on p16INK4a + MMP-7; IL-6 diverges',
+      contradiction: 'IL-6 confounded by concurrent infection — flagged, not resolved',
+      contraClass: 'v warn',
+      policy: 'Conservative — contradiction routed to review inbox',
+      audit: 'contradiction_events · 1 row written',
+    },
+    schema: {
+      title: 'Verdict: <em>Promoted to schema_ipf_panel_v1</em>',
+      check: '✓', checkClass: 'check',
+      bars: { p16: 71, mmp7: 64, il6: 68 },
+      scores: { p16: '0.71 · replicated', mmp7: '0.64 · replicated', il6: '0.68 · disputed' },
+      source: 'n_ipf_cohortA, n_ipf_cohortB, n_ipf_cohortC',
+      consol: '0.00 → 0.79 · promoted',
+      similarity: '0.86 across 3 episodes',
+      contradiction: 'IL-6 flagged — confounded by infection (Cohort C)',
+      contraClass: 'v warn',
+      policy: 'Conservative — flag only, human review required',
+      audit: 'promoted_to_schema · consolidation_events row written',
+    },
+  };
+
+  const barP16 = document.getElementById('bar-p16');
+  const barMmp7 = document.getElementById('bar-mmp7');
+  const barIl6 = document.getElementById('bar-il6');
+  const scoreP16 = document.getElementById('score-p16');
+  const scoreMmp7 = document.getElementById('score-mmp7');
+  const scoreIl6 = document.getElementById('score-il6');
+  const resultCheck = document.getElementById('resultCheck');
+  const resultTitle = document.getElementById('resultTitle');
+  const sourceDoc = document.getElementById('sourceDoc');
+  const consolScore = document.getElementById('consolScore');
+  const similarity = document.getElementById('similarity');
+  const contradiction = document.getElementById('contradiction');
+  const policy = document.getElementById('policy');
+  const auditEvent = document.getElementById('auditEvent');
+  const buttons = document.querySelectorAll('.ep-btn');
+
+  function setView(key) {
+    const v = views[key];
+    buttons.forEach(b => b.classList.toggle('active', b.dataset.view === key));
+
+    barP16.style.width = v.bars.p16 + '%';
+    barMmp7.style.width = v.bars.mmp7 + '%';
+    barIl6.style.width = v.bars.il6 + '%';
+    scoreP16.textContent = v.scores.p16;
+    scoreMmp7.textContent = v.scores.mmp7;
+    scoreIl6.textContent = v.scores.il6;
+
+    resultCheck.className = v.checkClass;
+    resultCheck.textContent = v.check;
+    resultTitle.innerHTML = v.title;
+    sourceDoc.textContent = v.source;
+    consolScore.textContent = v.consol;
+    similarity.textContent = v.similarity;
+    contradiction.textContent = v.contradiction;
+    contradiction.className = v.contraClass;
+    policy.textContent = v.policy;
+    auditEvent.textContent = v.audit;
+  }
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => setView(btn.dataset.view));
+  });
+
+  setView('schema');
+</script>
+
+</body>
+</html>

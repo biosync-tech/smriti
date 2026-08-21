@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face {
+    font-family: 'Fraunces';
+    src: local('Georgia');
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 1200px;
+    height: 630px;
+    background: #0B1416;
+    font-family: -apple-system, 'Plus Jakarta Sans', system-ui, sans-serif;
+    overflow: hidden;
+  }
+  .wrap {
+    width: 1200px;
+    height: 630px;
+    padding: 72px 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+  }
+  .wrap::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 85% 15%, rgba(31,77,58,0.35), transparent 45%),
+      radial-gradient(circle at 10% 90%, rgba(197,107,71,0.18), transparent 40%);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: relative;
+  }
+  .mark {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: #1F4D3A;
+    color: #FBFAF7;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 26px;
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .brand-name {
+    color: #E6EDE9;
+    font-size: 22px;
+    letter-spacing: 0.02em;
+    font-weight: 500;
+  }
+  .headline {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 60px;
+    line-height: 1.12;
+    color: #FBFAF7;
+    max-width: 920px;
+    font-weight: 500;
+    position: relative;
+  }
+  .headline em {
+    color: #E8A97E;
+    font-style: italic;
+  }
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    position: relative;
+  }
+  .sub {
+    color: rgba(230,237,233,0.62);
+    font-size: 21px;
+    max-width: 640px;
+    line-height: 1.5;
+  }
+  .badges {
+    display: flex;
+    gap: 10px;
+  }
+  .badge {
+    font-family: 'IBM Plex Mono', 'SF Mono', ui-monospace, monospace;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #B5DBC2;
+    border: 1px solid rgba(230,237,233,0.22);
+    border-radius: 999px;
+    padding: 8px 16px;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">
+      <div class="mark">S.</div>
+      <div class="brand-name">Smriti</div>
+    </div>
+    <div class="headline">An AI agent&rsquo;s memory <em>you can defend.</em></div>
+    <div class="foot">
+      <div class="sub">Self-hosted memory for AI agents in clinical trials, biotech, and revenue cycle. Every claim cites its source. Every change replays bit-identical.</div>
+      <div class="badges">
+        <span class="badge">Self-hosted</span>
+        <span class="badge">Zero cloud</span>
+        <span class="badge">Audit-ready</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,1628 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smriti — An AI agent's memory you can defend</title>
+  <meta name="description" content="A self-hosted memory layer for AI agents in clinical trials, pharmacovigilance, and biomedical research. Every output is reproducible from stored evidence. Every claim cites its source. Every change is verifiable. One binary. Zero cloud." />
+  <link rel="canonical" href="https://smritiai.netlify.app/" />
+  <meta property="og:title" content="Smriti — An AI agent's memory you can defend" />
+  <meta property="og:description" content="A self-hosted memory layer for AI agents in clinical and biomedical work. Built for the moment an FDA reviewer or IRB asks where the AI got that." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://smritiai.netlify.app/" />
+  <meta property="og:image" content="https://smritiai.netlify.app/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Smriti — An AI agent's memory you can defend" />
+  <meta name="twitter:description" content="A self-hosted memory layer for AI agents in clinical trials, biotech, and revenue cycle. Every claim cites its source. Every change replays bit-identical." />
+  <meta name="twitter:image" content="https://smritiai.netlify.app/og-image.png" />
+  <meta name="theme-color" content="#FFFFFF" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231F4D3A'/%3E%3Ctext x='32' y='42' font-family='Georgia,serif' font-style='italic' font-size='30' fill='%23FBFAF7' text-anchor='middle'%3ES.%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" />
+
+  <style>
+    :root {
+      --white:        #FFFFFF;
+      --offwhite:     #FBFAF7;
+      --sand:         #F2EBDB;
+
+      --ink:          #0B1416;
+      --ink-2:        #3D4F53;
+      --ink-3:        #7A8A8E;
+      --ink-4:        #C5CDD0;
+
+      --rule:         rgba(11, 20, 22, 0.10);
+      --rule-2:       rgba(11, 20, 22, 0.05);
+
+      --green:        #1F4D3A;
+      --green-2:      #2A6B50;
+      --green-soft:   rgba(31, 77, 58, 0.06);
+      --clay:         #C56B47;
+      --clay-soft:    rgba(197, 107, 71, 0.10);
+
+      --serif:    'Fraunces', Georgia, 'Times New Roman', serif;
+      --sans:     'Plus Jakarta Sans', -apple-system, system-ui, sans-serif;
+      --mono:     'IBM Plex Mono', 'SF Mono', ui-monospace, monospace;
+
+      --max:      1240px;
+      --gutter:   clamp(20px, 4vw, 64px);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--white);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    ::selection { background: var(--green); color: var(--white); }
+
+    /* ── Layout primitives ─────────────────────────────────────── */
+    .wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); position: relative; }
+
+    /* ── Typography utilities ──────────────────────────────────── */
+    .small-caps {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--ink-2);
+    }
+    .lede {
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 14, "SOFT" 50, "WONK" 0;
+      font-size: clamp(19px, 1.4vw, 24px);
+      line-height: 1.55;
+      color: var(--ink-2);
+    }
+    em.italic-clay {
+      font-style: italic;
+      color: var(--clay);
+      font-variation-settings: "opsz" 144, "SOFT" 50, "WONK" 1;
+    }
+
+    /* ── Masthead ──────────────────────────────────────────────── */
+    .masthead {
+      border-bottom: 1px solid var(--rule);
+      padding: 18px 0;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: saturate(140%) blur(20px);
+      -webkit-backdrop-filter: saturate(140%) blur(20px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .masthead-inner {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 24px;
+    }
+    .mast-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ink-2);
+    }
+    .mast-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border: 1px solid var(--green);
+      color: var(--green);
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      font-weight: 600;
+      border-radius: 999px;
+    }
+    .mast-pulse {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--clay);
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+    .mast-center {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .mast-monogram {
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 144, "SOFT" 0, "WONK" 1;
+      font-weight: 600;
+      font-size: 24px;
+      line-height: 1;
+      color: var(--green);
+      transform: translateY(2px);
+    }
+    .mast-name {
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 144, "SOFT" 0, "WONK" 0;
+      font-weight: 500;
+      font-size: 19px;
+      letter-spacing: 0.02em;
+      color: var(--ink);
+    }
+    .mast-right {
+      display: flex;
+      gap: 22px;
+      justify-content: flex-end;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-2);
+    }
+    .mast-link { transition: color 0.18s; }
+    .mast-link:hover { color: var(--green); }
+    .mast-link.cta-link {
+      color: var(--green);
+      font-weight: 500;
+    }
+    .mast-link.cta-link:hover { color: var(--clay); }
+
+    @media (max-width: 720px) {
+      .masthead-inner { grid-template-columns: auto 1fr; }
+      .mast-left { display: none; }
+      .mast-right { gap: 14px; font-size: 10px; }
+    }
+
+    /* ── Hero ──────────────────────────────────────────────────── */
+    .hero {
+      padding: clamp(96px, 14vw, 200px) 0 clamp(96px, 12vw, 192px);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      top: -40%;
+      left: -20%;
+      right: -20%;
+      height: 90%;
+      background: radial-gradient(ellipse at center, rgba(31, 77, 58, 0.05), transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+      max-width: 1100px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .hero h1 {
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 144, "SOFT" 25, "WONK" 0;
+      font-weight: 400;
+      font-size: clamp(56px, 11vw, 168px);
+      line-height: 0.92;
+      letter-spacing: -0.032em;
+      color: var(--ink);
+      margin-bottom: 36px;
+    }
+    .hero h1 .underline-clay {
+      position: relative;
+      white-space: nowrap;
+    }
+    .hero h1 .underline-clay::after {
+      content: "";
+      position: absolute;
+      left: -1%;
+      right: -1%;
+      bottom: 0.05em;
+      height: 0.10em;
+      background: var(--clay);
+      z-index: -1;
+      transform-origin: left;
+      animation: drawline 1.4s 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    }
+    @keyframes drawline {
+      from { transform: scaleX(0); }
+      to { transform: scaleX(1); }
+    }
+    .hero p.lede {
+      font-size: clamp(20px, 1.6vw, 26px);
+      max-width: 56ch;
+      margin: 0 auto 44px;
+      color: var(--ink-2);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      justify-content: center;
+      margin-bottom: 36px;
+    }
+    .hero-meta {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-3);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 24px;
+      justify-content: center;
+    }
+    .hero-meta .stamp {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--green);
+      font-weight: 500;
+    }
+    .hero-meta .stamp .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+    }
+
+    /* ── Buttons ───────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 16px 28px;
+      border: 1px solid var(--ink);
+      transition: all 0.22s ease;
+      cursor: pointer;
+      background: transparent;
+      color: var(--ink);
+      border-radius: 999px;
+    }
+    .btn-primary {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: var(--white);
+    }
+    .btn-primary:hover {
+      background: var(--green);
+      border-color: var(--green);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(31, 77, 58, 0.30);
+    }
+    .btn-ghost { background: var(--white); }
+    .btn-ghost:hover {
+      background: var(--green-soft);
+      border-color: var(--green);
+      color: var(--green);
+      transform: translateY(-2px);
+    }
+    .btn .arrow { display: inline-block; transition: transform 0.22s; }
+    .btn:hover .arrow { transform: translateX(4px); }
+
+    /* ── Section base ──────────────────────────────────────────── */
+    .section {
+      padding: clamp(96px, 12vw, 184px) 0;
+      position: relative;
+      scroll-margin-top: 88px;
+    }
+    .cta { scroll-margin-top: 88px; }
+    .section + .section { border-top: 1px solid var(--rule); }
+    .section-header {
+      max-width: 920px;
+      margin: 0 auto clamp(56px, 6vw, 96px);
+      text-align: center;
+    }
+    .section-marker {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      margin-bottom: 22px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-marker .num {
+      color: var(--clay);
+      font-weight: 600;
+    }
+    .section h2 {
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 144, "SOFT" 25, "WONK" 0;
+      font-weight: 400;
+      font-size: clamp(44px, 6.4vw, 96px);
+      line-height: 0.96;
+      letter-spacing: -0.024em;
+      max-width: 22ch;
+      margin: 0 auto 24px;
+      color: var(--ink);
+    }
+    .section h2 em {
+      font-style: italic;
+      color: var(--clay);
+      font-variation-settings: "opsz" 144, "SOFT" 50, "WONK" 1;
+    }
+    .section-header .lede {
+      max-width: 60ch;
+      margin: 0 auto;
+    }
+
+    /* ── Problems ──────────────────────────────────────────────── */
+    .problems-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+    @media (min-width: 920px) {
+      .problems-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    .problem {
+      padding: 56px 36px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      transition: transform 0.32s ease;
+    }
+    .problem:hover { transform: translateY(-4px); }
+    @media (min-width: 920px) {
+      .problem + .problem { border-left: 1px solid var(--rule); }
+    }
+    @media (max-width: 919px) {
+      .problem + .problem { border-top: 1px solid var(--rule); }
+    }
+    .problem-num {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--clay);
+      letter-spacing: 0.16em;
+      font-weight: 600;
+    }
+    .problem-quote {
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 36, "SOFT" 50, "WONK" 1;
+      font-style: italic;
+      font-weight: 400;
+      font-size: clamp(26px, 2.2vw, 34px);
+      line-height: 1.15;
+      letter-spacing: -0.012em;
+      color: var(--ink);
+    }
+    .problem-quote::before { content: "“"; color: var(--clay); margin-right: 2px; }
+    .problem-quote::after { content: "”"; color: var(--clay); margin-left: 2px; }
+    .problem-body {
+      color: var(--ink-2);
+      font-size: 16px;
+      line-height: 1.65;
+    }
+    .problem-tag {
+      margin-top: auto;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--green);
+      font-weight: 600;
+    }
+
+    /* ── Pull quote ────────────────────────────────────────────── */
+    .pullquote {
+      max-width: 64ch;
+      margin: clamp(80px, 9vw, 144px) auto 0;
+      text-align: center;
+      padding: 0 var(--gutter);
+    }
+    .pullquote .text {
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 144, "SOFT" 50, "WONK" 0;
+      font-style: italic;
+      font-weight: 400;
+      font-size: clamp(26px, 3vw, 42px);
+      line-height: 1.18;
+      color: var(--ink);
+      letter-spacing: -0.018em;
+    }
+    .pullquote .text em.italic-clay {
+      letter-spacing: -0.012em;
+    }
+    .pullquote .attr {
+      margin-top: 28px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.20em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+    }
+
+    /* ── Approach cards ────────────────────────────────────────── */
+    .approach-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 28px;
+    }
+    @media (min-width: 920px) {
+      .approach-grid { grid-template-columns: repeat(3, 1fr); gap: 32px; }
+    }
+    .approach-card {
+      background: var(--offwhite);
+      padding: 44px 36px 48px;
+      position: relative;
+      transition: background 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+      border-radius: 8px;
+    }
+    .approach-card:hover {
+      background: var(--white);
+      transform: translateY(-4px);
+      box-shadow: 0 18px 48px rgba(11, 20, 22, 0.08);
+    }
+    .card-roman {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 18px;
+      color: var(--clay);
+      margin-bottom: 22px;
+      letter-spacing: 0.04em;
+    }
+    .approach-card h3 {
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 36, "SOFT" 30, "WONK" 0;
+      font-weight: 500;
+      font-size: clamp(26px, 2.1vw, 32px);
+      line-height: 1.12;
+      margin-bottom: 16px;
+      letter-spacing: -0.014em;
+      color: var(--ink);
+    }
+    .card-tagline {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 16px;
+      font-weight: 500;
+    }
+    .approach-card p {
+      color: var(--ink-2);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    /* ── Capabilities tile strip ───────────────────────────────── */
+    .caps-grid {
+      margin-top: clamp(56px, 6vw, 88px);
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0;
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+    }
+    @media (min-width: 720px) {
+      .caps-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    .cap {
+      padding: 36px 32px;
+      border-right: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+      transition: background 0.24s ease;
+    }
+    .cap:hover { background: var(--green-soft); }
+    @media (min-width: 720px) {
+      .cap:nth-child(3n) { border-right: 0; }
+      .cap:nth-last-child(-n+3) { border-bottom: 0; }
+    }
+    @media (max-width: 719px) {
+      .cap:nth-child(2n) { border-right: 0; }
+      .cap:nth-last-child(-n+2) { border-bottom: 0; }
+    }
+    .cap-tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .cap-tag.is-new {
+      color: var(--clay);
+      font-weight: 600;
+    }
+    .cap-tag .pip {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: currentColor;
+    }
+    .cap-title {
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 36, "SOFT" 30, "WONK" 0;
+      font-weight: 500;
+      font-size: 20px;
+      line-height: 1.2;
+      color: var(--ink);
+      letter-spacing: -0.008em;
+    }
+    .cap-desc {
+      font-size: 14px;
+      color: var(--ink-2);
+      line-height: 1.6;
+    }
+
+    /* ── Proof: terminal + side anchors ────────────────────────── */
+    .proof-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 48px;
+      max-width: 1140px;
+      margin: 0 auto;
+    }
+    @media (min-width: 920px) {
+      .proof-grid {
+        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+        gap: 72px;
+        align-items: start;
+      }
+    }
+    .terminal {
+      background: var(--ink);
+      color: #E6EDE9;
+      padding: 38px 36px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.85;
+      overflow-x: auto;
+      position: relative;
+      border-radius: 12px;
+      box-shadow: 0 24px 64px rgba(11, 20, 22, 0.16);
+    }
+    .terminal::before {
+      content: "smriti.local · zsh";
+      position: absolute;
+      top: 16px;
+      left: 24px;
+      color: var(--ink-3);
+      padding-bottom: 14px;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .terminal::after {
+      content: "● ● ●";
+      position: absolute;
+      top: 14px;
+      right: 18px;
+      color: var(--ink-3);
+      font-size: 9px;
+      letter-spacing: 0.6em;
+    }
+    .terminal-body { padding-top: 40px; }
+    .terminal .prompt { color: var(--clay); user-select: none; }
+    .terminal .ok { color: #B5DBC2; }
+    .terminal .key { color: #E8C895; }
+    .terminal .dim { color: rgba(230, 237, 233, 0.45); }
+    .terminal .hash { color: #F5BFA1; }
+    .terminal .blink {
+      display: inline-block;
+      width: 0.55em;
+      height: 1em;
+      background: #E6EDE9;
+      vertical-align: -2px;
+      animation: blink 1.1s steps(1) infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .proof-side {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .anchor {
+      display: grid;
+      grid-template-columns: 96px 1fr;
+      gap: 18px;
+      align-items: baseline;
+      padding: 22px 0;
+      border-top: 1px solid var(--rule);
+    }
+    .anchor:last-child { border-bottom: 1px solid var(--rule); }
+    .anchor-tag {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--green);
+      font-weight: 500;
+    }
+    .anchor-body strong {
+      display: block;
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 24, "SOFT" 30, "WONK" 0;
+      font-weight: 500;
+      font-size: 18px;
+      color: var(--ink);
+      margin-bottom: 4px;
+      letter-spacing: -0.01em;
+    }
+    .anchor-body span {
+      font-size: 14px;
+      color: var(--ink-2);
+      line-height: 1.6;
+    }
+
+    .segment-badge {
+      display: inline-flex;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--green);
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+      padding: 6px 14px;
+      margin-bottom: 20px;
+    }
+
+    /* ── Numbers row ───────────────────────────────────────────── */
+    .nums {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0;
+      margin-top: clamp(72px, 8vw, 120px);
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+    }
+    @media (min-width: 720px) {
+      .nums { grid-template-columns: repeat(4, 1fr); }
+    }
+    .num-cell {
+      padding: 44px 32px;
+      border-right: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: background 0.22s ease;
+    }
+    .num-cell:hover { background: var(--green-soft); }
+    .num-cell:nth-child(2n) { border-right: 0; }
+    @media (min-width: 720px) {
+      .num-cell:nth-child(2n) { border-right: 1px solid var(--rule); }
+      .num-cell:nth-child(4n) { border-right: 0; }
+      .num-cell { border-bottom: 0; }
+    }
+    .num-val {
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 144, "SOFT" 0, "WONK" 0;
+      font-weight: 400;
+      font-size: clamp(56px, 5vw, 84px);
+      line-height: 1;
+      letter-spacing: -0.026em;
+      font-feature-settings: "tnum";
+      color: var(--green);
+    }
+    .num-val .unit {
+      font-size: 0.34em;
+      color: var(--ink-3);
+      font-weight: 400;
+      margin-left: 4px;
+      letter-spacing: 0;
+      vertical-align: 6px;
+    }
+    .num-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-2);
+    }
+    .num-foot {
+      font-size: 12px;
+      color: var(--ink-3);
+      margin-top: auto;
+      padding-top: 8px;
+      line-height: 1.5;
+    }
+
+    /* ── For builders panel ────────────────────────────────────── */
+    .builders {
+      max-width: 920px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .builders h3 {
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 144, "SOFT" 30, "WONK" 0;
+      font-size: clamp(36px, 4.4vw, 60px);
+      line-height: 1.05;
+      letter-spacing: -0.022em;
+      font-weight: 400;
+      margin-bottom: 24px;
+      color: var(--ink);
+    }
+    .builders .lede { margin: 0 auto 56px; max-width: 56ch; }
+    .builder-list {
+      list-style: none;
+      counter-reset: bl;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 28px;
+      text-align: left;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    @media (min-width: 720px) {
+      .builder-list { grid-template-columns: 1fr 1fr; gap: 32px 56px; }
+    }
+    .builder-list li {
+      counter-increment: bl;
+      padding-left: 56px;
+      position: relative;
+      font-size: 16px;
+      line-height: 1.65;
+      color: var(--ink-2);
+    }
+    .builder-list li::before {
+      content: counter(bl, decimal-leading-zero);
+      position: absolute;
+      left: 0;
+      top: 2px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--green);
+      letter-spacing: 0.12em;
+      font-weight: 600;
+      padding: 4px 9px;
+      border: 1px solid var(--green);
+      border-radius: 999px;
+    }
+    .builder-list li strong {
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    /* ── CTA ───────────────────────────────────────────────────── */
+    .cta {
+      padding: clamp(96px, 12vw, 192px) 0;
+      background: var(--green);
+      color: var(--white);
+      position: relative;
+      overflow: hidden;
+    }
+    .cta::before {
+      content: "";
+      position: absolute;
+      top: -30%;
+      right: -15%;
+      width: 720px;
+      height: 720px;
+      background: radial-gradient(circle at center, rgba(197, 107, 71, 0.18), transparent 70%);
+      pointer-events: none;
+    }
+    .cta-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 56px;
+      align-items: start;
+      position: relative;
+      z-index: 2;
+    }
+    @media (min-width: 920px) {
+      .cta-grid {
+        grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+        gap: 96px;
+        align-items: end;
+      }
+    }
+    .cta h2 {
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 144, "SOFT" 30, "WONK" 0;
+      font-weight: 400;
+      font-size: clamp(44px, 6.4vw, 96px);
+      line-height: 0.96;
+      letter-spacing: -0.026em;
+      color: var(--white);
+      max-width: 18ch;
+    }
+    .cta h2 em {
+      font-style: italic;
+      color: #F0BB99;
+      font-variation-settings: "opsz" 144, "SOFT" 50, "WONK" 1;
+    }
+
+    /* ── Contact form (CTA) ────────────────────────────────────── */
+    .cta-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .form-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.85);
+      font-weight: 500;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .form-optional {
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.55);
+      letter-spacing: 0.14em;
+      text-transform: none;
+      font-style: italic;
+    }
+    .cta-form input[type="email"],
+    .cta-form input[type="text"] {
+      width: 100%;
+      padding: 16px 18px;
+      border: 1px solid rgba(255, 255, 255, 0.30);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--white);
+      font-family: var(--sans);
+      font-size: 15px;
+      transition: border-color 0.2s, background 0.2s;
+      outline: none;
+      border-radius: 6px;
+    }
+    .cta-form input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+    .cta-form input:focus {
+      border-color: #F0BB99;
+      background: rgba(255, 255, 255, 0.10);
+    }
+    .botcheck {
+      position: absolute !important;
+      width: 1px; height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      pointer-events: none;
+    }
+    .form-submit {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      align-self: flex-start;
+      padding: 16px 28px;
+      margin-top: 6px;
+      background: var(--clay);
+      color: var(--white);
+      border: 1px solid var(--clay);
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.22s ease;
+      border-radius: 999px;
+    }
+    .form-submit:hover:not(:disabled) {
+      background: #D4825D;
+      border-color: #D4825D;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.20);
+    }
+    .form-submit:disabled { opacity: 0.65; cursor: progress; }
+    .form-submit .submit-arrow { display: inline-block; transition: transform 0.22s; }
+    .form-submit:hover:not(:disabled) .submit-arrow { transform: translateX(4px); }
+
+    .form-success, .form-error {
+      padding: 22px 26px;
+      background: rgba(255, 255, 255, 0.06);
+      border-left: 3px solid #F0BB99;
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--white);
+      border-radius: 4px;
+    }
+    .form-error { border-left-color: var(--clay); }
+    .form-success strong, .form-error strong {
+      display: block;
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 36, "SOFT" 30, "WONK" 0;
+      font-size: 19px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--white);
+    }
+    .form-success a, .form-error a {
+      color: #F0BB99;
+      border-bottom: 1px dotted #F0BB99;
+    }
+    .is-hidden { display: none !important; }
+
+    .cta-fallback {
+      margin-top: 14px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.55);
+    }
+    .cta-fallback a {
+      color: rgba(255, 255, 255, 0.85);
+      border-bottom: 1px dotted rgba(255, 255, 255, 0.5);
+      transition: color 0.18s, border-color 0.18s;
+    }
+    .cta-fallback a:hover {
+      color: #F0BB99;
+      border-bottom-color: #F0BB99;
+    }
+
+    /* ── Footer ────────────────────────────────────────────────── */
+    footer {
+      padding: 40px 0;
+      background: var(--white);
+      border-top: 1px solid var(--rule);
+    }
+    .foot {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+    }
+    .foot a:hover { color: var(--green); }
+    .foot-mark {
+      color: var(--green);
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 144, "SOFT" 0, "WONK" 1;
+      font-weight: 600;
+      font-size: 14px;
+      margin-right: 8px;
+    }
+
+    /* ── Reveal on load ────────────────────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(8px);
+      animation: reveal 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+    }
+    .reveal-1 { animation-delay: 0.05s; }
+    .reveal-2 { animation-delay: 0.18s; }
+    .reveal-3 { animation-delay: 0.32s; }
+    .reveal-4 { animation-delay: 0.46s; }
+    .reveal-5 { animation-delay: 0.60s; }
+    @keyframes reveal {
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── MASTHEAD ───────────────────────────────────────────────── -->
+<header class="masthead">
+  <div class="wrap masthead-inner">
+    <div class="mast-center">
+      <span class="mast-monogram">S.</span>
+      <span class="mast-name">Smriti</span>
+    </div>
+    <div class="mast-right">
+      <a class="mast-link" href="#problem">Problem</a>
+      <a class="mast-link" href="#approach">Approach</a>
+      <a class="mast-link" href="#use-cases">Use cases</a>
+      <a class="mast-link" href="#proof">Proof</a>
+      <a class="mast-link cta-link" href="#contact">Talk to us →</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ─── HERO ──────────────────────────────────────────────────── -->
+  <section class="hero">
+    <div class="wrap hero-inner">
+      <h1 class="reveal reveal-1">
+        An AI agent's<br/>
+        memory you can<br/>
+        <span class="underline-clay"><em class="italic-clay">defend.</em></span>
+      </h1>
+      <p class="lede reveal reveal-2">
+        For teams shipping AI agents into clinical trials, drug safety, and translational research. A self-hosted memory layer where every output is reproducible from stored evidence, every claim cites its source, and every change is verifiable. One binary. Zero cloud. No patient data ever leaves the machine.
+      </p>
+      <div class="hero-actions reveal reveal-3">
+        <a href="#contact" class="btn btn-primary">
+          Talk to us <span class="arrow">→</span>
+        </a>
+        <a href="#approach" class="btn btn-ghost">
+          How it works
+        </a>
+      </div>
+      <div class="hero-meta reveal reveal-4">
+        <span class="stamp"><span class="dot"></span>Self-hosted</span>
+        <span>Single binary</span>
+        <span>Offline by design</span>
+        <span>Built for clinical &amp; biomedical AI</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── PROBLEM ───────────────────────────────────────────────── -->
+  <section id="problem" class="section">
+    <div class="wrap">
+      <div class="section-header">
+        <h2>You can't <em>show your work.</em></h2>
+        <p class="lede">
+          Every state-of-the-art agent memory layer treats the model as a trusted writer. The data model assumes good faith. So when the obvious question arrives, you can't answer it in less than four hours.
+        </p>
+      </div>
+
+      <div class="problems-grid">
+        <article class="problem">
+          <div class="problem-num">01</div>
+          <p class="problem-quote">Where did the agent get this?</p>
+          <p class="problem-body">Compliance asks. You have a model name, a transcript, and three log files in three places. The retrieval set that produced the answer was discarded after the request.</p>
+          <p class="problem-tag">Reproducibility</p>
+        </article>
+        <article class="problem">
+          <div class="problem-num">02</div>
+          <p class="problem-quote">Was that protocol still current?</p>
+          <p class="problem-body">The agent cited a guideline. It was correct three months ago and superseded last week. Your memory layer has no concept of valid-from and valid-until. The wrong version sat in retrieval.</p>
+          <p class="problem-tag">Time</p>
+        </article>
+        <article class="problem">
+          <div class="problem-num">03</div>
+          <p class="problem-quote">Did the agent see the contradiction?</p>
+          <p class="problem-body">Two notes in different sessions said different things. The agent silently used whichever was retrieved last. There was no signal that the conflict existed.</p>
+          <p class="problem-tag">Conflict</p>
+        </article>
+      </div>
+
+      <div class="pullquote">
+        <p class="text">"The transcript is not the audit trail. The audit trail is the chain of evidence that <em class="italic-clay">produced</em> the transcript."</p>
+        <p class="attr">Field note · From a discovery call with a clinical-AI team, 2026</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── APPROACH ──────────────────────────────────────────────── -->
+  <section id="approach" class="section">
+    <div class="wrap">
+      <div class="section-header">
+        <h2>Three primitives.<br/>Plain English.</h2>
+        <p class="lede">
+          Wired into the storage layer so they can't be opted out of. Each one replaces an afternoon of manual reconstruction with a single query.
+        </p>
+      </div>
+
+      <div class="approach-grid">
+        <article class="approach-card">
+          <span class="card-roman">i.</span>
+          <p class="card-tagline">Tamper-evident change log</p>
+          <h3>Every change leaves a fingerprint.</h3>
+          <p>Each note, each edit, each model call gets a fingerprint linked to the previous one. If anything was tampered with, the chain shows you exactly where. Your audit trail becomes a chain you can verify — not a story you have to tell.</p>
+        </article>
+        <article class="approach-card">
+          <span class="card-roman">ii.</span>
+          <p class="card-tagline">Memory that earns its place</p>
+          <h3>Knowledge gets cleaner over time.</h3>
+          <p>Notes earn durability through repeated, time-spread access. Old + replayed = important. Old + abandoned = fades. The graph stops bloating. The most-cited knowledge consolidates into durable schemas.</p>
+        </article>
+        <article class="approach-card">
+          <span class="card-roman">iii.</span>
+          <p class="card-tagline">Citations the system enforces</p>
+          <h3>Every claim cites its source.</h3>
+          <p>A claim that doesn't textually overlap with a cited source is rejected at write time. Not "logged" — rejected. The model can't quietly invent a citation, because the storage layer won't accept one.</p>
+        </article>
+      </div>
+
+      <div class="caps-grid">
+        <div class="cap">
+          <span class="cap-tag"><span class="pip"></span>Time</span>
+          <h4 class="cap-title">Knows when a fact stopped being true</h4>
+          <p class="cap-desc">Every link carries valid-from and valid-until. Stale guidance can't quietly resurface.</p>
+        </div>
+        <div class="cap">
+          <span class="cap-tag"><span class="pip"></span>Conflict</span>
+          <h4 class="cap-title">Surfaces contradictions, doesn't bury them</h4>
+          <p class="cap-desc">When two notes disagree, the system tells you. No silent overwrites.</p>
+        </div>
+        <div class="cap">
+          <span class="cap-tag is-new"><span class="pip"></span>New in v0.3</span>
+          <h4 class="cap-title">Triages memory the way a brain does</h4>
+          <p class="cap-desc">Frequently-accessed knowledge hardens into durable schemas. Abandoned notes fade.</p>
+        </div>
+        <div class="cap">
+          <span class="cap-tag"><span class="pip"></span>Replay</span>
+          <h4 class="cap-title">Re-runs a model call from stored metadata</h4>
+          <p class="cap-desc">Same model, same prompt, same retrieval set — bit-identical answer. By design, not by hope.</p>
+        </div>
+        <div class="cap">
+          <span class="cap-tag"><span class="pip"></span>Footprint</span>
+          <h4 class="cap-title">One binary. No services. No cloud.</h4>
+          <p class="cap-desc">A 30-megabyte program plus a database file. Air-gappable. Deployable anywhere.</p>
+        </div>
+        <div class="cap">
+          <span class="cap-tag"><span class="pip"></span>Custody</span>
+          <h4 class="cap-title">Your data never leaves your stack</h4>
+          <p class="cap-desc">Smriti runs on your hardware, against your database file. No vendor in the middle. No telemetry.</p>
+        </div>
+        <div class="cap">
+          <span class="cap-tag is-new"><span class="pip"></span>New · Path A</span>
+          <h4 class="cap-title">Your documents, queryable by any local LLM</h4>
+          <p class="cap-desc">Ingest .txt and .md files into the graph. One call returns assembled context — no cloud, no API key, no embedding model required.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── USE CASES ─────────────────────────────────────────────── -->
+  <section id="use-cases" class="section">
+    <div class="wrap">
+      <div class="section-header">
+        <h2>Four real <em>chains.</em></h2>
+        <p class="lede">
+          Every primitive on this page is grounded in a working scenario — across revenue cycle, clinical trials, and biotech — with sources, claim spans, and bit-identical replay. Each demo is replayable against the smriti store — not a screenshot, not a mockup.
+        </p>
+      </div>
+
+      <!-- ── USE CASE 1: Prior-auth denial overturn ── -->
+      <span class="segment-badge">Payer / Revenue Cycle · RCM</span>
+      <div class="proof-grid" style="margin-bottom: 4rem;">
+        <pre class="terminal"><div class="terminal-body">
+<span class="prompt">$</span> smriti graph --as-of 2024-03-14 <span class="key">payer-policy-UHC-MN</span>
+<span class="dim">─── time-aware retrieval ────────────────────</span>
+active policy      <span class="ok">UHC-MN-2024-03</span>  (2024-01-01 → 2024-12-31)
+superseded by      <span class="dim">UHC-MN-2025-01</span> (2025-01-01 →)
+                   <span class="dim">— excluded: not retroactive to date of service</span>
+
+<span class="prompt">$</span> smriti audit replay <span class="hash">call_5b1e9c3a</span>
+<span class="dim">─── appeal letter grounding ──────────────────</span>
+claim              <span class="key">"Level-4 visit: 2 of 3 required components"</span>
+cited policy       <span class="key">UHC-MN-2024-03 §4.2</span>
+provenance         <span class="ok">1.00</span>  literal-match
+verified spans     <span class="ok">6 of 6</span>
+
+stored hash        <span class="hash">7c91…4a2f</span>
+re-run hash        <span class="hash">7c91…4a2f</span>
+match              <span class="ok">✓ bit-identical</span>
+</div></pre>
+
+        <div class="proof-side">
+          <div class="anchor">
+            <span class="anchor-tag">Use case 01</span>
+            <div class="anchor-body">
+              <strong>Prior-auth appeal — grounded to the payer policy in force on the date of service</strong>
+              <span>Which policy applied on the date of service — the one in force then, or the one in force today? Smriti pins retrieval to 2024-03-14, the actual date of service, and returns UHC-MN-2024-03 — not the 2025-01 revision that happens to be current when the appeal is drafted. <strong>18 minutes vs. typical 4 hours.</strong></span>
+            </div>
+          </div>
+          <div class="anchor">
+            <span class="anchor-tag">Pain shape</span>
+            <div class="anchor-body">
+              <strong>A wrong policy version doesn't just lose the appeal</strong>
+              <span>Payer policies update quarterly. Appeals are often filed months after the date of service. A naive retrieval pipeline grabs whatever policy is "current" at query time — silently wrong more often than teams realize. Under the False Claims Act (§3729), a wrong citation in a submitted appeal isn't an admin error, it's exposure. Smriti's bi-temporal edges make "true as of the date of service" the default, not an edge case.</span>
+            </div>
+          </div>
+          <div class="anchor">
+            <span class="anchor-tag">Live in store</span>
+            <div class="anchor-body">
+              <strong>6 verified claim spans · 2 policy versions tracked · SHA-256 chain intact</strong>
+              <span><a href="/demos/denial-overturn.html" style="color: var(--accent, #f0b546); text-decoration: underline;">Open the live demo →</a></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── USE CASE 2: Clinical trial protocol amendment ── -->
+      <span class="segment-badge">Clinical Trial Compliance · ICH E6(R3)</span>
+      <div class="proof-grid" style="margin-bottom: 4rem;">
+        <pre class="terminal"><div class="terminal-body">
+<span class="prompt">$</span> smriti audit replay <span class="hash">call_8f7a02e1b</span>
+<span class="dim">─── reproducibility check (Subject 14) ──────</span>
+model              <span class="key">llama3.2:1b</span>
+seed               <span class="key">42</span>
+prompt template    <span class="key">clinical_qa@v3</span>
+retrieval set      <span class="key">[ n_s3_1, n_s4_1, n_s5_1 ]</span>
+
+stored hash        <span class="hash">a3f2…0e1b</span>
+re-run hash        <span class="hash">a3f2…0e1b</span>
+match              <span class="ok">✓ bit-identical</span>
+
+<span class="prompt">$</span> smriti graph --as-of 2026-03-10 <span class="key">trial-A</span>
+<span class="dim">─── time-aware retrieval ────────────────────</span>
+active protocol    <span class="ok">v2.1</span>  (2025-11-01 → 2026-03-13)
+superseded by      <span class="dim">v2.3</span> (2026-03-14 →)
+                   <span class="dim">— excluded: not retroactive (ICH E6(R3) §4.2.1)</span>
+
+<span class="prompt">$</span> smriti contradictions list
+<span class="dim">─── open inbox ──────────────────────────────</span>
+<span class="key">100bd551</span>  Subject 22 v2.1 vs v2.3   score=<span class="ok">0.728</span>
+                   authority=1.00  cite-disagreement
+</div></pre>
+
+        <div class="proof-side">
+          <div class="anchor">
+            <span class="anchor-tag">Use case 02</span>
+            <div class="anchor-body">
+              <strong>Clinical trial protocol amendment defense</strong>
+              <span>FDA asks: <em>was Subject 14 evaluated against the current protocol?</em> The chain returns the active protocol on the date of screening, the AI-generated summary that cites it, the bit-identical replay, and a flagged contradiction the system surfaced before the regulator did. <strong>11 minutes vs. typical 4 hours.</strong></span>
+            </div>
+          </div>
+          <div class="anchor">
+            <span class="anchor-tag">Pain shape</span>
+            <div class="anchor-body">
+              <strong>Reproducibility + Time + Conflict — all three primitives in one walkthrough</strong>
+              <span>Protocol v2.1 was active on 2026-03-10. v2.3 took effect 2026-03-14. Subject 14 was screened 4 days before the amendment. Smriti's temporal edge filtered v2.3 out of retrieval automatically. Without that filter, the AI would have cited the wrong policy and the audit chain breaks.</span>
+            </div>
+          </div>
+          <div class="anchor">
+            <span class="anchor-tag">Live in store</span>
+            <div class="anchor-body">
+              <strong>9 notes · 4 sources · 4 verified claim spans · 1 contradiction</strong>
+              <span><a href="/demos/trial-amendment-ledger.html" style="color: var(--accent, #f0b546); text-decoration: underline;">Open the live demo →</a></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── USE CASE 3: Senescence biomarker consolidation ── -->
+      <span class="segment-badge">Translational &amp; Biomarker Research</span>
+      <div class="proof-grid" style="margin-bottom: 4rem;">
+        <pre class="terminal"><div class="terminal-body">
+<span class="prompt">$</span> smriti notes_consolidate --dry-run --policy conservative
+<span class="dim">─── replay signal, senescence panel ─────────</span>
+episode  <span class="key">n_ipf_cohortA</span>  access=14  contexts=3  score=<span class="ok">0.71</span>
+episode  <span class="key">n_ipf_cohortB</span>  access=9   contexts=2  score=<span class="ok">0.64</span>
+episode  <span class="key">n_ipf_cohortC</span>  access=11  contexts=3  score=<span class="ok">0.68</span>  <span class="hash">⚠ IL-6 disputed</span>
+
+<span class="prompt">$</span> smriti graph traverse <span class="key">senescence-panel</span> --depth 1
+<span class="dim">─── candidate cluster ────────────────────────</span>
+replicated         <span class="ok">p16INK4a, MMP-7</span>  similarity <span class="ok">0.86</span> across 3 episodes
+flagged            <span class="hash">IL-6</span> — Cohort C disputes specificity
+                   <span class="dim">(confounded by concurrent infection) — not deleted</span>
+
+<span class="prompt">$</span> smriti audit consolidation-events <span class="key">schema_ipf_panel_v1</span>
+<span class="dim">─── promotion event ──────────────────────────</span>
+event              <span class="ok">promoted_to_schema</span>  0.00 → <span class="ok">0.79</span>
+lineage            <span class="key">n_ipf_cohortA, n_ipf_cohortB, n_ipf_cohortC</span>
+</div></pre>
+
+        <div class="proof-side">
+          <div class="anchor">
+            <span class="anchor-tag">Use case 03</span>
+            <div class="anchor-body">
+              <strong>Senescence biomarker panel — three IPF cohorts consolidate into a schema</strong>
+              <span>Mayo IPF Registry (2024), UCSF Aging Lung Cohort (2025), and a multi-center validation study (2026) each cite overlapping senescence markers against FVC decline. Smriti's consolidation engine tracks replay frequency, context diversity, and recency, then promotes the replicated pattern — p16INK4a and MMP-7 — into a durable schema, while routing the disputed marker (IL-6, confounded by infection) to a human review inbox instead of averaging it away.</span>
+            </div>
+          </div>
+          <div class="anchor">
+            <span class="anchor-tag">Pain shape</span>
+            <div class="anchor-body">
+              <strong>Replicated knowledge should get more durable, not just bigger</strong>
+              <span>Most memory layers treat consolidation as summarization — compress and move on, dissent included or lost silently. Smriti's CLS-inspired consolidation (McClelland 1995) keeps every source episode addressable, writes an audit event for the promotion, and never hard-deletes a disputed finding.</span>
+            </div>
+          </div>
+          <div class="anchor">
+            <span class="anchor-tag">Live in store</span>
+            <div class="anchor-body">
+              <strong>3 source episodes · 1 schema promoted · 1 contradiction flagged · full lineage</strong>
+              <span>The mechanism behind "knowledge gets cleaner over time" (see Approach, ii). <a href="/demos/senescence-panel-consolidation.html" style="color: var(--accent, #f0b546); text-decoration: underline;">Open the live demo →</a></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── USE CASE 4: Multi-source biotech synthesis ── -->
+      <span class="segment-badge">IND &amp; Regulatory Affairs</span>
+      <div class="proof-grid">
+        <pre class="terminal"><div class="terminal-body">
+<span class="prompt">$</span> smriti graph traverse <span class="key">CB-209</span> --depth 2
+<span class="dim">─── multi-hop chain ─────────────────────────</span>
+[<span class="key">compound</span>] CB-209 (PKC inhibitor)
+  ├─ [<span class="key">dosage 100mg</span>] safe; 18% CRP &lt; 30% endpoint
+  └─ [<span class="key">dosage 300mg</span>] efficacious; <span class="dim">29% Tn-T &gt; 0.10</span>
+                <span class="dim">— DLT triggered, cohort closed</span>
+
+<span class="prompt">$</span> smriti audit replay <span class="hash">call_7d3a</span>
+<span class="dim">─── dose synthesis ──────────────────────────</span>
+output             <span class="key">200 mg once daily</span> (MTD for Phase III)
+rationale          interpolation 100mg ↔ 300mg
+                   reaches efficacy + below toxicity
+verified spans     <span class="ok">2 of 2</span>  → trial protocol
+                                  → Troponin-T reference
+
+stored hash        <span class="hash">2e8b…7c4b</span>
+re-run hash        <span class="hash">2e8b…7c4b</span>
+match              <span class="ok">✓ bit-identical</span>
+</div></pre>
+
+        <div class="proof-side">
+          <div class="anchor">
+            <span class="anchor-tag">Use case 04</span>
+            <div class="anchor-body">
+              <strong>Lab-trial synthesis — IND amendment for CB-209</strong>
+              <span>Two dosage arms produce conflicting evidence: 100 mg is safe but sub-efficacious (18% CRP reduction vs 30% endpoint); 300 mg is efficacious but triggers the dose-limiting toxicity rule (29% of subjects with Troponin-T above 0.10 ng/mL). The AI traverses the compound → dosage → biomarker graph and recommends 200 mg as the maximum tolerated dose. Filed in FDA IND amendment 2024-11-22.</span>
+            </div>
+          </div>
+          <div class="anchor">
+            <span class="anchor-tag">Pain shape</span>
+            <div class="anchor-body">
+              <strong>The recommendation must reconstruct on demand</strong>
+              <span>An IND amendment narrative has to defend itself a year later, in front of an FDA reviewer, against the same evidence. Standard memory layers can't replay the model call against the dosage curves and biomarker thresholds as they existed at the moment of the recommendation. Smriti's frozen retrieval set + verified spans solve this structurally.</span>
+            </div>
+          </div>
+          <div class="anchor">
+            <span class="anchor-tag">Live in store</span>
+            <div class="anchor-body">
+              <strong>5 notes · 3 sources · 2 verified claim spans · multi-hop traversal</strong>
+              <span>The killer demo: <code>smriti graph traverse CB-209 --depth 2</code> returns the full evidence chain in one call. <a href="/demos/cb-209-synthesis.html" style="color: var(--accent, #f0b546); text-decoration: underline;">Open the live demo →</a></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── PROOF ─────────────────────────────────────────────────── -->
+  <section id="proof" class="section">
+    <div class="wrap">
+      <div class="section-header">
+        <h2>The boring <em>receipts.</em></h2>
+        <p class="lede">
+          Measured benchmarks. Peer-reviewed research. No demo magic. Every claim on this page is verifiable against the codebase.
+        </p>
+      </div>
+
+      <div class="proof-grid">
+        <pre class="terminal"><div class="terminal-body">
+<span class="prompt">$</span> smriti verify --chain
+<span class="dim">─── chain integrity ──────────────────────────</span>
+events scanned     <span class="ok">50,127</span>
+chain integrity    <span class="ok">✓ verified</span>
+prior tampering    <span class="ok">✓ none detected</span>
+last event         <span class="key">2026-05-08T14:21:33Z</span>
+walk time          <span class="ok">487 ms</span>
+
+<span class="prompt">$</span> smriti audit replay <span class="hash">call_8f7a02e1b</span>
+<span class="dim">─── reproducibility check ────────────────────</span>
+model              <span class="key">llama3.2:1b</span>
+seed               <span class="key">42</span>
+prompt template    <span class="key">clinical_qa@v3</span>
+retrieval set      <span class="key">[ n_s3_1, n_s4_1, n_s5_1 ]</span>
+
+stored hash        <span class="hash">a3f2…0e1b</span>
+re-run hash        <span class="hash">a3f2…0e1b</span>
+match              <span class="ok">✓ bit-identical</span>
+
+<span class="prompt">$</span> <span class="blink"></span>
+</div></pre>
+
+        <div class="proof-side">
+          <div class="anchor">
+            <span class="anchor-tag">Paper</span>
+            <div class="anchor-body">
+              <strong>Verifiable Agent Memory</strong>
+              <span>Working draft, 2026 — a formal integrity contract for LLM-augmented knowledge graphs.</span>
+            </div>
+          </div>
+          <div class="anchor">
+            <span class="anchor-tag">Research</span>
+            <div class="anchor-body">
+              <strong>Six peer-reviewed foundations</strong>
+              <span>Memory consolidation, belief revision, citation grounding, time-aware retrieval — distilled into one storage layer.</span>
+            </div>
+          </div>
+          <div class="anchor">
+            <span class="anchor-tag">Audit cost</span>
+            <div class="anchor-body">
+              <strong>Sub-millisecond per call</strong>
+              <span>The integrity layer adds &lt; 1 ms per LLM call — about 2% of typical inference latency.</span>
+            </div>
+          </div>
+          <div class="anchor">
+            <span class="anchor-tag">Ownership</span>
+            <div class="anchor-body">
+              <strong>You own the artifact end to end</strong>
+              <span>Your binary, your database file, your audit trail. No vendor between you and the regulator.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="nums">
+        <div class="num-cell">
+          <span class="num-val">2.5<span class="unit">µs</span></span>
+          <span class="num-label">Memory retrieval p50</span>
+          <span class="num-foot">in-memory · M-series Mac</span>
+        </div>
+        <div class="num-cell">
+          <span class="num-val">235<span class="unit">ns</span></span>
+          <span class="num-label">Graph traversal</span>
+          <span class="num-foot">cached two-hop walks</span>
+        </div>
+        <div class="num-cell">
+          <span class="num-val">≈ 30<span class="unit">MB</span></span>
+          <span class="num-label">Binary footprint</span>
+          <span class="num-foot">vs ≈ 1 GB Docker stacks</span>
+        </div>
+        <div class="num-cell">
+          <span class="num-val">0</span>
+          <span class="num-label">Cloud dependencies</span>
+          <span class="num-foot">offline-first by design</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FOR BUILDERS ──────────────────────────────────────────── -->
+  <section class="section">
+    <div class="wrap">
+      <div class="builders">
+        <h3>If you've ever had this conversation, talk to us.</h3>
+        <p class="lede">In customer discovery, not selling. Twenty minutes; you talk, we listen.</p>
+
+        <ol class="builder-list">
+          <li>Your <strong>compliance team</strong> asked you to defend a model output, and you spent half a day reconstructing what happened from log files.</li>
+          <li>You're shipping an agent into a <strong>clinical, biotech, or healthcare</strong> workflow and existing memory layers don't fit the audit posture.</li>
+          <li>You need a memory layer that's <strong>self-hosted by default</strong> — your data, your hardware, no vendor between you and the regulator.</li>
+          <li>You've watched an agent quote a <strong>superseded protocol</strong> as if it were current and have no clean way to express "true between dates X and Y."</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── CTA ───────────────────────────────────────────────────── -->
+  <section class="cta" id="contact">
+    <div class="wrap">
+      <div class="cta-grid">
+        <h2>If your compliance team asks <em>that question</em> more than once a quarter, talk to us.</h2>
+        <div class="cta-side">
+          <form id="contact-form" class="cta-form" action="https://api.web3forms.com/submit" method="POST">
+            <input type="hidden" name="access_key" value="bc817f9c-557d-44b7-a3f3-a2d797d814a1" />
+            <input type="hidden" name="subject" value="Smriti — discovery call request" />
+            <input type="hidden" name="from_name" value="Smriti Landing" />
+            <input type="checkbox" name="botcheck" class="botcheck" tabindex="-1" autocomplete="off" />
+
+            <div class="form-row">
+              <label class="form-label" for="cf-email">Email</label>
+              <input id="cf-email" type="email" name="email" required autocomplete="email" placeholder="you@company.com" />
+            </div>
+
+            <div class="form-row">
+              <label class="form-label" for="cf-context">
+                What are you working on?
+                <span class="form-optional">optional · one line</span>
+              </label>
+              <input id="cf-context" type="text" name="context" maxlength="200" placeholder="e.g. clinical-trial agent that needs to defend its outputs" />
+            </div>
+
+            <button type="submit" class="form-submit">
+              <span class="submit-label">Request a 20-minute call</span>
+              <span class="submit-arrow">→</span>
+            </button>
+          </form>
+
+          <div id="contact-success" class="form-success is-hidden">
+            <strong>Thank you — we'll be in touch within 24 hours.</strong>
+            We read every message personally. If you don't hear back, ping <a href="mailto:hello@bio-sync.tech">hello@bio-sync.tech</a>.
+          </div>
+
+          <div id="contact-error" class="form-error is-hidden">
+            <strong>Something didn't send.</strong>
+            Please email <a href="mailto:hello@bio-sync.tech?subject=Smriti%20discovery%20call">hello@bio-sync.tech</a> directly — we'll reply faster than the form would have anyway.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // Robust anchor scrolling
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      const id = a.getAttribute('href').slice(1);
+      if (!id) return;
+      const target = document.getElementById(id);
+      if (!target) return;
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      history.pushState(null, '', '#' + id);
+    });
+  });
+
+  // Contact form — Web3Forms AJAX submit
+  (function() {
+    const form    = document.getElementById('contact-form');
+    const success = document.getElementById('contact-success');
+    const error   = document.getElementById('contact-error');
+    if (!form || !success || !error) return;
+
+    const submit = form.querySelector('button[type="submit"]');
+    const label  = form.querySelector('.submit-label');
+    const TIMEOUT_MS = 10000;
+
+    const reset = () => {
+      if (!submit) return;
+      submit.disabled = false;
+      if (label) label.textContent = 'Request a 20-minute call';
+    };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!submit) return;
+
+      submit.disabled = true;
+      if (label) label.textContent = 'Sending';
+      error.classList.add('is-hidden');
+
+      const data = new FormData(form);
+      const ctrl = new AbortController();
+      const timer = window.setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+
+      try {
+        const res = await fetch(form.action, {
+          method:  'POST',
+          body:    data,
+          headers: { Accept: 'application/json' },
+          signal:  ctrl.signal,
+        });
+        window.clearTimeout(timer);
+        const json = await res.json();
+        if (res.ok && json.success) {
+          form.classList.add('is-hidden');
+          success.classList.remove('is-hidden');
+          success.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          throw new Error(json.message || 'Submission failed');
+        }
+      } catch (err) {
+        window.clearTimeout(timer);
+        error.classList.remove('is-hidden');
+        reset();
+        console.error('Contact submit error:', err);
+      }
+    });
+  })();
+</script>
+
+<footer>
+  <div class="wrap foot">
+    <div><span class="foot-mark">S.</span>Smriti · Self-hosted by design · 2026</div>
+    <div>
+      <a href="mailto:hello@bio-sync.tech">hello@bio-sync.tech</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

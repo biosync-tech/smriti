@@ -1,0 +1,221 @@
+% =====================================================================
+% Smriti: Verifiable Agent Memory
+% Paper draft skeleton — LaTeX
+%
+% Build:
+%   pdflatex paper && bibtex paper && pdflatex paper && pdflatex paper
+%
+% Each section in this skeleton is a stub `\input{...}` that pulls from
+% docs/papers/sections/. Drop the Markdown drafts (after pandoc
+% conversion: `pandoc -f gfm -t latex section-N.md -o sections/N.tex`)
+% into that directory.
+%
+% Bibliography: see refs.bib. Keys are the same as the [CITE: ...]
+% placeholders in the Markdown drafts.
+%
+% Style: chosen to be portable. Uses generic `article` class with
+% packages that produce conference-style output. Switch to `neurips_2026`,
+% `usenix-2026`, or AAAI/IEEE styles for camera-ready by replacing
+% \documentclass and minor preamble adjustments.
+% =====================================================================
+
+\documentclass[11pt, letterpaper]{article}
+
+% --- core packages -------------------------------------------------------
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{lmodern}
+
+% --- math ----------------------------------------------------------------
+\usepackage{amsmath, amssymb, amsthm, mathtools}
+\usepackage{bm}
+
+% --- references and links ------------------------------------------------
+\usepackage[
+  backend=bibtex,
+  style=numeric-comp,
+  sorting=none,
+  maxbibnames=99
+]{biblatex}
+\addbibresource{refs.bib}
+
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=blue!50!black,
+  urlcolor=blue!50!black
+}
+\usepackage{cleveref}
+
+% --- code listings -------------------------------------------------------
+\usepackage{listings}
+\usepackage{xcolor}
+\definecolor{codebg}{RGB}{248,248,248}
+\definecolor{codekey}{RGB}{10, 60, 120}
+\definecolor{codecomment}{RGB}{90, 110, 90}
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  keywordstyle=\color{codekey}\bfseries,
+  commentstyle=\color{codecomment}\itshape,
+  frame=single,
+  framesep=4pt,
+  framerule=0.4pt,
+  rulecolor=\color{black!30},
+  showstringspaces=false,
+  breaklines=true,
+  captionpos=b,
+  numberstyle=\tiny\color{black!50},
+  numbers=left,
+  numbersep=8pt,
+  xleftmargin=2.5em
+}
+\lstdefinelanguage{Rust}{
+  morekeywords={fn, let, mut, pub, struct, impl, trait, async, await, return, use, mod, self, Self, match, if, else, for, in, while, loop, break, continue, where, type, enum, const, static, ref, dyn, as, move, unsafe, crate, super, true, false},
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]"
+}
+
+% --- tables --------------------------------------------------------------
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+
+% --- algorithms ----------------------------------------------------------
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% --- diagrams ------------------------------------------------------------
+\usepackage{tikz}
+\usetikzlibrary{shapes, arrows.meta, positioning, fit, backgrounds, calc}
+
+% --- theorem environments ------------------------------------------------
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{invariant}[definition]{Invariant}
+
+\theoremstyle{plain}
+\newtheorem{theorem}[definition]{Theorem}
+\newtheorem{lemma}[definition]{Lemma}
+
+\theoremstyle{remark}
+\newtheorem*{remark}{Remark}
+
+% --- author shortcuts ----------------------------------------------------
+\newcommand{\Smriti}{\textsc{Smriti}}
+\newcommand{\sysname}{\Smriti}
+\newcommand{\Iname}{\textbf{I1}}
+\newcommand{\IIname}{\textbf{I2}}
+\newcommand{\IIIname}{\textbf{I3}}
+\newcommand{\sha}{\mathrm{SHA\text{-}256}}
+\newcommand{\overlap}{\omega}
+
+% --- title ---------------------------------------------------------------
+\title{
+  Verifiable Agent Memory: \\
+  A Hash-Chained Integrity Layer for LLM-Generated Knowledge Graphs
+}
+
+\author{
+  Anonymous Authors \\
+  \texttt{anonymous@example.org}
+}
+
+\date{\today}
+
+% =====================================================================
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\input{sections/abstract}
+\end{abstract}
+
+% --- §1 -----------------------------------------------------------------
+\section{Introduction}
+\label{sec:intro}
+\input{sections/01-introduction}
+
+% --- §2 -----------------------------------------------------------------
+\section{Background}
+\label{sec:background}
+\input{sections/02-background}
+
+% --- §3 -----------------------------------------------------------------
+\section{The Integrity Contract}
+\label{sec:contract}
+\input{sections/03-integrity-contract}
+
+% --- §4 -----------------------------------------------------------------
+\section{Architecture}
+\label{sec:architecture}
+\input{sections/04-architecture}
+
+% --- §5 -----------------------------------------------------------------
+\section{Implementation}
+\label{sec:implementation}
+\input{sections/05-implementation}
+
+% --- §6 -----------------------------------------------------------------
+\section{Evaluation}
+\label{sec:evaluation}
+
+\subsection{Audit overhead}
+\label{sec:eval-overhead}
+\input{sections/06-1-audit-overhead}
+
+\subsection{Chain integrity at scale}
+\label{sec:eval-chain}
+\input{sections/06-2-chain-scale}
+
+\subsection{Reproducibility-by-replay}
+\label{sec:eval-replay}
+\input{sections/06-3-replay-reproducibility}
+
+\subsection{Provenance threshold sweep}
+\label{sec:eval-factum}
+\input{sections/06-4-factum-threshold}
+
+\subsection{Worked replay case study}
+\label{sec:eval-case-study}
+\input{sections/06-5-replay-case-study}
+
+% --- §7 -----------------------------------------------------------------
+\section{Related Work}
+\label{sec:related}
+\input{sections/07-related-work}
+
+% --- §8 -----------------------------------------------------------------
+\section{Limitations and Future Work}
+\label{sec:limitations}
+\input{sections/08-limitations}
+
+% --- §9 -----------------------------------------------------------------
+\section{Conclusion}
+\label{sec:conclusion}
+\input{sections/09-conclusion}
+
+% --- bibliography --------------------------------------------------------
+\printbibliography
+
+% --- appendices ----------------------------------------------------------
+\appendix
+
+\section{Schema reference}
+\label{app:schema}
+\input{sections/appendix-A-schema}
+
+\section{Reproducibility checklist}
+\label{app:repro}
+\input{sections/appendix-B-reproducibility}
+
+\section{Glossary}
+\label{app:glossary}
+\input{sections/appendix-C-glossary}
+
+\end{document}

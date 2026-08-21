@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Smriti Ecosystem — Substrate, Products, and the Gemma 4B Wedge</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --panel: #111113;
+    --panel-2: #15151a;
+    --line: #26262c;
+    --text: #e7e7ea;
+    --dim: #8a8a95;
+    --amber: #f5b046;
+    --amber-dim: #b57d2e;
+    --green: #6bd17b;
+    --blue: #6eaaff;
+    --red: #ef6b6b;
+    --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+    font-size: 15px; line-height: 1.55;
+  }
+  a { color: var(--amber); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 56px 32px 96px; }
+  header h1 {
+    font-size: 34px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 8px;
+  }
+  header .kicker {
+    font-family: var(--mono); font-size: 12px; color: var(--amber);
+    text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 12px;
+  }
+  header p.lead { font-size: 17px; color: var(--dim); margin: 0 0 0; max-width: 780px; }
+  section { margin-top: 64px; }
+  h2 {
+    font-size: 22px; font-weight: 600; letter-spacing: -0.01em;
+    margin: 0 0 6px;
+  }
+  h2 .num {
+    font-family: var(--mono); color: var(--amber); font-weight: 500;
+    margin-right: 10px; font-size: 14px;
+  }
+  h3 { font-size: 15px; font-weight: 600; margin: 0 0 8px; }
+  .sub { color: var(--dim); font-size: 14px; margin: 0 0 20px; }
+
+  /* architecture diagram */
+  .diagram {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 32px;
+    margin-top: 16px;
+  }
+  .layer {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin: 0 auto;
+    background: var(--panel-2);
+    position: relative;
+  }
+  .layer.verticals {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    padding: 14px;
+    background: transparent;
+    border: none;
+  }
+  .chip {
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px 12px; background: var(--panel-2);
+  }
+  .chip .title {
+    font-size: 13px; font-weight: 600; margin-bottom: 4px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .chip .title .tag {
+    font-family: var(--mono); font-size: 10px; color: var(--dim);
+    border: 1px solid var(--line); padding: 1px 6px; border-radius: 4px;
+  }
+  .chip .desc { font-size: 12px; color: var(--dim); line-height: 1.45; }
+
+  .layer.docflow, .layer.smriti, .layer.gemma {
+    max-width: 900px;
+  }
+  .layer.smriti {
+    background: linear-gradient(180deg, #1d1609 0%, #130f07 100%);
+    border: 1px solid var(--amber-dim);
+  }
+  .layer.smriti .band {
+    font-family: var(--mono); color: var(--amber); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.15em;
+  }
+  .layer.smriti .name {
+    font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin-top: 2px;
+  }
+  .layer.smriti .tools {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px;
+  }
+  .layer.smriti .tool {
+    font-family: var(--mono); font-size: 11px;
+    border: 1px solid var(--amber-dim); color: var(--amber);
+    padding: 3px 8px; border-radius: 4px;
+  }
+
+  .layer.docflow .name, .layer.gemma .name {
+    font-size: 18px; font-weight: 600;
+  }
+  .layer.gemma {
+    background: linear-gradient(180deg, #0d1a12 0%, #091108 100%);
+    border: 1px solid #2e5a3a;
+  }
+  .layer.gemma .band {
+    font-family: var(--mono); color: var(--green); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 0.15em;
+  }
+  .layer.gemma .tools .tool {
+    border-color: #2e5a3a; color: var(--green);
+  }
+
+  .arrow {
+    display: flex; justify-content: center; align-items: center;
+    color: var(--dim); font-family: var(--mono); font-size: 11px;
+    padding: 10px 0; position: relative;
+  }
+  .arrow::before {
+    content: ""; position: absolute; top: 50%; left: 50%;
+    width: 1px; height: 22px; background: var(--line);
+    transform: translate(-50%, -50%);
+  }
+  .arrow span {
+    background: var(--panel); padding: 0 10px; position: relative; z-index: 1;
+  }
+
+  /* value prop grid */
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .card .pill {
+    font-family: var(--mono); font-size: 10px; color: var(--amber);
+    text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 6px;
+  }
+  .card.green .pill { color: var(--green); }
+  .card.blue .pill { color: var(--blue); }
+  .card .kv { color: var(--dim); font-size: 13px; line-height: 1.5; }
+  .card ul { padding-left: 16px; margin: 6px 0 0; color: var(--dim); font-size: 13px; }
+  .card ul li { margin: 3px 0; }
+
+  /* table */
+  table.cmp {
+    width: 100%; border-collapse: collapse; margin-top: 12px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    overflow: hidden;
+  }
+  table.cmp th, table.cmp td {
+    padding: 10px 14px; text-align: left; font-size: 13px;
+    border-bottom: 1px solid var(--line);
+  }
+  table.cmp th {
+    background: var(--panel-2); color: var(--dim); font-weight: 500;
+    font-family: var(--mono); text-transform: uppercase; font-size: 11px;
+    letter-spacing: 0.1em;
+  }
+  table.cmp td.dim { color: var(--dim); }
+  table.cmp td.y { color: var(--green); font-family: var(--mono); font-size: 12px; }
+  table.cmp td.n { color: var(--red); font-family: var(--mono); font-size: 12px; }
+  table.cmp td.p { color: var(--amber); font-family: var(--mono); font-size: 12px; }
+  table.cmp tbody tr:last-child td { border-bottom: none; }
+  table.cmp .bold { color: var(--text); font-weight: 600; }
+
+  /* wedge callout */
+  .wedge {
+    border: 1px solid var(--amber-dim);
+    background: linear-gradient(180deg, #1a1208 0%, #120d07 100%);
+    border-radius: 14px; padding: 28px 28px; margin-top: 18px;
+  }
+  .wedge h3 { font-size: 20px; font-weight: 600; margin-bottom: 12px; }
+  .wedge .row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .wedge .kpi {
+    font-family: var(--mono); font-size: 12px; color: var(--amber);
+    border: 1px dashed var(--amber-dim); padding: 10px 12px; border-radius: 8px;
+    margin-bottom: 8px;
+  }
+
+  /* footer strip */
+  .strip {
+    margin-top: 48px; padding: 18px 20px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    font-family: var(--mono); font-size: 12px; color: var(--dim);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+  }
+  .strip span.hi { color: var(--amber); }
+
+  code.inl {
+    font-family: var(--mono); font-size: 12px; color: var(--amber);
+    background: #1c1a12; padding: 1px 6px; border-radius: 4px;
+    border: 1px solid #2a2412;
+  }
+
+  @media (max-width: 820px) {
+    .grid4, .grid3, .grid2 { grid-template-columns: 1fr 1fr; }
+    .layer.verticals { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 520px) {
+    .grid4, .grid3, .grid2 { grid-template-columns: 1fr; }
+    .layer.verticals { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Smriti · ecosystem map</div>
+  <h1>Smriti as the substrate. Products as thin verticals. Gemma 4B as the wedge.</h1>
+  <p class="lead">
+    One graph-native memory layer. Multiple document-processing agents.
+    A local LLM runtime that lets the whole stack run inside customer infrastructure.
+    Below: how the pieces fit, what each layer sells, and why Gemma 4B reshapes the pricing and compliance story.
+  </p>
+</header>
+
+<section>
+  <h2><span class="num">01</span>Architecture — stacked, not radial</h2>
+  <p class="sub">Products on top. Processing in the middle. Memory + graph at the core. Local LLM at the floor.</p>
+
+  <div class="diagram">
+    <!-- VERTICAL PRODUCTS -->
+    <div class="layer verticals">
+      <div class="chip">
+        <div class="title">ProtocolOS<span class="tag">clinical</span></div>
+        <div class="desc">Protocol-transfer readiness agent. Study/site tenancy. Reviewer inbox. HIPAA-ready.</div>
+      </div>
+      <div class="chip">
+        <div class="title">PriorAuthOS<span class="tag">rcm</span></div>
+        <div class="desc">Prior auth, eligibility, denial-management workflows. Your existing healthcare wedge.</div>
+      </div>
+      <div class="chip">
+        <div class="title">InvoiceBot<span class="tag">finance</span></div>
+        <div class="desc">AP automation. Current DocFlow landing-page story. Self-serve API pricing.</div>
+      </div>
+      <div class="chip">
+        <div class="title">ResearchDesk<span class="tag">academic</span></div>
+        <div class="desc">Grounded second brain for researchers. Every claim cites source with FACTUM score.</div>
+      </div>
+    </div>
+
+    <div class="arrow"><span>each vertical owns ONE jtbd</span></div>
+
+    <!-- DOCFLOW -->
+    <div class="layer docflow">
+      <div class="band" style="font-family: var(--mono); color: var(--blue); font-size: 11px; text-transform: uppercase; letter-spacing: 0.15em;">Processing tier</div>
+      <div class="name">DocFlow — multi-doc-type extraction engine</div>
+      <div class="desc" style="color: var(--dim); font-size: 13px; margin-top: 6px;">
+        <code class="inl">POST /extract</code>
+        <code class="inl">POST /validate</code>
+        <code class="inl">POST /generate</code>
+        · <code class="inl">doc_type: invoice | contract | clinical_protocol | icf | crf | sae</code>
+      </div>
+      <div class="desc" style="color: var(--dim); font-size: 13px; margin-top: 10px;">
+        Horizontal. Schema-driven. Per-field confidence. Claim spans. Writes through Smriti transactions — no parallel audit chain.
+      </div>
+    </div>
+
+    <div class="arrow"><span>writes wiki_transaction_submit</span></div>
+
+    <!-- SMRITI -->
+    <div class="layer smriti">
+      <div class="band">Substrate · single binary · zero cloud</div>
+      <div class="name">Smriti — memory + graph + integrity</div>
+      <div class="desc" style="color: var(--dim); font-size: 13px; margin-top: 8px;">
+        Rust + SQLite. Typed edges, bi-temporal validity, AGM conflict policies, FACTUM provenance,
+        SHA-256 hash chain. Every claim cites its source.
+      </div>
+      <div class="tools">
+        <div class="tool">notes_create</div>
+        <div class="tool">notes_graph</div>
+        <div class="tool">notes_search (FTS5 + vec)</div>
+        <div class="tool">memory_store</div>
+        <div class="tool">wiki_transaction_submit</div>
+        <div class="tool">wiki_verify</div>
+        <div class="tool">contradictions_detect</div>
+      </div>
+    </div>
+
+    <div class="arrow"><span>tool-calling · structured extraction · low marginal cost</span></div>
+
+    <!-- GEMMA 4B -->
+    <div class="layer gemma">
+      <div class="band">Runtime · local · apache 2.0</div>
+      <div class="name">Gemma 3 4B (via Ollama / llama.cpp)</div>
+      <div class="desc" style="color: var(--dim); font-size: 13px; margin-top: 8px;">
+        Multimodal 4B parameter model. 128k context. Runs on a laptop or a Mac mini.
+        Handles schema-driven extraction with tool calling. Zero per-token cost. Zero PHI leaves the box.
+      </div>
+      <div class="tools">
+        <div class="tool">8GB RAM floor</div>
+        <div class="tool">~200 tok/s on M2</div>
+        <div class="tool">128k context</div>
+        <div class="tool">tool calling</div>
+        <div class="tool">multimodal (PDF pages)</div>
+      </div>
+    </div>
+
+    <div class="arrow"><span>↓ customer hardware — Mac mini · on-prem Linux · air-gapped rack</span></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">02</span>Value proposition per layer</h2>
+  <p class="sub">What each layer sells, to whom, and the single line that captures it.</p>
+
+  <div class="grid4">
+    <div class="card">
+      <div class="pill">Smriti — substrate</div>
+      <h3>Agent memory you can audit</h3>
+      <div class="kv">Bi-temporal graph + hash-chained writes + provenance scoring. Sold as OSS today; the moat is the design, not the code.</div>
+      <ul>
+        <li>Buyer: dev/infra lead at an AI-native startup</li>
+        <li>Monetize: enterprise license + support (Red Hat model)</li>
+        <li>Wedge: integrity layer — nothing else in the memory category has it</li>
+      </ul>
+    </div>
+
+    <div class="card blue">
+      <div class="pill">DocFlow — engine</div>
+      <h3>PDF → structured facts, auditable</h3>
+      <div class="kv">Horizontal extract/validate/generate. Same API for invoice, contract, protocol. Writes through Smriti — one audit chain, not two.</div>
+      <ul>
+        <li>Buyer: dev building an AP / clinical / legal workflow</li>
+        <li>Monetize: usage-based API + self-hosted license</li>
+        <li>Wedge: claim-span provenance baked into every extraction</li>
+      </ul>
+    </div>
+
+    <div class="card green">
+      <div class="pill">Gemma 4B — runtime</div>
+      <h3>Local LLM with no BAA required</h3>
+      <div class="kv">Entire extraction tier runs on customer hardware. PHI never transits a third party. Zero marginal cost per call.</div>
+      <ul>
+        <li>Buyer: any regulated vertical (clinical, legal, finance)</li>
+        <li>Monetize: implicit — unlocks premium pricing on verticals</li>
+        <li>Wedge: HIPAA/GDPR story without cloud-AI lock-in</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="pill">Verticals — thin apps</div>
+      <h3>One JTBD, priced per workflow</h3>
+      <div class="kv">Branded separately. Opinionated about one workflow. UI is agent input + output. Reuses substrate + engine + runtime.</div>
+      <ul>
+        <li>Buyer: clinical ops head / AP lead / research PI</li>
+        <li>Monetize: per-study / per-site / per-engagement</li>
+        <li>Wedge: depth over breadth — no chat, no dashboards</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span>The Gemma 4B strategic wedge</h2>
+  <p class="sub">Why a 4B local model is not a cost optimization — it's a category definition.</p>
+
+  <div class="wedge">
+    <h3>One sentence: your stack is the only one that ships PHI-never-leaves-the-box as a default, not a premium tier.</h3>
+    <div class="row">
+      <div>
+        <div class="kpi">compliance · no BAA required with any LLM vendor</div>
+        <div class="kpi">cost · $0 marginal LLM spend per extraction</div>
+        <div class="kpi">deployment · Mac mini to air-gapped rack, same binary</div>
+        <div class="kpi">latency · ~200 tok/s local beats cloud round-trip</div>
+      </div>
+      <div>
+        <div style="color: var(--dim); font-size: 13px; line-height: 1.6;">
+          Every competitor in this category (Mem0, Zep, Letta, Mendable, Humata, Hebbia) assumes cloud-LLM dependency.
+          Gemma 3 4B + Ollama + Smriti + DocFlow collapses the entire stack onto customer hardware.
+          For clinical, legal, defense, and pharma buyers — that is the whole sale.
+          It also rewrites your unit economics: per-extraction price stays flat while COGS falls to compute + electricity.
+          That is how you price per-study at $5k and still run 80% gross margin.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid3" style="margin-top: 18px;">
+    <div class="card">
+      <div class="pill">Tiered LLM routing</div>
+      <div class="kv">
+        Extraction tier → Gemma 4B local (always). Synthesis tier → optional:
+        customer keeps it local on Gemma 27B / Llama 70B OR routes to Claude/GPT with their own BAA.
+        You never hold the BAA.
+      </div>
+    </div>
+    <div class="card">
+      <div class="pill">Hardware menu</div>
+      <div class="kv">
+        Dev trial: MacBook with 16GB. Pilot: Mac mini M2 16GB ($800). Production: 1U Linux server with
+        a single consumer GPU ($2-4k). Rack-scale: 4× H100 for 4B fleet ($100k+ customer CAPEX, zero yours).
+      </div>
+    </div>
+    <div class="card">
+      <div class="pill">Differentiation story</div>
+      <div class="kv">
+        "Your memory layer and your extraction engine, running on your own hardware, with the same audit guarantees
+        as our cloud SaaS — and priced per workflow, not per token." That is the pitch no competitor can reproduce
+        without rebuilding from scratch.
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">04</span>Competitive map</h2>
+  <p class="sub">How the stack stacks up once Gemma 4B is in the picture.</p>
+
+  <table class="cmp">
+    <thead>
+      <tr>
+        <th>Capability</th>
+        <th>Smriti stack</th>
+        <th>Mem0 / Zep / Letta</th>
+        <th>Pinecone / Weaviate</th>
+        <th>Veeva / IQVIA (clinical)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="bold">Self-hosted, one binary</td>
+        <td class="y">yes</td>
+        <td class="n">cloud-first</td>
+        <td class="p">partial</td>
+        <td class="n">SaaS only</td>
+      </tr>
+      <tr>
+        <td class="bold">Local LLM (no BAA needed)</td>
+        <td class="y">Gemma 4B default</td>
+        <td class="n">cloud LLM</td>
+        <td class="n">cloud LLM</td>
+        <td class="n">cloud LLM</td>
+      </tr>
+      <tr>
+        <td class="bold">Graph-native memory</td>
+        <td class="y">native</td>
+        <td class="n">vector KV</td>
+        <td class="n">vector</td>
+        <td class="n">relational</td>
+      </tr>
+      <tr>
+        <td class="bold">Bi-temporal edges</td>
+        <td class="y">valid_from / valid_until</td>
+        <td class="n">—</td>
+        <td class="n">—</td>
+        <td class="p">partial (amendments)</td>
+      </tr>
+      <tr>
+        <td class="bold">Enforced provenance (FACTUM)</td>
+        <td class="y">claim-span scoring</td>
+        <td class="n">—</td>
+        <td class="n">—</td>
+        <td class="n">—</td>
+      </tr>
+      <tr>
+        <td class="bold">Hash-chained audit trail</td>
+        <td class="y">SHA-256 event chain</td>
+        <td class="n">—</td>
+        <td class="n">—</td>
+        <td class="p">proprietary</td>
+      </tr>
+      <tr>
+        <td class="bold">Document extraction</td>
+        <td class="y">DocFlow (multi-type)</td>
+        <td class="n">not included</td>
+        <td class="n">not included</td>
+        <td class="y">proprietary</td>
+      </tr>
+      <tr>
+        <td class="bold">Pricing model</td>
+        <td class="y">per workflow / license</td>
+        <td class="n">per call / seat</td>
+        <td class="n">per vector / GB</td>
+        <td class="n">per seat, 6-fig floors</td>
+      </tr>
+      <tr>
+        <td class="bold">Deployment in air-gapped env</td>
+        <td class="y">supported</td>
+        <td class="n">no</td>
+        <td class="n">no</td>
+        <td class="p">on-prem tier only</td>
+      </tr>
+      <tr>
+        <td class="bold">Marginal cost per extraction</td>
+        <td class="y">~$0</td>
+        <td class="n">$0.01–0.10</td>
+        <td class="n">$0.01+</td>
+        <td class="n">usage fees</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">05</span>Packaging moves that fall out of this</h2>
+  <p class="sub">Concrete pricing shapes that become viable once the stack is local-first.</p>
+  <div class="grid3">
+    <div class="card">
+      <div class="pill">01 · Self-hosted license</div>
+      <h3>ProtocolOS On-Prem</h3>
+      <div class="kv">$100–250k/yr per sponsor. Ships as a Docker Compose bundle: Smriti + DocFlow + Gemma 4B + reviewer UI. Includes validation package, SLA, support. Regulated buyers will pay this without blinking.</div>
+    </div>
+    <div class="card">
+      <div class="pill">02 · Per-protocol engagement</div>
+      <h3>Transfer Sprint</h3>
+      <div class="kv">$8–15k flat per protocol transfer. 4-week engagement. Installs the stack at customer site, loads documents, delivers readiness report. Converts to subscription after second success.</div>
+    </div>
+    <div class="card">
+      <div class="pill">03 · Hosted managed tier</div>
+      <h3>For non-regulated buyers</h3>
+      <div class="kv">Standard SaaS on your cloud for academic / research / finance verticals that don't need HIPAA. $99–499/mo. Usage-priced overages. This is InvoiceBot and ResearchDesk.</div>
+    </div>
+  </div>
+</section>
+
+<div class="strip">
+  <div><span class="hi">One substrate.</span> Smriti — graph memory with integrity.</div>
+  <div><span class="hi">One engine.</span> DocFlow — extraction + validation + generation.</div>
+  <div><span class="hi">One runtime.</span> Gemma 4B — local, free, HIPAA-compatible.</div>
+  <div><span class="hi">N products.</span> Thin verticals, each owning one JTBD.</div>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smriti — 2-slide pitch (last 5 minutes of a discovery call)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" />
+
+  <style>
+    :root {
+      --paper:    #F2EBDC;
+      --paper-2:  #E8E0CD;
+      --paper-3:  #DCD3BB;
+      --ink:      #1A150E;
+      --ink-2:    #4A3F30;
+      --ink-3:    #8A7F6E;
+      --rule:     rgba(26, 21, 14, 0.20);
+      --rule-2:   rgba(26, 21, 14, 0.08);
+      --accent:   #B23A2C;
+      --accent-soft: rgba(178, 58, 44, 0.12);
+      --serif:    'Fraunces', Georgia, serif;
+      --sans:     'IBM Plex Sans', -apple-system, system-ui, sans-serif;
+      --mono:     'IBM Plex Mono', 'SF Mono', ui-monospace, monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; overflow: hidden; }
+    body {
+      font-family: var(--sans);
+      background: #0E0B07;
+      color: var(--paper);
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: "ss01";
+    }
+
+    /* ── Stage ─────────────────────────────────────────────────────── */
+    .stage {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      perspective: 1400px;
+    }
+
+    .deck {
+      position: relative;
+      width: 100vw; height: 100vh;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      padding: clamp(40px, 5vw, 80px);
+      opacity: 0;
+      transform: translateX(60px);
+      transition: opacity 0.5s ease, transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+      z-index: 2;
+    }
+    .slide.prev {
+      transform: translateX(-60px);
+    }
+
+    /* ── Slide chrome (top + bottom rails) ─────────────────────────── */
+    .rail-top, .rail-bottom {
+      display: flex; align-items: center; justify-content: space-between;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+    }
+    .rail-top { padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+    .rail-bottom { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--rule); }
+    .rail-mark { color: var(--accent); }
+
+    /* ── Slide content frame ───────────────────────────────────────── */
+    .frame {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr;
+      align-content: center;
+      padding: clamp(32px, 5vw, 80px) 0;
+    }
+
+    /* ── Slide 1 specifics ─────────────────────────────────────────── */
+    .slide-1 {
+      background:
+        radial-gradient(1200px 600px at 20% 30%, rgba(178, 58, 44, 0.12), transparent 60%),
+        var(--paper);
+      color: var(--ink);
+    }
+    .slide-1 .frame { gap: 48px; }
+    .slide-1 .eyebrow {
+      font-family: var(--mono);
+      font-size: 13px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .slide-1 h1 {
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 144, "SOFT" 25, "WONK" 0;
+      font-weight: 400;
+      font-size: clamp(40px, 6vw, 96px);
+      line-height: 0.96;
+      letter-spacing: -0.02em;
+      max-width: 22ch;
+    }
+    .slide-1 h1 em {
+      font-style: italic;
+      color: var(--accent);
+      font-variation-settings: "opsz" 144, "SOFT" 50, "WONK" 1;
+    }
+    .slide-1 .scene {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 48px;
+      max-width: 1200px;
+    }
+    .scene-card {
+      border: 1px solid var(--ink);
+      background: var(--paper);
+      padding: 28px 28px 30px;
+      position: relative;
+    }
+    .scene-card::before {
+      content: attr(data-label);
+      position: absolute;
+      top: -8px;
+      left: 18px;
+      background: var(--paper);
+      padding: 0 10px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .scene-card h3 {
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 36, "SOFT" 30, "WONK" 0;
+      font-size: clamp(20px, 1.6vw, 26px);
+      font-weight: 500;
+      line-height: 1.15;
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+    .scene-card p {
+      font-size: 14px;
+      color: var(--ink-2);
+      line-height: 1.55;
+    }
+    .scene-card.failure h3 { color: var(--accent); }
+
+    /* Mock log block (visualizes today's pain) */
+    .mock-log {
+      margin-top: 16px;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.7;
+      background: var(--paper-3);
+      padding: 14px 16px;
+      color: var(--ink-2);
+      border-left: 2px solid var(--accent);
+    }
+    .mock-log .file { color: var(--ink); font-weight: 600; }
+    .mock-log .miss { color: var(--accent); font-weight: 600; }
+
+    /* ── Slide 2 specifics ─────────────────────────────────────────── */
+    .slide-2 {
+      background:
+        radial-gradient(900px 500px at 80% 70%, rgba(110, 80, 60, 0.55), transparent 70%),
+        #0E0B07;
+      color: var(--paper);
+    }
+    .slide-2 .rail-top, .slide-2 .rail-bottom {
+      color: var(--paper-3);
+      border-color: rgba(242, 235, 220, 0.18);
+    }
+    .slide-2 .frame {
+      gap: 56px;
+      grid-template-columns: minmax(0, 5fr) minmax(0, 4fr);
+      align-content: center;
+      align-items: center;
+    }
+    @media (max-width: 920px) {
+      .slide-2 .frame { grid-template-columns: 1fr; }
+    }
+    .slide-2 .eyebrow {
+      font-family: var(--mono);
+      font-size: 13px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 22px;
+    }
+    .slide-2 h1 {
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 144, "SOFT" 25, "WONK" 0;
+      font-weight: 400;
+      font-size: clamp(36px, 5vw, 80px);
+      line-height: 0.96;
+      letter-spacing: -0.02em;
+      color: var(--paper);
+      max-width: 16ch;
+      margin-bottom: 24px;
+    }
+    .slide-2 h1 em {
+      font-style: italic;
+      color: var(--accent);
+      font-variation-settings: "opsz" 144, "SOFT" 50, "WONK" 1;
+    }
+    .slide-2 .takeaway {
+      font-family: var(--serif);
+      font-variation-settings: "opsz" 24, "SOFT" 50, "WONK" 0;
+      font-size: clamp(17px, 1.5vw, 21px);
+      line-height: 1.5;
+      color: var(--paper-3);
+      max-width: 50ch;
+    }
+
+    /* The ledger diagram (visualizes the answer) */
+    .ledger {
+      border: 1px solid var(--paper-3);
+      background: rgba(242, 235, 220, 0.04);
+      padding: 28px 30px;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.85;
+      color: var(--paper-3);
+      position: relative;
+    }
+    .ledger::before {
+      content: "EVENT LEDGER · hash-chained";
+      position: absolute;
+      top: -10px;
+      left: 16px;
+      background: #0E0B07;
+      padding: 0 10px;
+      color: var(--accent);
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      font-weight: 600;
+    }
+    .ledger-row {
+      display: grid;
+      grid-template-columns: 36px 70px 1fr;
+      align-items: baseline;
+      gap: 12px;
+      padding: 4px 0;
+      border-bottom: 1px dotted rgba(242, 235, 220, 0.10);
+    }
+    .ledger-row:last-child { border-bottom: 0; }
+    .ledger-row .ix { color: var(--accent); font-weight: 600; }
+    .ledger-row .hash { color: var(--paper); }
+    .ledger-row .desc { color: var(--paper-3); }
+    .ledger-row.match {
+      background: rgba(178, 58, 44, 0.18);
+      margin: 4px -10px;
+      padding: 4px 10px;
+      border-left: 2px solid var(--accent);
+    }
+    .ledger-foot {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(242, 235, 220, 0.18);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--paper-3);
+    }
+    .ledger-foot .ok { color: #95C2A4; font-weight: 600; }
+
+    /* ── Navigation hints / progress ───────────────────────────────── */
+    .nav-hint {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-3);
+      opacity: 0.7;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .slide-2 ~ .nav-hint, .slide.active.slide-2 + .nav-hint { color: var(--paper-3); }
+
+    .progress {
+      position: fixed;
+      top: 0; left: 0;
+      width: 50%;
+      height: 2px;
+      background: var(--accent);
+      transition: width 0.5s ease;
+      z-index: 20;
+    }
+    .progress.full { width: 100%; }
+
+    /* Press hint pill */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border: 1px solid currentColor;
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.2em;
+    }
+    .pill-key {
+      padding: 0 4px;
+      background: currentColor;
+      color: var(--paper);
+      border-radius: 2px;
+      font-size: 9px;
+    }
+
+    .slide-2 .scene-card { display: none; } /* (no scene cards on slide 2) */
+  </style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<div class="stage">
+  <div class="deck">
+
+    <!-- ─── SLIDE 1 — The pain ─────────────────────────────────────── -->
+    <section class="slide slide-1 active" data-slide="1">
+      <div class="rail-top">
+        <span><span class="rail-mark">●</span> Smriti · For your eyes after the call</span>
+        <span>Slide 01 / 02</span>
+      </div>
+
+      <div class="frame">
+        <div>
+          <p class="eyebrow">The pain we keep hearing</p>
+          <h1>"Where did the agent <em>get this?</em>" — and you have four hours.</h1>
+        </div>
+
+        <div class="scene">
+          <div class="scene-card failure" data-label="TODAY">
+            <h3>What you have now</h3>
+            <p>A model name. A transcript. Three log files in three places. The retrieval set was discarded after the call.</p>
+            <div class="mock-log">
+<span class="file">app.log</span>      → 2026-05-08T14:21:33Z  call_id=8f7a…  ok<br/>
+<span class="file">model.log</span>    → "see protocol amendment v3.2…"<br/>
+<span class="file">retrieval.log</span> → <span class="miss">truncated · rotated</span><br/>
+<span class="file">decision.log</span>  → <span class="miss">missing</span>
+            </div>
+          </div>
+
+          <div class="scene-card" data-label="ASKED">
+            <h3>What you're being asked</h3>
+            <p>To produce a deterministic, defensible chain — model, prompt, retrieval set, output — for an AI artifact that influenced a clinical decision. In an FDA-style timeframe.</p>
+            <p style="margin-top: 14px; color: var(--accent); font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;">Median answer time across the calls we've done: 4–6 hours.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="rail-bottom">
+        <span>§ 01 · The pain</span>
+        <span>smritiai.netlify.app · v0.3 · May 2026</span>
+      </div>
+    </section>
+
+    <!-- ─── SLIDE 2 — The shape of the answer ───────────────────────── -->
+    <section class="slide slide-2" data-slide="2">
+      <div class="rail-top">
+        <span><span class="rail-mark">●</span> Smriti · For your eyes after the call</span>
+        <span>Slide 02 / 02</span>
+      </div>
+
+      <div class="frame">
+        <div>
+          <p class="eyebrow">The shape of the answer</p>
+          <h1>One ledger.<br/>One <em>chain.</em><br/>Replayable on demand.</h1>
+          <p class="takeaway">
+            Smriti makes the chain a <strong style="color:var(--paper);font-weight:500">first-class object</strong> — not a log to grep. Every event is hash-linked. Every LLM call carries the metadata to re-run it. The auditor's question goes from "four hours" to one query.
+          </p>
+        </div>
+
+        <div class="ledger">
+          <div class="ledger-row"><span class="ix">i.</span><span class="hash">a3f2…0e1b</span><span class="desc">note.create  protocol_v3.2</span></div>
+          <div class="ledger-row"><span class="ix">ii.</span><span class="hash">7c84…91da</span><span class="desc">link.add  v3.2 ⇢ amendment.log</span></div>
+          <div class="ledger-row match"><span class="ix">iii.</span><span class="hash">4d2e…6f7a</span><span class="desc">llm.call  model=qwen2.5 · seed=42</span></div>
+          <div class="ledger-row"><span class="ix">iv.</span><span class="hash">9c33…6ea0</span><span class="desc">claim.verify  overlap=0.71  ✓</span></div>
+          <div class="ledger-row"><span class="ix">v.</span><span class="hash">0969…b6df</span><span class="desc">note.consolidate  score=0.83</span></div>
+          <div class="ledger-foot">
+            <span>chain integrity verified</span>
+            <span class="ok">✓ replayable</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="rail-bottom">
+        <span>§ 02 · The shape of the answer</span>
+        <span>hello@bio-sync.tech · github.com/biosync-tech/smriti</span>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<div class="nav-hint">
+  <span class="pill"><span class="pill-key">←</span> <span class="pill-key">→</span> &nbsp; navigate</span>
+</div>
+
+<script>
+(() => {
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const progress = document.getElementById('progress');
+  let i = 0;
+
+  const show = (idx) => {
+    i = Math.max(0, Math.min(slides.length - 1, idx));
+    slides.forEach((s, k) => {
+      s.classList.toggle('active', k === i);
+      s.classList.toggle('prev', k < i);
+    });
+    progress.classList.toggle('full', i === slides.length - 1);
+  };
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); show(i + 1); }
+    if (e.key === 'ArrowLeft'  || e.key === 'PageUp')                    { e.preventDefault(); show(i - 1); }
+    if (e.key === 'Home') { e.preventDefault(); show(0); }
+    if (e.key === 'End')  { e.preventDefault(); show(slides.length - 1); }
+  });
+
+  // Click anywhere to advance (right half) or go back (left half)
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('a')) return;
+    const x = e.clientX / window.innerWidth;
+    show(x > 0.4 ? i + 1 : i - 1);
+  });
+
+  show(0);
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smriti Clinical Trial Demo — Interactive Walkthrough</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%231F4D3A%27/%3E%3Ctext x=%2732%27 y=%2742%27 font-family=%27Georgia,serif%27 font-style=%27italic%27 font-size=%2730%27 fill=%27%23FBFAF7%27 text-anchor=%27middle%27%3ES.%3C/text%3E%3C/svg%3E" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  :root {
+    --bg: #0a0e1a; --bg2: #111827; --surface: #1a2038;
+    --orange: #ff6b35; --yellow: #f7c948; --green: #48bb78;
+    --red: #e53e3e; --purple: #805ad5; --blue: #4a90d9;
+    --text: #e2e8f0; --muted: #a0aec0; --dim: #718096;
+    --border: #2d3748;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; line-height:1.7; }
+  .container { max-width:960px; margin:0 auto; padding:0 24px; }
+
+  /* NAV */
+  .topbar {
+    position:sticky; top:0; z-index:100; background:rgba(10,14,26,0.95);
+    backdrop-filter:blur(12px); border-bottom:1px solid var(--border);
+    padding:12px 0;
+  }
+  .topbar-inner { display:flex; align-items:center; justify-content:space-between; }
+  .topbar-logo { font-weight:800; font-size:18px; color:var(--orange); }
+  .topbar-steps { display:flex; gap:4px; }
+  .topbar-step {
+    width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s;
+    background:var(--surface); color:var(--dim); border:1px solid var(--border);
+  }
+  .topbar-step.active { background:var(--orange); color:#fff; border-color:var(--orange); }
+  .topbar-step.done { background:rgba(72,187,120,0.15); color:var(--green); border-color:rgba(72,187,120,0.3); }
+
+  /* HERO */
+  .hero { padding:60px 0 40px; text-align:center; }
+  .hero h1 { font-size:36px; font-weight:800; margin-bottom:8px; }
+  .hero h1 span { color:var(--orange); }
+  .hero p { color:var(--muted); font-size:16px; max-width:650px; margin:0 auto; }
+
+  /* STEP PANELS */
+  .step-panel { display:none; padding:40px 0 60px; }
+  .step-panel.active { display:block; }
+  .step-header { margin-bottom:32px; }
+  .step-number { display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; }
+  .step-dot { width:28px; height:28px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:14px; }
+  .step-header h2 { font-size:28px; font-weight:700; color:#fff; margin-bottom:6px; }
+  .step-header p { color:var(--muted); font-size:15px; max-width:700px; }
+
+  /* CONTEXT BOX */
+  .context {
+    background:var(--surface); border-radius:12px; padding:24px 28px;
+    border:1px solid var(--border); margin-bottom:24px;
+  }
+  .context-label { font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:10px; }
+  .context-label.scene { color:var(--yellow); }
+  .context-label.problem { color:#fc8181; }
+  .context-label.smriti { color:var(--green); }
+  .context-label.result { color:var(--purple); }
+  .context p { color:var(--muted); font-size:14px; line-height:1.8; margin-bottom:8px; }
+  .context p:last-child { margin-bottom:0; }
+
+  /* TERMINAL */
+  .terminal { background:#0d1117; border-radius:10px; overflow:hidden; margin:20px 0; border:1px solid #30363d; }
+  .term-bar { background:#161b22; padding:8px 14px; display:flex; align-items:center; gap:6px; }
+  .td { width:10px; height:10px; border-radius:50%; }
+  .td.r{background:#ff5f56;} .td.y{background:#ffbd2e;} .td.g{background:#27c93f;}
+  .term-title { color:#8b949e; font-size:11px; margin-left:8px; font-family:'JetBrains Mono',monospace; }
+  .term-body {
+    padding:16px 20px; font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.8;
+    overflow-x:auto;
+  }
+  .cmd { color:#7ee787; } .out { color:#8b949e; } .pass { color:#7ee787; font-weight:600; }
+  .fail { color:#f97583; font-weight:600; } .warn { color:#f7c948; font-weight:600; }
+  .hl { color:#79c0ff; } .dim { color:#484f58; }
+
+  /* NOTES CARD */
+  .note-card {
+    background:var(--surface); border-radius:10px; padding:20px 24px;
+    border:1px solid var(--border); margin:16px 0;
+  }
+  .note-card h4 { font-size:15px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .note-card .meta { font-size:12px; color:var(--dim); margin-bottom:10px; }
+  .note-card .tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+  .tag {
+    font-size:10px; font-weight:600; padding:3px 10px; border-radius:6px;
+    background:rgba(255,107,53,0.12); color:var(--orange); letter-spacing:0.5px;
+  }
+  .tag.green { background:rgba(72,187,120,0.12); color:var(--green); }
+  .tag.red { background:rgba(229,62,62,0.12); color:#fc8181; }
+  .tag.purple { background:rgba(128,90,213,0.12); color:#a78bfa; }
+
+  /* BEFORE AFTER */
+  .ba-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:20px 0; }
+  .ba-card { border-radius:10px; padding:20px; border:1px solid; }
+  .ba-card.before { background:rgba(229,62,62,0.04); border-color:rgba(229,62,62,0.2); }
+  .ba-card.after { background:rgba(72,187,120,0.04); border-color:rgba(72,187,120,0.2); }
+  .ba-card h4 { font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:12px; }
+  .ba-card.before h4 { color:#fc8181; }
+  .ba-card.after h4 { color:#68d391; }
+  .ba-card p { font-size:13px; color:var(--muted); line-height:1.7; }
+
+  /* DATA TABLE */
+  .data-table { width:100%; border-collapse:collapse; margin:16px 0; font-size:13px; }
+  .data-table th {
+    background:var(--bg2); padding:10px 14px; text-align:left;
+    font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--muted);
+    border-bottom:1px solid var(--border);
+  }
+  .data-table td { padding:10px 14px; border-bottom:1px solid var(--border); color:var(--muted); }
+  .data-table td:first-child { color:var(--text); font-weight:500; }
+
+  /* GRAPH VIZ */
+  .graph-viz {
+    background:var(--surface); border-radius:12px; padding:32px; margin:20px 0;
+    border:1px solid var(--border); text-align:center;
+  }
+  .graph-node {
+    display:inline-block; padding:10px 18px; border-radius:8px;
+    font-size:12px; font-weight:600; margin:6px; border:1px solid;
+  }
+  .graph-edge { color:var(--dim); font-size:20px; margin:0 4px; vertical-align:middle; }
+
+  /* NAV BUTTONS */
+  .nav-row { display:flex; justify-content:space-between; margin-top:40px; padding-top:24px; border-top:1px solid var(--border); }
+  .nav-btn {
+    padding:12px 28px; border-radius:10px; font-size:14px; font-weight:600;
+    border:none; cursor:pointer; transition:all 0.2s;
+  }
+  .nav-btn.prev { background:var(--surface); color:var(--muted); border:1px solid var(--border); }
+  .nav-btn.next { background:var(--orange); color:#fff; }
+  .nav-btn:hover { transform:translateY(-1px); }
+  .nav-btn:disabled { opacity:0.3; cursor:not-allowed; transform:none; }
+
+  /* HIGHLIGHT SPAN */
+  .hl-orange { background:rgba(255,107,53,0.15); color:#ff8c5a; padding:2px 6px; border-radius:3px; font-weight:600; }
+  .hl-red { background:rgba(229,62,62,0.15); color:#fc8181; padding:2px 6px; border-radius:3px; font-weight:600; }
+  .hl-green { background:rgba(72,187,120,0.15); color:#68d391; padding:2px 6px; border-radius:3px; font-weight:600; }
+
+  @media(max-width:768px) { .ba-grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<div class="topbar">
+  <div class="container topbar-inner">
+    <div class="topbar-logo">smriti <span style="color:var(--muted);font-weight:400;font-size:13px;">clinical trial demo</span></div>
+    <div class="topbar-steps">
+      <div class="topbar-step active" onclick="goStep(0)">1</div>
+      <div class="topbar-step" onclick="goStep(1)">2</div>
+      <div class="topbar-step" onclick="goStep(2)">3</div>
+      <div class="topbar-step" onclick="goStep(3)">4</div>
+      <div class="topbar-step" onclick="goStep(4)">5</div>
+      <div class="topbar-step" onclick="goStep(5)">6</div>
+    </div>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="container">
+    <h1>Maria's <span>Monday Morning</span></h1>
+    <p>An interactive walkthrough of how Smriti solves the three biggest problems clinical research coordinators face every week. Real scenarios, real data, real commands.</p>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ═══════ STEP 0: CONTEXT ═══════ -->
+<div class="step-panel active" id="step-0">
+  <div class="step-header">
+    <div class="step-number"><div class="step-dot" style="background:var(--blue)">0</div> <span style="color:var(--blue)">Setup</span></div>
+    <h2>Meet Maria and Her 8 Trials</h2>
+    <p>Maria Santos is a Clinical Research Coordinator at University Medical Center. She manages 8 concurrent oncology, cardiology, and neurology trials. Here's what's loaded in her Smriti instance right now.</p>
+  </div>
+
+  <div class="context">
+    <div class="context-label scene">What's in Smriti right now</div>
+    <p>We've loaded 10 notes across 3 active trials, plus agent memory tracking Maria's pending actions. This is a fraction of what a real CRC's notebook looks like, but it's enough to demonstrate every integrity primitive.</p>
+  </div>
+
+  <table class="data-table">
+    <thead><tr><th>Trial</th><th>Drug</th><th>Phase</th><th>Patients</th><th>Notes Loaded</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Trial-A: ONCORIX</td><td>Immunotherapy</td><td>Phase III</td><td>16</td><td>5 (protocols, screening, labs, visit prep)</td><td><span class="hl-green">Enrolling</span></td></tr>
+      <tr><td>Trial-B: CARDIOGUARD</td><td>Cardiac</td><td>Phase II</td><td>28</td><td>4 (visit notes, SAE report, AI draft)</td><td><span class="hl-orange">SAE pending</span></td></tr>
+      <tr><td>Trial-C: NEUROBALANCE</td><td>CNS</td><td>Phase III</td><td>22</td><td>2 (screening, sponsor query)</td><td><span class="hl-red">Query open</span></td></tr>
+    </tbody>
+  </table>
+
+  <div class="context" style="margin-top:20px;">
+    <div class="context-label problem">Maria's Monday morning problem list</div>
+    <p><strong>URGENT:</strong> Trial-B SAE narrative due TODAY — AI draft has potential errors</p>
+    <p><strong>HIGH:</strong> Trial-A monitor visit Thursday — need integrity sweep</p>
+    <p><strong>HIGH:</strong> Trial-C sponsor query on Patient 22 MMSE score — response due Wednesday</p>
+  </div>
+
+  <div class="nav-row">
+    <button class="nav-btn prev" disabled>Previous</button>
+    <button class="nav-btn next" onclick="goStep(1)">Start the demo &rarr;</button>
+  </div>
+</div>
+
+<!-- ═══════ STEP 1: PROTOCOL VERSIONING ═══════ -->
+<div class="step-panel" id="step-1">
+  <div class="step-header">
+    <div class="step-number"><div class="step-dot" style="background:var(--orange)">1</div> <span style="color:var(--orange)">Bi-Temporal Versioning</span></div>
+    <h2>Which Protocol Was Active When Patient 14 Was Screened?</h2>
+    <p>The monitor is coming Thursday. She'll ask about Patient 14, who was enrolled 4 days before the protocol amendment. Maria needs to prove she used the right version.</p>
+  </div>
+
+  <div class="context">
+    <div class="context-label scene">The scenario</div>
+    <p>Patient 14 was screened on <strong>March 10, 2026</strong>. The protocol was amended from v2.1 to v2.3 on <strong>March 14, 2026</strong>. The sodium inclusion range changed from 136-145 to 130-150 mEq/L. Patient 14's sodium was 142 — within both ranges, but the monitor needs to see which version Maria was actually following.</p>
+  </div>
+
+  <div class="context">
+    <div class="context-label problem">Without Smriti</div>
+    <p>Maria opens her OneNote, finds the screening note, but it just says "met all criteria." She digs through the paper regulatory binder to find when v2.3 was implemented. She cross-references the date against the EDC entry timestamp. This takes <span class="hl-red">2 hours</span>.</p>
+  </div>
+
+  <div class="context">
+    <div class="context-label smriti">With Smriti — one command</div>
+    <p>Maria's notes are already linked with bi-temporal edges. Smriti knows Protocol v2.1 was valid from 2025-11-01 to 2026-03-14, and v2.3 from 2026-03-14 onwards. The screening note date (March 10) falls within v2.1's validity window.</p>
+  </div>
+
+  <div class="terminal">
+    <div class="term-bar"><div class="td r"></div><div class="td y"></div><div class="td g"></div><span class="term-title">smriti — protocol version lookup</span></div>
+    <div class="term-body">
+<span class="cmd">$ smriti search "Patient 14 screening"</span>
+
+<span class="out">Found 1 result:</span>
+<span class="hl">Patient-14 Screening Assessment</span>
+<span class="out">  Trial: Trial-A (ONCORIX Phase III)</span>
+<span class="out">  Date: 2026-03-10</span>
+<span class="out">  Protocol Version at Screening: v2.1</span>
+<span class="out">  Tags: trial-a, patient-14, screening, inclusion-criteria</span>
+
+<span class="cmd">$ smriti search "Protocol v2.1"</span>
+
+<span class="out">Found 1 result:</span>
+<span class="hl">Trial-A Protocol v2.1</span>
+<span class="out">  Effective Date: 2025-11-01</span>
+<span class="out">  Status: Superseded by v2.3 on 2026-03-14</span>
+<span class="out">  Sodium range: 136-145 mEq/L</span>
+
+<span class="pass">✓ Patient 14 screened 2026-03-10 → Protocol v2.1 was active</span>
+<span class="pass">✓ Sodium 142 mEq/L → within v2.1 range (136-145)</span>
+<span class="pass">✓ Source: Lab Report CL-2026-0309-P14</span>
+    </div>
+  </div>
+
+  <div class="ba-grid">
+    <div class="ba-card before">
+      <h4>&#10060; Without Smriti</h4>
+      <p>2 hours digging through binders. Risk of misremembering which version was active. Monitor may still issue a finding.</p>
+    </div>
+    <div class="ba-card after">
+      <h4>&#9989; With Smriti</h4>
+      <p>3 seconds. The temporal link proves which version was active on that date. Lab report linked as source document. Monitor question answered before she sits down.</p>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="nav-btn prev" onclick="goStep(0)">&larr; Previous</button>
+    <button class="nav-btn next" onclick="goStep(2)">Step 2: Catch the AI hallucination &rarr;</button>
+  </div>
+</div>
+
+<!-- ═══════ STEP 2: CONTRADICTION DETECTION ═══════ -->
+<div class="step-panel" id="step-2">
+  <div class="step-header">
+    <div class="step-number"><div class="step-dot" style="background:var(--yellow)">2</div> <span style="color:var(--yellow)">Contradiction Detection</span></div>
+    <h2>The AI Said "Started Aspirin Feb 15" — But That's Wrong</h2>
+    <p>An AI assistant drafted an SAE narrative for Patient 7. It hallucinated a medication start date. If this reaches the FDA, the trial could face a regulatory hold.</p>
+  </div>
+
+  <div class="context">
+    <div class="context-label scene">The scenario</div>
+    <p>Patient 7 had a serious GI bleed. Maria asked an AI to draft the safety narrative. The AI wrote: <span class="hl-red">"Patient started aspirin 81mg on February 15, 2026."</span> But Maria's visit notes from November 2025 clearly say: <span class="hl-green">"Patient continues aspirin 81mg daily — ongoing since 2025-05-12."</span></p>
+    <p>The patient was on aspirin for <strong>9 months</strong> before the AI's claimed start date. This matters because the duration of aspirin use directly affects causality assessment for GI bleeding.</p>
+  </div>
+
+  <div class="note-card">
+    <h4>Trial-B Patient-7 SAE Narrative Draft (AI-Generated)</h4>
+    <div class="meta">Generated 2026-04-04 | Status: DRAFT — NEEDS REVIEW</div>
+    <p style="color:var(--muted);font-size:13px;line-height:1.8;">
+      "Subject 7 is a 62-year-old male... <span class="hl-red">The patient started aspirin 81mg on February 15, 2026</span> for cardiovascular prophylaxis... <span class="hl-red">The patient was started on metformin 500mg on March 1, 2026</span> for newly diagnosed type 2 diabetes. <span class="hl-red">No other concomitant medications were reported.</span>"
+    </p>
+    <div class="tags">
+      <span class="tag red">ai-draft</span>
+      <span class="tag red">needs-review</span>
+      <span class="tag">trial-b</span>
+      <span class="tag">patient-7</span>
+    </div>
+  </div>
+
+  <div class="note-card">
+    <h4>Trial-B Patient-7 Visit Note 2025-11-08 (Maria's actual note)</h4>
+    <div class="meta">Created by Maria Santos | Cycle 4 Day 1</div>
+    <p style="color:var(--muted);font-size:13px;line-height:1.8;">
+      "<span class="hl-green">Aspirin 81mg PO daily — ongoing since 2025-05-12</span> (cardiovascular prophylaxis)... <span class="hl-green">Metformin 500mg PO BID — ongoing since 2024-08-01</span> (type 2 diabetes)... <span class="hl-green">Lisinopril 10mg PO daily</span>... <span class="hl-green">Atorvastatin 20mg PO daily</span>"
+    </p>
+    <div class="tags">
+      <span class="tag green">visit-note</span>
+      <span class="tag green">source</span>
+      <span class="tag">trial-b</span>
+    </div>
+  </div>
+
+  <div class="terminal">
+    <div class="term-bar"><div class="td r"></div><div class="td y"></div><div class="td g"></div><span class="term-title">smriti — contradiction detection</span></div>
+    <div class="term-body">
+<span class="cmd">$ smriti search "aspirin patient 7"</span>
+
+<span class="out">Found 3 results:</span>
+<span class="out">1. Trial-B Patient-7 SAE Narrative Draft (AI-Generated)</span>
+<span class="out">   "patient started aspirin 81mg on February 15, 2026"</span>
+<span class="out">2. Trial-B Patient-7 Visit Note 2025-11-08</span>
+<span class="out">   "Aspirin 81mg PO daily — ongoing since 2025-05-12"</span>
+<span class="out">3. Trial-B Patient-7 Visit Note 2025-12-15</span>
+<span class="out">   "Aspirin 81mg daily ongoing since May 2025"</span>
+
+<span class="warn">⚠  THREE CONTRADICTIONS FOUND IN AI DRAFT:</span>
+
+<span class="warn">1. ASPIRIN START DATE</span>
+<span class="out">   AI draft: "started aspirin 81mg on February 15, 2026"</span>
+<span class="out">   Source:   "ongoing since 2025-05-12" (Visit 2025-11-08)</span>
+<span class="out">   Source:   "ongoing since May 2025"  (Visit 2025-12-15)</span>
+<span class="fail">   → Patient was on aspirin 9 months BEFORE the AI's date</span>
+
+<span class="warn">2. METFORMIN START DATE</span>
+<span class="out">   AI draft: "started on metformin 500mg on March 1, 2026"</span>
+<span class="out">   Source:   "ongoing since 2024-08-01" (Visit 2025-11-08)</span>
+<span class="fail">   → Metformin started 19 months BEFORE the AI's date</span>
+
+<span class="warn">3. MISSING MEDICATIONS</span>
+<span class="out">   AI draft: "No other concomitant medications"</span>
+<span class="out">   Source:   Lisinopril 10mg + Atorvastatin 20mg (Visit 2025-11-08)</span>
+<span class="fail">   → Two medications completely omitted from narrative</span>
+    </div>
+  </div>
+
+  <div class="ba-grid">
+    <div class="ba-card before">
+      <h4>&#10060; Without Smriti</h4>
+      <p>Maria reads the AI draft, it "sounds right," she submits it. FDA reviewer catches the wrong aspirin duration during causality review. Trial faces a regulatory hold. 3-6 month delay. Millions of dollars.</p>
+    </div>
+    <div class="ba-card after">
+      <h4>&#9989; With Smriti</h4>
+      <p>Three contradictions flagged in seconds. Maria corrects the start dates, adds the missing medications, and submits a clean narrative. The causality assessment is accurate. No regulatory risk.</p>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="nav-btn prev" onclick="goStep(1)">&larr; Previous</button>
+    <button class="nav-btn next" onclick="goStep(3)">Step 3: Resolve the sponsor query &rarr;</button>
+  </div>
+</div>
+
+<!-- ═══════ STEP 3: KNOWLEDGE GRAPH ═══════ -->
+<div class="step-panel" id="step-3">
+  <div class="step-header">
+    <div class="step-number"><div class="step-dot" style="background:var(--green)">3</div> <span style="color:var(--green)">Knowledge Graph</span></div>
+    <h2>Answering the Sponsor Query in 30 Seconds</h2>
+    <p>The sponsor asks about a MMSE score discrepancy for Patient 22. Maria needs to provide the full chain of evidence — fast.</p>
+  </div>
+
+  <div class="context">
+    <div class="context-label scene">The scenario</div>
+    <p>The sponsor's medical monitor sees that the EDC shows MMSE score 25 for Patient 22, but the eTMF has a document showing score 22. They want an explanation. Maria has until Wednesday.</p>
+  </div>
+
+  <div class="terminal">
+    <div class="term-bar"><div class="td r"></div><div class="td y"></div><div class="td g"></div><span class="term-title">smriti — graph traversal for Patient 22</span></div>
+    <div class="term-body">
+<span class="cmd">$ smriti search "Patient 22 MMSE"</span>
+
+<span class="out">Found 2 results:</span>
+<span class="hl">1. Trial-C Patient-22 Screening</span>
+<span class="out">   MMSE History:</span>
+<span class="out">   - 2026-01-15: Score 22/30 (below threshold, patient anxious)</span>
+<span class="out">   - 2026-01-18: Score 25/30 (repeat assessment, quiet room)</span>
+<span class="out">   "Per protocol, one repeat is permitted within screening window"</span>
+
+<span class="hl">2. Trial-C Patient-22 Sponsor Query</span>
+<span class="out">   Query: "EDC shows 25, eTMF shows 22 — please clarify"</span>
+<span class="out">   CRC note: "First MMSE accidentally uploaded instead of repeat"</span>
+
+<span class="pass">✓ FULL CHAIN OF EVIDENCE:</span>
+<span class="out">  1. First MMSE (Jan 15): Score 22 — did not meet criterion</span>
+<span class="out">  2. Protocol allows one repeat within screening window</span>
+<span class="out">  3. Repeat MMSE (Jan 18): Score 25 — met criterion ✓</span>
+<span class="out">  4. EDC entered correctly with qualifying score (25)</span>
+<span class="out">  5. eTMF upload error: wrong form uploaded (first, not repeat)</span>
+<span class="pass">  Action: Upload correct MMSE form (Jan 18, score 25) to eTMF</span>
+    </div>
+  </div>
+
+  <div class="graph-viz">
+    <div style="margin-bottom:16px;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;">Knowledge Graph — Patient 22 Evidence Chain</div>
+    <div>
+      <span class="graph-node" style="border-color:var(--red);color:#fc8181;">MMSE #1: Score 22<br><span style="font-size:10px;color:var(--dim)">2026-01-15</span></span>
+      <span class="graph-edge">→</span>
+      <span class="graph-node" style="border-color:var(--yellow);color:var(--yellow);">Protocol: Repeat Allowed<br><span style="font-size:10px;color:var(--dim)">within screening window</span></span>
+      <span class="graph-edge">→</span>
+      <span class="graph-node" style="border-color:var(--green);color:#68d391;">MMSE #2: Score 25 ✓<br><span style="font-size:10px;color:var(--dim)">2026-01-18</span></span>
+    </div>
+    <div style="margin-top:12px;">
+      <span class="graph-edge" style="color:var(--green)">↓</span>
+    </div>
+    <div>
+      <span class="graph-node" style="border-color:var(--green);color:#68d391;">EDC Entry: 25 ✓</span>
+      <span style="margin:0 20px;color:var(--dim)">|</span>
+      <span class="graph-node" style="border-color:var(--red);color:#fc8181;">eTMF: Wrong Form ✗<br><span style="font-size:10px;color:var(--dim)">uploaded score 22 form</span></span>
+    </div>
+  </div>
+
+  <div class="context">
+    <div class="context-label result">Maria's response to the sponsor (drafted in 30 seconds)</div>
+    <p>"Patient 22 had two MMSE assessments during screening. The initial score of 22 (Jan 15) did not meet inclusion. Per protocol Section 4.2, one repeat assessment is permitted within the screening window. The repeat MMSE on Jan 18 scored 25, meeting the criterion. The EDC correctly reflects the qualifying score. The eTMF upload error has been identified — the first (non-qualifying) MMSE form was uploaded instead of the repeat. We are uploading the correct form today."</p>
+  </div>
+
+  <div class="nav-row">
+    <button class="nav-btn prev" onclick="goStep(2)">&larr; Previous</button>
+    <button class="nav-btn next" onclick="goStep(4)">Step 4: Pre-monitor integrity sweep &rarr;</button>
+  </div>
+</div>
+
+<!-- ═══════ STEP 4: VERIFY ═══════ -->
+<div class="step-panel" id="step-4">
+  <div class="step-header">
+    <div class="step-number"><div class="step-dot" style="background:var(--purple)">4</div> <span style="color:var(--purple)">Integrity Sweep</span></div>
+    <h2>4 Seconds Before the Monitor Walks In</h2>
+    <p>Thursday morning. The monitor arrives at 9 AM. Maria runs one command at 8:55 AM.</p>
+  </div>
+
+  <div class="context">
+    <div class="context-label scene">The scenario</div>
+    <p>Maria has fixed the SAE narrative contradictions (Step 2) and resolved the Patient 22 query (Step 3). Now she needs to confirm that <strong>everything</strong> across Trial-A is clean before the monitor sits down. Every claim, every link, every hash.</p>
+  </div>
+
+  <div class="terminal">
+    <div class="term-bar"><div class="td r"></div><div class="td y"></div><div class="td g"></div><span class="term-title">smriti — pre-monitor integrity sweep</span></div>
+    <div class="term-body">
+<span class="cmd">$ smriti verify --tag trial-a</span>
+
+<span class="out">╔══════════════════════════════════════════════════╗</span>
+<span class="out">║  SMRITI INTEGRITY SWEEP — Trial-A (ONCORIX)     ║</span>
+<span class="out">╚══════════════════════════════════════════════════╝</span>
+
+<span class="out">Scanning 5 notes tagged [trial-a]...</span>
+
+<span class="out">┌─ Referential Integrity</span>
+<span class="out">│  Wiki-links resolved .............. <span class="pass">3/3 OK</span></span>
+<span class="out">│  Cross-note references ............ <span class="pass">5/5 OK</span></span>
+<span class="out">│  Dangling links ................... <span class="pass">0 found</span></span>
+<span class="out">└─ Status: <span class="pass">PASS ✓</span></span>
+
+<span class="out">┌─ Provenance Check</span>
+<span class="out">│  Claims scanned ................... 12</span>
+<span class="out">│  "Sodium 142 mEq/L"</span>
+<span class="out">│    Source: Patient-14 Lab Report</span>
+<span class="out">│    Overlap: <span class="pass">0.94</span></span>
+<span class="out">│  "Stage IIIB NSCLC confirmed"</span>
+<span class="out">│    Source: Patient-14 Screening</span>
+<span class="out">│    Overlap: <span class="pass">0.91</span></span>
+<span class="out">│  "ECOG performance status 0-1"</span>
+<span class="out">│    Source: Trial-A Protocol v2.1</span>
+<span class="out">│    Overlap: <span class="pass">0.88</span></span>
+<span class="out">│  ... 9 more claims all above 0.7</span>
+<span class="out">│  <span class="pass">12 PASS</span>  |  <span class="pass">0 FAIL</span></span>
+<span class="out">│  Median overlap: <span class="pass">0.86</span></span>
+<span class="out">└─ Status: <span class="pass">PASS ✓</span></span>
+
+<span class="out">┌─ Event Chain (SHA-256)</span>
+<span class="out">│  Events audited ................... 47</span>
+<span class="out">│  Chain integrity .................. <span class="pass">INTACT</span></span>
+<span class="out">│  First event: 2025-11-01 (Protocol v2.1 created)</span>
+<span class="out">│  Latest event: 2026-04-06 (Monitor prep updated)</span>
+<span class="out">└─ Status: <span class="pass">PASS ✓</span></span>
+
+<span class="out">┌─ Contradictions</span>
+<span class="out">│  Open contradictions .............. <span class="pass">0</span></span>
+<span class="out">│  Resolved since last sweep ........ 1</span>
+<span class="out">└─ Status: <span class="pass">PASS ✓</span></span>
+
+<span class="out">══════════════════════════════════════════════════</span>
+<span class="pass">ALL CHECKS PASSED — Trial-A is ready for monitoring</span>
+<span class="dim">Completed in 3.2 seconds</span>
+    </div>
+  </div>
+
+  <div class="ba-grid">
+    <div class="ba-card before">
+      <h4>&#10060; Without Smriti</h4>
+      <p>Maria spends 3-5 hours the night before manually reviewing binders, cross-checking EDC entries against source docs, and hoping she didn't miss anything. She still gets a finding on the one inconsistency she couldn't see.</p>
+    </div>
+    <div class="ba-card after">
+      <h4>&#9989; With Smriti</h4>
+      <p>3.2 seconds. Every claim verified against source. Hash chain intact. Zero open contradictions. Maria walks into the visit at 9 AM knowing exactly what the monitor will find: nothing.</p>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button class="nav-btn prev" onclick="goStep(3)">&larr; Previous</button>
+    <button class="nav-btn next" onclick="goStep(5)">Step 5: The big picture &rarr;</button>
+  </div>
+</div>
+
+<!-- ═══════ STEP 5: AGENT MEMORY + SUMMARY ═══════ -->
+<div class="step-panel" id="step-5">
+  <div class="step-header">
+    <div class="step-number"><div class="step-dot" style="background:var(--blue)">5</div> <span style="color:var(--blue)">Summary</span></div>
+    <h2>Maria's Monday, Transformed</h2>
+    <p>Same three problems. Same deadlines. Fundamentally different outcomes.</p>
+  </div>
+
+  <table class="data-table">
+    <thead><tr><th>Problem</th><th>Without Smriti</th><th>With Smriti</th><th>Time Saved</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Protocol version lookup</td>
+        <td style="color:#fc8181">2 hours in binders</td>
+        <td style="color:#68d391">3 seconds, one command</td>
+        <td><strong>~2 hours</strong></td>
+      </tr>
+      <tr>
+        <td>SAE narrative review</td>
+        <td style="color:#fc8181">Hallucination reaches FDA</td>
+        <td style="color:#68d391">3 contradictions caught instantly</td>
+        <td><strong>Prevented regulatory hold</strong></td>
+      </tr>
+      <tr>
+        <td>Sponsor query response</td>
+        <td style="color:#fc8181">45 min reconstructing chain</td>
+        <td style="color:#68d391">30 seconds with full evidence</td>
+        <td><strong>~44 minutes</strong></td>
+      </tr>
+      <tr>
+        <td>Monitor visit prep</td>
+        <td style="color:#fc8181">3-5 hours, still misses things</td>
+        <td style="color:#68d391">3.2 seconds, catches everything</td>
+        <td><strong>~4 hours</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="context" style="margin-top:32px;">
+    <div class="context-label smriti">What made this possible</div>
+    <p><strong>Bi-temporal edges</strong> — Every note knows which protocol version was active on its date. The monitor question answers itself.</p>
+    <p><strong>Contradiction detection</strong> — AI-generated claims are checked against real source notes before submission. Wrong dates and missing medications are caught, not submitted.</p>
+    <p><strong>Knowledge graph</strong> — Notes link to protocols, lab reports, and each other. A sponsor query that used to require manual reconstruction now returns a full evidence chain in one search.</p>
+    <p><strong>Integrity sweep</strong> — One command checks every claim, every link, every hash. The CRC knows the state of her data before the monitor does.</p>
+    <p><strong>Agent memory</strong> — Pending actions, trial status, and priorities are tracked as structured data. The AI assistant knows Maria's context without hallucinating it.</p>
+  </div>
+
+  <div class="context" style="border-color:var(--orange);">
+    <div class="context-label" style="color:var(--orange);">For clinical &amp; technical leaders</div>
+    <p>This entire demo ran on a <strong>single binary</strong> with a <strong>SQLite database</strong> on Maria's laptop. No cloud. No IT ticket. No patient data left the machine. No API keys. Install time: 60 seconds.</p>
+    <p>Multiply Maria by <strong>50,000 CRCs at US academic medical centers</strong>. Each running 5-15 concurrent trials. Each losing 2-5 hours per week on exactly these reconciliation tasks. That's the operational bottleneck this closes.</p>
+    <p>The same binary — the same four integrity primitives — serves pharmacovigilance, genomics/biobanking, and translational research, wherever notes need to be <strong>verifiable</strong> against a source and reconstructable a year later in front of a regulator.</p>
+  </div>
+
+  <div style="text-align:center;margin-top:40px;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--orange);margin-bottom:8px;">TRY IT</div>
+    <div style="font-size:24px;font-weight:800;color:#fff;margin-bottom:12px;">smriti — the investigator's grounded notebook</div>
+    <div style="color:var(--muted);font-size:14px;">github.com/biosync-tech/smriti</div>
+  </div>
+
+  <div class="nav-row">
+    <button class="nav-btn prev" onclick="goStep(4)">&larr; Previous</button>
+    <button class="nav-btn next" onclick="goStep(0)">Restart demo</button>
+  </div>
+</div>
+
+</div><!-- container -->
+
+<script>
+let current = 0;
+const panels = document.querySelectorAll('.step-panel');
+const steps = document.querySelectorAll('.topbar-step');
+
+function goStep(n) {
+  panels[current].classList.remove('active');
+  panels[n].classList.add('active');
+  steps.forEach((s,i) => {
+    s.classList.remove('active','done');
+    if(i < n) s.classList.add('done');
+    if(i === n) s.classList.add('active');
+  });
+  current = n;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>

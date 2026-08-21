@@ -1,0 +1,350 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1200" font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0e27;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#1a1040;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="wedgeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b35;stop-opacity:1"/>
+      <stop offset="50%" style="stop-color:#f7c948;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#48bb78;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ff6b35"/>
+      <stop offset="100%" style="stop-color:#ff8c5a"/>
+    </linearGradient>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4a90d9"/>
+      <stop offset="100%" style="stop-color:#6bb5f0"/>
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#38a169"/>
+      <stop offset="100%" style="stop-color:#68d391"/>
+    </linearGradient>
+    <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#805ad5"/>
+      <stop offset="100%" style="stop-color:#a78bfa"/>
+    </linearGradient>
+    <linearGradient id="redGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#e53e3e"/>
+      <stop offset="100%" style="stop-color:#fc8181"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+    <filter id="shadowSm">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1600" height="1200" fill="url(#bgGrad)"/>
+
+  <!-- Subtle grid pattern -->
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff06" stroke-width="0.5"/>
+  </pattern>
+  <rect width="1600" height="1200" fill="url(#grid)"/>
+
+  <!-- ═══════════════ HEADER ═══════════════ -->
+  <text x="800" y="52" text-anchor="middle" fill="#ff6b35" font-size="14" font-weight="600" letter-spacing="4">SMRITI FOR CLINICAL TRIAL OPERATIONS</text>
+  <text x="800" y="88" text-anchor="middle" fill="#ffffff" font-size="32" font-weight="700">The Investigator's Grounded Notebook</text>
+  <text x="800" y="118" text-anchor="middle" fill="#a0aec0" font-size="15">Single binary fills the gap between EDC systems and the investigator's actual cognitive workflow</text>
+
+  <!-- ═══════════════ THE GAP VISUALIZATION (center) ═══════════════ -->
+  <text x="800" y="168" text-anchor="middle" fill="#f7c948" font-size="13" font-weight="600" letter-spacing="3">THE GAP SMRITI FILLS</text>
+
+  <!-- EDC Systems block (left) -->
+  <rect x="80" y="190" width="320" height="130" rx="12" fill="#1e2a4a" stroke="#4a90d9" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="240" y="220" text-anchor="middle" fill="#6bb5f0" font-size="14" font-weight="700" letter-spacing="2">EDC SYSTEMS</text>
+  <text x="240" y="245" text-anchor="middle" fill="#a0aec0" font-size="12">Medidata Rave | Veeva Vault | Oracle InForm</text>
+  <line x1="120" y1="258" x2="360" y2="258" stroke="#4a90d933" stroke-width="1"/>
+  <text x="240" y="278" text-anchor="middle" fill="#718096" font-size="11">Current value = truth</text>
+  <text x="240" y="296" text-anchor="middle" fill="#718096" font-size="11">History buried in audit logs</text>
+  <text x="240" y="314" text-anchor="middle" fill="#718096" font-size="11">No cross-system reconciliation</text>
+
+  <!-- Investigator Notes block (right) -->
+  <rect x="1200" y="190" width="320" height="130" rx="12" fill="#1e2a4a" stroke="#e53e3e" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="1360" y="220" text-anchor="middle" fill="#fc8181" font-size="14" font-weight="700" letter-spacing="2">INVESTIGATOR NOTES</text>
+  <text x="1360" y="245" text-anchor="middle" fill="#a0aec0" font-size="12">OneNote | Word Docs | Paper Binders</text>
+  <line x1="1240" y1="258" x2="1480" y2="258" stroke="#e53e3e33" stroke-width="1"/>
+  <text x="1360" y="278" text-anchor="middle" fill="#718096" font-size="11">Not audited, not linked</text>
+  <text x="1360" y="296" text-anchor="middle" fill="#718096" font-size="11">Source of 30%+ audit findings</text>
+  <text x="1360" y="314" text-anchor="middle" fill="#718096" font-size="11">Reconstructed from memory</text>
+
+  <!-- SMRITI center bridge -->
+  <rect x="500" y="185" width="600" height="140" rx="16" fill="#1a1040" stroke="url(#orangeGrad)" stroke-width="2.5" filter="url(#shadow)"/>
+  <!-- Inner glow effect -->
+  <rect x="504" y="189" width="592" height="132" rx="14" fill="none" stroke="#ff6b3515" stroke-width="4"/>
+
+  <text x="800" y="218" text-anchor="middle" fill="#ff6b35" font-size="20" font-weight="800" letter-spacing="1">SMRITI</text>
+  <text x="800" y="240" text-anchor="middle" fill="#f7c948" font-size="12" font-weight="600">Single Binary | SQLite | Local-First | MCP-Native</text>
+
+  <!-- Four integrity primitives in the bridge -->
+  <rect x="525" y="255" width="125" height="55" rx="8" fill="#ff6b3518" stroke="#ff6b3566" stroke-width="1"/>
+  <text x="587" y="275" text-anchor="middle" fill="#ff8c5a" font-size="10" font-weight="700">BI-TEMPORAL</text>
+  <text x="587" y="292" text-anchor="middle" fill="#a0aec0" font-size="9">valid_from/until</text>
+  <text x="587" y="304" text-anchor="middle" fill="#718096" font-size="8">Protocol versioning</text>
+
+  <rect x="660" y="255" width="125" height="55" rx="8" fill="#f7c94818" stroke="#f7c94866" stroke-width="1"/>
+  <text x="722" y="275" text-anchor="middle" fill="#f7c948" font-size="10" font-weight="700">HASH CHAIN</text>
+  <text x="722" y="292" text-anchor="middle" fill="#a0aec0" font-size="9">SHA-256 events</text>
+  <text x="722" y="304" text-anchor="middle" fill="#718096" font-size="8">Part 11 audit trail</text>
+
+  <rect x="795" y="255" width="125" height="55" rx="8" fill="#48bb7818" stroke="#48bb7866" stroke-width="1"/>
+  <text x="857" y="275" text-anchor="middle" fill="#68d391" font-size="10" font-weight="700">PROVENANCE</text>
+  <text x="857" y="292" text-anchor="middle" fill="#a0aec0" font-size="9">FACTUM overlap</text>
+  <text x="857" y="304" text-anchor="middle" fill="#718096" font-size="8">Claim grounding</text>
+
+  <rect x="930" y="255" width="145" height="55" rx="8" fill="#805ad518" stroke="#805ad566" stroke-width="1"/>
+  <text x="1002" y="275" text-anchor="middle" fill="#a78bfa" font-size="10" font-weight="700">CONTRADICTIONS</text>
+  <text x="1002" y="292" text-anchor="middle" fill="#a0aec0" font-size="9">MemoTime scoring</text>
+  <text x="1002" y="304" text-anchor="middle" fill="#718096" font-size="8">AE reconciliation</text>
+
+  <!-- Arrows connecting gap -->
+  <path d="M400 255 L498 255" fill="none" stroke="#4a90d966" stroke-width="2" stroke-dasharray="6,4"/>
+  <polygon points="496,250 506,255 496,260" fill="#4a90d9"/>
+  <path d="M1102 255 L1198 255" fill="none" stroke="#e53e3e66" stroke-width="2" stroke-dasharray="6,4"/>
+  <polygon points="1196,250 1206,255 1196,260" fill="#e53e3e"/>
+
+  <!-- ═══════════════ WEDGE STRATEGY (left triangle) ═══════════════ -->
+  <text x="260" y="380" text-anchor="middle" fill="#f7c948" font-size="13" font-weight="600" letter-spacing="3">ADOPTION WEDGE</text>
+
+  <!-- Wedge triangle shape -->
+  <path d="M 80 400 L 440 400 L 260 720 Z" fill="none" stroke="url(#wedgeGrad)" stroke-width="2" opacity="0.3"/>
+
+  <!-- Phase 1: CRC (top, widest) -->
+  <rect x="95" y="410" width="330" height="90" rx="10" fill="#1e2a4a" stroke="#ff6b35" stroke-width="1.5" filter="url(#shadowSm)"/>
+  <circle cx="125" cy="440" r="16" fill="#ff6b3530" stroke="#ff6b35" stroke-width="1.5"/>
+  <text x="125" y="445" text-anchor="middle" fill="#ff6b35" font-size="14" font-weight="800">1</text>
+  <text x="150" y="436" fill="#ff8c5a" font-size="13" font-weight="700">Site Coordinators (CRCs)</text>
+  <text x="150" y="454" fill="#a0aec0" font-size="10">~50,000 at US academic medical centers</text>
+  <text x="150" y="472" fill="#718096" font-size="10">Individual adoption | No IT ticket | No PHI risk</text>
+  <text x="150" y="490" fill="#f7c948" font-size="9" font-style="italic">"Never get blindsided at a monitor visit again"</text>
+
+  <!-- Phase 2: Coordinating Centers -->
+  <rect x="130" y="515" width="260" height="85" rx="10" fill="#1e2a4a" stroke="#f7c948" stroke-width="1.5" filter="url(#shadowSm)"/>
+  <circle cx="158" cy="543" r="16" fill="#f7c94830" stroke="#f7c948" stroke-width="1.5"/>
+  <text x="158" y="548" text-anchor="middle" fill="#f7c948" font-size="14" font-weight="800">2</text>
+  <text x="183" y="539" fill="#f7c948" font-size="13" font-weight="700">Coordinating Centers</text>
+  <text x="183" y="557" fill="#a0aec0" font-size="10">Aggregate 20+ sites via WebDAV sync</text>
+  <text x="183" y="575" fill="#718096" font-size="10">Nightly verify sweep | Network integrity</text>
+  <text x="183" y="591" fill="#f7c948" font-size="9" font-style="italic">"Know which sites drift before the sponsor"</text>
+
+  <!-- Phase 3: Sponsors / CROs -->
+  <rect x="165" y="615" width="190" height="85" rx="10" fill="#1e2a4a" stroke="#48bb78" stroke-width="1.5" filter="url(#shadowSm)"/>
+  <circle cx="190" cy="643" r="16" fill="#48bb7830" stroke="#48bb78" stroke-width="1.5"/>
+  <text x="190" y="648" text-anchor="middle" fill="#48bb78" font-size="14" font-weight="800">3</text>
+  <text x="215" y="639" fill="#68d391" font-size="13" font-weight="700">Sponsors / CROs</text>
+  <text x="215" y="657" fill="#a0aec0" font-size="10">Validated binary (IQ/OQ/PQ)</text>
+  <text x="215" y="675" fill="#718096" font-size="10">Part 11 compliant | Revenue $200-500/seat</text>
+  <text x="215" y="691" fill="#48bb78" font-size="9" font-style="italic">"Your sites already use this"</text>
+
+  <!-- Timeline arrow -->
+  <text x="50" y="455" text-anchor="middle" fill="#ff6b35" font-size="10" font-weight="600" transform="rotate(-90,50,550)">ADOPTION TIMELINE</text>
+  <line x1="65" y1="410" x2="65" y2="700" stroke="#ffffff20" stroke-width="1"/>
+  <text x="68" y="425" fill="#ff6b35" font-size="9">Day 1</text>
+  <text x="68" y="540" fill="#f7c948" font-size="9">Month 6</text>
+  <text x="68" y="640" fill="#48bb78" font-size="9">Month 18</text>
+
+  <!-- ═══════════════ MARIA'S WORKFLOW (center-right) ═══════════════ -->
+  <text x="880" y="380" text-anchor="middle" fill="#f7c948" font-size="13" font-weight="600" letter-spacing="3">MARIA'S MONDAY MORNING</text>
+  <text x="880" y="398" text-anchor="middle" fill="#718096" font-size="11">Site coordinator | 8 concurrent oncology trials | Academic medical center</text>
+
+  <!-- Problem cards (left column of workflow) -->
+  <!-- Problem 1 -->
+  <rect x="510" y="418" width="240" height="72" rx="8" fill="#2d1b1b" stroke="#e53e3e55" stroke-width="1" filter="url(#shadowSm)"/>
+  <circle cx="535" cy="440" r="10" fill="#e53e3e30" stroke="#e53e3e" stroke-width="1"/>
+  <text x="535" y="444" text-anchor="middle" fill="#fc8181" font-size="11" font-weight="700">!</text>
+  <text x="555" y="440" fill="#fc8181" font-size="11" font-weight="600">Monitor Visit Thursday</text>
+  <text x="555" y="456" fill="#a0aec0" font-size="9">Protocol changed v2.1 to v2.3</text>
+  <text x="555" y="470" fill="#718096" font-size="9">Which version applied when?</text>
+
+  <!-- Problem 2 -->
+  <rect x="510" y="498" width="240" height="72" rx="8" fill="#2d1b1b" stroke="#e53e3e55" stroke-width="1" filter="url(#shadowSm)"/>
+  <circle cx="535" cy="520" r="10" fill="#e53e3e30" stroke="#e53e3e" stroke-width="1"/>
+  <text x="535" y="524" text-anchor="middle" fill="#fc8181" font-size="11" font-weight="700">!</text>
+  <text x="555" y="520" fill="#fc8181" font-size="11" font-weight="600">SAE Due in 24 Hours</text>
+  <text x="555" y="536" fill="#a0aec0" font-size="9">Narrative says "started aspirin Feb 15"</text>
+  <text x="555" y="550" fill="#718096" font-size="9">Notes say "continues aspirin" since Nov</text>
+
+  <!-- Problem 3 -->
+  <rect x="510" y="578" width="240" height="72" rx="8" fill="#2d1b1b" stroke="#e53e3e55" stroke-width="1" filter="url(#shadowSm)"/>
+  <circle cx="535" cy="600" r="10" fill="#e53e3e30" stroke="#e53e3e" stroke-width="1"/>
+  <text x="535" y="604" text-anchor="middle" fill="#fc8181" font-size="11" font-weight="700">!</text>
+  <text x="555" y="600" fill="#fc8181" font-size="11" font-weight="600">Sponsor Query on Patient 14</text>
+  <text x="555" y="616" fill="#a0aec0" font-size="9">Inclusion criteria cited draft protocol</text>
+  <text x="555" y="630" fill="#718096" font-size="9">Need source doc chain in 15 min</text>
+
+  <!-- Arrow: problems to solutions -->
+  <path d="M755 535 Q790,535 795,535" fill="none" stroke="#ff6b3566" stroke-width="2"/>
+  <text x="780" y="530" text-anchor="middle" fill="#ff6b35" font-size="20" font-weight="300">&#8594;</text>
+
+  <!-- Solution cards (right column of workflow) -->
+  <!-- Solution 1: Bi-temporal -->
+  <rect x="810" y="418" width="280" height="72" rx="8" fill="#1b2d1b" stroke="#48bb7855" stroke-width="1" filter="url(#shadowSm)"/>
+  <circle cx="835" cy="440" r="10" fill="#48bb7830" stroke="#48bb78" stroke-width="1"/>
+  <text x="835" y="444" text-anchor="middle" fill="#68d391" font-size="11" font-weight="700">&#10003;</text>
+  <text x="855" y="440" fill="#68d391" font-size="11" font-weight="600">smriti note history Patient-14</text>
+  <text x="855" y="456" fill="#a0aec0" font-size="9">Returns note + protocol version valid at date</text>
+  <text x="855" y="470" fill="#718096" font-size="9">21 CFR 312.32: what did protocol say then?</text>
+
+  <!-- Solution 2: Contradiction -->
+  <rect x="810" y="498" width="280" height="72" rx="8" fill="#1b2d1b" stroke="#48bb7855" stroke-width="1" filter="url(#shadowSm)"/>
+  <circle cx="835" cy="520" r="10" fill="#48bb7830" stroke="#48bb78" stroke-width="1"/>
+  <text x="835" y="524" text-anchor="middle" fill="#68d391" font-size="11" font-weight="700">&#10003;</text>
+  <text x="855" y="520" fill="#68d391" font-size="11" font-weight="600">smriti contradictions list --open</text>
+  <text x="855" y="536" fill="#a0aec0" font-size="9">Flags "started Feb" vs "continues since Nov"</text>
+  <text x="855" y="550" fill="#718096" font-size="9">Confidence 0.87 | Fixed before submission</text>
+
+  <!-- Solution 3: Verify -->
+  <rect x="810" y="578" width="280" height="72" rx="8" fill="#1b2d1b" stroke="#48bb7855" stroke-width="1" filter="url(#shadowSm)"/>
+  <circle cx="835" cy="600" r="10" fill="#48bb7830" stroke="#48bb78" stroke-width="1"/>
+  <text x="835" y="604" text-anchor="middle" fill="#68d391" font-size="11" font-weight="700">&#10003;</text>
+  <text x="855" y="600" fill="#68d391" font-size="11" font-weight="600">smriti verify --trial Trial-A</text>
+  <text x="855" y="616" fill="#a0aec0" font-size="9">47 claims rechecked, 1 weak provenance found</text>
+  <text x="855" y="630" fill="#718096" font-size="9">4 seconds | Run before every monitor visit</text>
+
+  <!-- ═══════════════ REGULATORY MAPPING (bottom left) ═══════════════ -->
+  <text x="260" y="755" text-anchor="middle" fill="#f7c948" font-size="13" font-weight="600" letter-spacing="3">REGULATORY MAPPING</text>
+
+  <rect x="60" y="775" width="400" height="175" rx="12" fill="#1e2a4a" stroke="#805ad555" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Row headers -->
+  <text x="85" y="800" fill="#a78bfa" font-size="11" font-weight="700">Smriti Primitive</text>
+  <text x="255" y="800" fill="#a78bfa" font-size="11" font-weight="700">FDA Regulation</text>
+
+  <line x1="80" y1="810" x2="440" y2="810" stroke="#805ad533" stroke-width="1"/>
+
+  <!-- Row 1 -->
+  <text x="85" y="832" fill="#a0aec0" font-size="11">Bi-temporal edges</text>
+  <text x="255" y="832" fill="#e2e8f0" font-size="11">21 CFR 312.32 (IND safety)</text>
+
+  <!-- Row 2 -->
+  <text x="85" y="858" fill="#a0aec0" font-size="11">Hash-chained events</text>
+  <text x="255" y="858" fill="#e2e8f0" font-size="11">21 CFR Part 11 (audit trail)</text>
+
+  <!-- Row 3 -->
+  <text x="85" y="884" fill="#a0aec0" font-size="11">FACTUM provenance</text>
+  <text x="255" y="884" fill="#e2e8f0" font-size="11">ICH E6(R3) data integrity</text>
+
+  <!-- Row 4 -->
+  <text x="85" y="910" fill="#a0aec0" font-size="11">Contradiction inbox</text>
+  <text x="255" y="910" fill="#e2e8f0" font-size="11">CIOMS form reconciliation</text>
+
+  <!-- Row 5 -->
+  <text x="85" y="936" fill="#a0aec0" font-size="11">smriti verify</text>
+  <text x="255" y="936" fill="#e2e8f0" font-size="11">Pre-monitoring visit prep</text>
+
+  <!-- ═══════════════ LINK TYPES (bottom center) ═══════════════ -->
+  <text x="690" y="755" text-anchor="middle" fill="#f7c948" font-size="13" font-weight="600" letter-spacing="3">TYPED GRAPH EDGES</text>
+
+  <rect x="520" y="775" width="340" height="175" rx="12" fill="#1e2a4a" stroke="#4a90d955" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- Edge type visualizations -->
+  <!-- amended_by -->
+  <rect x="545" y="798" width="90" height="28" rx="6" fill="#ff6b3520" stroke="#ff6b3566" stroke-width="1"/>
+  <text x="590" y="816" text-anchor="middle" fill="#ff8c5a" font-size="10" font-weight="600">Protocol v2.1</text>
+  <line x1="638" y1="812" x2="695" y2="812" stroke="#ff6b35" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="666" y="805" text-anchor="middle" fill="#ff6b35" font-size="8">amended_by</text>
+  <polygon points="693,808 700,812 693,816" fill="#ff6b35"/>
+  <rect x="700" y="798" width="90" height="28" rx="6" fill="#ff6b3520" stroke="#ff6b3566" stroke-width="1"/>
+  <text x="745" y="816" text-anchor="middle" fill="#ff8c5a" font-size="10" font-weight="600">Protocol v2.3</text>
+
+  <!-- reports_ae -->
+  <rect x="545" y="840" width="90" height="28" rx="6" fill="#805ad520" stroke="#805ad566" stroke-width="1"/>
+  <text x="590" y="858" text-anchor="middle" fill="#a78bfa" font-size="10" font-weight="600">Patient Visit</text>
+  <line x1="638" y1="854" x2="695" y2="854" stroke="#805ad5" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="666" y="847" text-anchor="middle" fill="#805ad5" font-size="8">reports_ae</text>
+  <polygon points="693,850 700,854 693,858" fill="#805ad5"/>
+  <rect x="700" y="840" width="90" height="28" rx="6" fill="#805ad520" stroke="#805ad566" stroke-width="1"/>
+  <text x="745" y="858" text-anchor="middle" fill="#a78bfa" font-size="10" font-weight="600">AE Report</text>
+
+  <!-- deviates -->
+  <rect x="545" y="882" width="90" height="28" rx="6" fill="#e53e3e20" stroke="#e53e3e66" stroke-width="1"/>
+  <text x="590" y="900" text-anchor="middle" fill="#fc8181" font-size="10" font-weight="600">Site Action</text>
+  <line x1="638" y1="896" x2="695" y2="896" stroke="#e53e3e" stroke-width="1.5" stroke-dasharray="4,3"/>
+  <text x="666" y="889" text-anchor="middle" fill="#e53e3e" font-size="8">deviates</text>
+  <polygon points="693,892 700,896 693,900" fill="#e53e3e"/>
+  <rect x="700" y="882" width="90" height="28" rx="6" fill="#e53e3e20" stroke="#e53e3e66" stroke-width="1"/>
+  <text x="745" y="900" text-anchor="middle" fill="#fc8181" font-size="10" font-weight="600">Protocol SOP</text>
+
+  <!-- revised_guidance -->
+  <rect x="545" y="924" width="90" height="14" rx="4" fill="#48bb7820" stroke="#48bb7866" stroke-width="1"/>
+  <text x="590" y="934" text-anchor="middle" fill="#68d391" font-size="8" font-weight="600">DSMB Review</text>
+  <line x1="638" y1="931" x2="695" y2="931" stroke="#48bb78" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="666" y="926" text-anchor="middle" fill="#48bb78" font-size="7">revised_guidance</text>
+  <polygon points="693,928 698,931 693,934" fill="#48bb78"/>
+  <rect x="700" y="924" width="90" height="14" rx="4" fill="#48bb7820" stroke="#48bb7866" stroke-width="1"/>
+  <text x="745" y="934" text-anchor="middle" fill="#68d391" font-size="8" font-weight="600">Safety Update</text>
+
+  <!-- ═══════════════ CLI DEMO (bottom right) ═══════════════ -->
+  <text x="1160" y="755" text-anchor="middle" fill="#f7c948" font-size="13" font-weight="600" letter-spacing="3">THE 4-SECOND DEMO</text>
+
+  <rect x="910" y="775" width="620" height="175" rx="12" fill="#0d1117" stroke="#30363d" stroke-width="1.5" filter="url(#shadow)"/>
+
+  <!-- Terminal header bar -->
+  <rect x="910" y="775" width="620" height="24" rx="12" fill="#161b22"/>
+  <rect x="910" y="787" width="620" height="12" fill="#161b22"/>
+  <circle cx="930" cy="787" r="5" fill="#ff5f56"/>
+  <circle cx="948" cy="787" r="5" fill="#ffbd2e"/>
+  <circle cx="966" cy="787" r="5" fill="#27c93f"/>
+  <text x="1220" y="791" text-anchor="middle" fill="#8b949e" font-size="10">smriti -- clinical trial ops</text>
+
+  <!-- Terminal content -->
+  <text x="930" y="818" fill="#7ee787" font-size="11" font-family="'SF Mono', 'Fira Code', monospace">$ smriti verify --trial Trial-A --since 2026-03-01</text>
+
+  <text x="930" y="840" fill="#8b949e" font-size="10" font-family="'SF Mono', 'Fira Code', monospace">Referential integrity ............ <tspan fill="#7ee787">OK</tspan></text>
+  <text x="930" y="858" fill="#8b949e" font-size="10" font-family="'SF Mono', 'Fira Code', monospace">Provenance check (47 claims) ..... <tspan fill="#7ee787">46 PASS</tspan> <tspan fill="#f97583">1 FAIL</tspan></text>
+  <text x="930" y="876" fill="#f97583" font-size="10" font-family="'SF Mono', 'Fira Code', monospace">  Patient-14-Screening: "lab 142 mEq/L" overlap <tspan fill="#f97583">0.31</tspan></text>
+  <text x="930" y="894" fill="#8b949e" font-size="10" font-family="'SF Mono', 'Fira Code', monospace">Event chain (312 events) ......... <tspan fill="#7ee787">INTACT</tspan></text>
+  <text x="930" y="912" fill="#8b949e" font-size="10" font-family="'SF Mono', 'Fira Code', monospace">Contradictions ................... <tspan fill="#f7c948">1 OPEN</tspan></text>
+  <text x="930" y="934" fill="#7ee787" font-size="11" font-family="'SF Mono', 'Fira Code', monospace">Ready for monitor visit. 1 item needs review.</text>
+
+  <!-- ═══════════════ MARKET SIZING (very bottom) ═══════════════ -->
+  <rect x="80" y="980" width="1440" height="100" rx="12" fill="#1e2a4a55" stroke="#ffffff10" stroke-width="1"/>
+
+  <!-- Market metrics -->
+  <text x="240" y="1010" text-anchor="middle" fill="#ff6b35" font-size="28" font-weight="800">50K</text>
+  <text x="240" y="1030" text-anchor="middle" fill="#a0aec0" font-size="11">US CRCs</text>
+  <text x="240" y="1048" text-anchor="middle" fill="#718096" font-size="10">Individual adoption</text>
+  <text x="240" y="1062" text-anchor="middle" fill="#718096" font-size="10">No procurement needed</text>
+
+  <line x1="400" y1="998" x2="400" y2="1065" stroke="#ffffff10" stroke-width="1"/>
+
+  <text x="560" y="1010" text-anchor="middle" fill="#f7c948" font-size="28" font-weight="800">2-5 hrs</text>
+  <text x="560" y="1030" text-anchor="middle" fill="#a0aec0" font-size="11">Per CRC per week</text>
+  <text x="560" y="1048" text-anchor="middle" fill="#718096" font-size="10">Reconciliation work</text>
+  <text x="560" y="1062" text-anchor="middle" fill="#718096" font-size="10">Smriti automates</text>
+
+  <line x1="720" y1="998" x2="720" y2="1065" stroke="#ffffff10" stroke-width="1"/>
+
+  <text x="880" y="1010" text-anchor="middle" fill="#48bb78" font-size="28" font-weight="800">4 sec</text>
+  <text x="880" y="1030" text-anchor="middle" fill="#a0aec0" font-size="11">Full integrity sweep</text>
+  <text x="880" y="1048" text-anchor="middle" fill="#718096" font-size="10">vs 40 min manual</text>
+  <text x="880" y="1062" text-anchor="middle" fill="#718096" font-size="10">reconstruction</text>
+
+  <line x1="1040" y1="998" x2="1040" y2="1065" stroke="#ffffff10" stroke-width="1"/>
+
+  <text x="1200" y="1010" text-anchor="middle" fill="#a78bfa" font-size="28" font-weight="800">$200-500</text>
+  <text x="1200" y="1030" text-anchor="middle" fill="#a0aec0" font-size="11">Per seat / month</text>
+  <text x="1200" y="1048" text-anchor="middle" fill="#718096" font-size="10">Enterprise tier</text>
+  <text x="1200" y="1062" text-anchor="middle" fill="#718096" font-size="10">Sponsors / CROs</text>
+
+  <line x1="1360" y1="998" x2="1360" y2="1065" stroke="#ffffff10" stroke-width="1"/>
+
+  <text x="1440" y="1010" text-anchor="middle" fill="#ff6b35" font-size="20" font-weight="800">0</text>
+  <text x="1440" y="1030" text-anchor="middle" fill="#a0aec0" font-size="11">Cloud dependencies</text>
+  <text x="1440" y="1048" text-anchor="middle" fill="#718096" font-size="10">PHI stays local</text>
+  <text x="1440" y="1062" text-anchor="middle" fill="#718096" font-size="10">No BAA on day one</text>
+
+  <!-- ═══════════════ BOTTOM BAR ═══════════════ -->
+  <rect x="0" y="1100" width="1600" height="100" fill="#0a0e27" opacity="0.7"/>
+  <text x="800" y="1130" text-anchor="middle" fill="#ff6b35" font-size="16" font-weight="700">The Gap Between EDC and Reality Is Where Audit Findings Are Born</text>
+  <text x="800" y="1155" text-anchor="middle" fill="#a0aec0" font-size="12">Smriti is the single binary that closes it: bi-temporal versioning, cryptographic audit trail, provenance scoring, contradiction detection</text>
+  <text x="800" y="1180" text-anchor="middle" fill="#718096" font-size="10">github.com/Smriti-AA/smriti | Single binary | SQLite | Local-first | MCP-native | Apache 2.0</text>
+</svg>

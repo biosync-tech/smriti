@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smriti — Trial Amendment Ledger Demo</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%231F4D3A%27/%3E%3Ctext x=%2732%27 y=%2742%27 font-family=%27Georgia,serif%27 font-style=%27italic%27 font-size=%2730%27 fill=%27%23FBFAF7%27 text-anchor=%27middle%27%3ES.%3C/text%3E%3C/svg%3E" />
+<meta name="description" content="Pick any date in your trial. See which protocol version was in force, with the source document and audit chain. 3 seconds, no archeology." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #141b2e;
+    --surface2: #1e2742;
+    --border: rgba(255,255,255,0.08);
+    --amber: #f0b546;
+    --amber-bri: #f7c948;
+    --cyan: #60a5fa;
+    --green: #3ecf8e;
+    --red: #ef4444;
+    --text: #f1f5f9;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --font: 'Space Grotesk', system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  /* Top bar */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand {
+    font-family: var(--mono); font-size: 14px; font-weight: 600;
+    color: var(--amber); letter-spacing: 2px; text-transform: lowercase;
+  }
+  .back {
+    font-family: var(--mono); font-size: 12px;
+    color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase;
+    transition: color 0.15s;
+  }
+  .back:hover { color: var(--text); }
+
+  /* Main */
+  main {
+    flex: 1;
+    max-width: 920px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 48px 28px 32px;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    color: var(--amber); letter-spacing: 3px; text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-size: clamp(1.8rem, 3.5vw, 2.4rem); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15;
+    margin-bottom: 14px;
+  }
+  h1 em { color: var(--amber-bri); font-style: italic; }
+  .lede {
+    color: var(--text2); font-size: 1.05rem; max-width: 640px;
+    margin-bottom: 36px;
+  }
+
+  /* Interactive panel */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+  }
+  .panel-label {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    color: var(--text3); letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .input-row {
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+    margin-bottom: 22px;
+  }
+  input[type="date"] {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: var(--mono); font-size: 14px;
+    color-scheme: dark;
+    min-width: 180px;
+    flex: 0 1 auto;
+  }
+  input[type="date"]:focus { outline: none; border-color: var(--amber); }
+  .preset-btn {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    letter-spacing: 1px; text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover { color: var(--text); border-color: var(--amber); }
+
+  /* Timeline */
+  .timeline {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px 24px 20px;
+    margin-bottom: 22px;
+    position: relative;
+  }
+  .tl-segments {
+    position: relative;
+    height: 90px;
+    margin: 8px 0 6px;
+  }
+  .tl-bar {
+    position: absolute;
+    top: 38px;
+    height: 8px;
+    border-radius: 2px;
+  }
+  .tl-bar.v21 { left: 0; width: 56%; background: var(--green); }
+  .tl-bar.v23 { left: 56%; width: 44%; background: var(--cyan); }
+  .tl-label {
+    position: absolute; top: 6px;
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 1px;
+  }
+  .tl-label.v21 { left: 0; color: var(--green); }
+  .tl-label.v23 { left: 56%; color: var(--cyan); }
+  .tl-marker {
+    position: absolute; top: 22px; bottom: 8px;
+    width: 2px;
+    background: var(--amber);
+    transform: translateX(-1px);
+    transition: left 0.4s cubic-bezier(.4,.2,.2,1);
+  }
+  .tl-marker::after {
+    content: '';
+    position: absolute; top: 14px; left: -7px;
+    width: 16px; height: 16px;
+    background: var(--amber);
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(240,181,70,0.18);
+  }
+  .tl-marker-label {
+    position: absolute; top: 60px; left: -64px;
+    width: 128px; text-align: center;
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    color: var(--amber); letter-spacing: 1px;
+  }
+  .tl-axis {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 10px; color: var(--text3);
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+    margin-top: 4px;
+  }
+
+  /* Result */
+  .result {
+    background: var(--surface2);
+    border: 1px solid var(--green);
+    border-radius: 10px;
+    padding: 18px 22px;
+    display: none;
+  }
+  .result.show { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .result-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .check {
+    width: 22px; height: 22px;
+    background: var(--green);
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px; color: var(--bg); font-weight: 700;
+    flex-shrink: 0;
+  }
+  .result-title { font-size: 1.05rem; font-weight: 600; }
+  .result-title em { color: var(--green); font-style: normal; }
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 22px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .result-cell .k {
+    font-family: var(--mono); font-size: 10px; color: var(--text3);
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px;
+  }
+  .result-cell .v {
+    font-family: var(--mono); font-size: 13px; color: var(--text);
+  }
+  .result-cell .v.ok { color: var(--green); }
+  .result-cell .v.muted { color: var(--text2); }
+
+  /* Footer CTA */
+  .cta-strip {
+    margin-top: 28px;
+    padding: 18px 22px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: linear-gradient(180deg, var(--surface) 0%, transparent 100%);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .cta-strip .ct { color: var(--text2); font-size: 0.95rem; }
+  .cta-strip .ct strong { color: var(--text); }
+  .cta-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--amber); color: var(--bg);
+    padding: 10px 18px; border-radius: 8px;
+    font-weight: 600; font-size: 13px;
+    letter-spacing: 1px; text-transform: uppercase;
+    transition: transform 0.15s;
+  }
+  .cta-btn:hover { transform: translateY(-1px); }
+
+  footer {
+    text-align: center; padding: 20px;
+    font-family: var(--mono); font-size: 11px; color: var(--text3);
+    letter-spacing: 1px;
+  }
+  @media (max-width: 600px) {
+    .result-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/" class="brand">smriti</a>
+  <a href="/" class="back">← Back to site</a>
+</div>
+
+<main>
+  <div class="eyebrow">Live demo · Trial amendment ledger</div>
+  <h1>When was your protocol amendment <em>in force?</em></h1>
+  <p class="lede">Pick any date in the trial timeline. Smriti returns the active protocol version, the source document, and a verifiable audit chain — in the time it takes to blink.</p>
+
+  <div class="panel">
+    <div class="panel-label">Choose a screening date</div>
+    <div class="input-row">
+      <input type="date" id="datePicker" min="2025-11-01" max="2026-05-04" value="2026-03-10" />
+      <button class="preset-btn" data-date="2025-12-15">Dec 15, 2025</button>
+      <button class="preset-btn" data-date="2026-03-10">Mar 10, 2026</button>
+      <button class="preset-btn" data-date="2026-04-20">Apr 20, 2026</button>
+    </div>
+
+    <div class="timeline">
+      <div class="tl-segments">
+        <div class="tl-label v21">PROTOCOL v2.1 · NOV 2025 — MAR 14</div>
+        <div class="tl-label v23">PROTOCOL v2.3 · FROM MAR 14</div>
+        <div class="tl-bar v21"></div>
+        <div class="tl-bar v23"></div>
+        <div class="tl-marker" id="marker" style="left: 71%;">
+          <div class="tl-marker-label" id="markerLabel">SCREENING<br>2026-03-10</div>
+        </div>
+      </div>
+      <div class="tl-axis">
+        <span>2025-11-01</span>
+        <span>2026-03-14</span>
+        <span>2026-05-04</span>
+      </div>
+    </div>
+
+    <div class="result show" id="result">
+      <div class="result-head">
+        <span class="check">✓</span>
+        <div class="result-title">Active protocol on this date: <em id="versionLabel">v2.1</em></div>
+      </div>
+      <div class="result-grid">
+        <div class="result-cell">
+          <div class="k">Source document</div>
+          <div class="v" id="sourceDoc">Lab Report CL-2026-0309-P14</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Provenance score</div>
+          <div class="v ok" id="provScore">0.94 — strong</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Inclusion-criteria reference</div>
+          <div class="v muted" id="critRef">Sodium 136–145 mEq/L (v2.1 §4.2)</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Audit chain</div>
+          <div class="v ok">✓ Intact · 312 events · SHA-256 verified</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta-strip">
+    <div class="ct">This is the same answer your monitor will ask for. <strong>You'll have it before they sit down.</strong></div>
+    <a class="cta-btn" href="mailto:hello@bio-sync.tech?subject=Smriti%20discovery%20call">Book a 20-min call →</a>
+  </div>
+</main>
+
+<footer>smriti — audit-ready knowledge for AI-driven clinical work</footer>
+
+<script>
+  const AMENDMENT_DATE = new Date('2026-03-14');
+  const TIMELINE_START = new Date('2025-11-01');
+  const TIMELINE_END   = new Date('2026-05-04');
+  const SPAN = TIMELINE_END - TIMELINE_START;
+
+  const picker = document.getElementById('datePicker');
+  const marker = document.getElementById('marker');
+  const markerLabel = document.getElementById('markerLabel');
+  const result = document.getElementById('result');
+  const versionLabel = document.getElementById('versionLabel');
+  const critRef = document.getElementById('critRef');
+  const sourceDoc = document.getElementById('sourceDoc');
+  const provScore = document.getElementById('provScore');
+
+  function fmt(d) {
+    return d.toISOString().slice(0,10);
+  }
+  function update() {
+    const d = new Date(picker.value);
+    if (isNaN(d)) return;
+
+    // Position marker
+    const pct = Math.max(0, Math.min(100, ((d - TIMELINE_START) / SPAN) * 100));
+    marker.style.left = pct + '%';
+    markerLabel.innerHTML = `SCREENING<br>${fmt(d)}`;
+
+    // Determine active version
+    const isV21 = d < AMENDMENT_DATE;
+    if (isV21) {
+      versionLabel.textContent = 'v2.1';
+      versionLabel.style.color = 'var(--green)';
+      result.style.borderColor = 'var(--green)';
+      critRef.textContent = 'Sodium 136–145 mEq/L (v2.1 §4.2)';
+      sourceDoc.textContent = `Lab Report CL-${fmt(d).replace(/-/g,'').slice(0,8)}-P14`;
+      provScore.textContent = '0.94 — strong';
+    } else {
+      versionLabel.textContent = 'v2.3';
+      versionLabel.style.color = 'var(--cyan)';
+      result.style.borderColor = 'var(--cyan)';
+      critRef.textContent = 'Sodium 130–150 mEq/L (v2.3 §4.2 — broadened)';
+      sourceDoc.textContent = `Lab Report CL-${fmt(d).replace(/-/g,'').slice(0,8)}-P14`;
+      provScore.textContent = '0.91 — strong';
+    }
+    result.classList.add('show');
+  }
+
+  picker.addEventListener('input', update);
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      picker.value = btn.dataset.date;
+      update();
+    });
+  });
+
+  update();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://smritiai.netlify.app/sitemap.xml

@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smriti — Verifiable Knowledge Infrastructure for AI-Driven Organizations</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%231F4D3A%27/%3E%3Ctext x=%2732%27 y=%2742%27 font-family=%27Georgia,serif%27 font-style=%27italic%27 font-size=%2730%27 fill=%27%23FBFAF7%27 text-anchor=%27middle%27%3ES.%3C/text%3E%3C/svg%3E" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  :root {
+    --bg: #090d1a;
+    --bg2: #0f1423;
+    --surface: #151c2e;
+    --surface2: #1a2340;
+    --accent: #ff6b35;
+    --accent2: #ff8855;
+    --gold: #f0c548;
+    --green: #3ecf8e;
+    --green2: #6ee7b7;
+    --red: #ef4444;
+    --purple: #8b5cf6;
+    --blue: #60a5fa;
+    --text: #f1f5f9;
+    --sub: #94a3b8;
+    --dim: #64748b;
+    --border: #1e293b;
+    --border2: #334155;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 36px; }
+
+  /* ─── HERO ─── */
+  .hero {
+    position: relative;
+    padding: 100px 0 80px;
+    text-align: center;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -200px; left: 50%; transform: translateX(-50%);
+    width: 800px; height: 800px;
+    background: radial-gradient(circle, rgba(255,107,53,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 8px 20px; border-radius: 100px;
+    background: rgba(255,107,53,0.08);
+    border: 1px solid rgba(255,107,53,0.2);
+    font-size: 12px; font-weight: 600; letter-spacing: 2.5px;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: 28px;
+  }
+  .hero-eyebrow .dot { width:6px; height:6px; border-radius:50%; background:var(--accent); }
+  .hero h1 {
+    font-size: 52px; font-weight: 800; line-height: 1.1;
+    margin-bottom: 20px; letter-spacing: -0.5px;
+    color: #fff;
+  }
+  .hero h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--gold) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero-sub {
+    font-size: 19px; color: var(--sub); max-width: 680px;
+    margin: 0 auto 36px; line-height: 1.7;
+  }
+  .hero-pills { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
+  .pill {
+    padding: 7px 18px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    border: 1px solid var(--border2); color: var(--sub);
+    background: var(--surface);
+  }
+  .pill strong { color: var(--text); }
+
+  /* ─── SECTION BASE ─── */
+  section { padding: 80px 0; border-top: 1px solid var(--border); }
+  .sec-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 3.5px;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 14px;
+  }
+  .sec-title {
+    font-size: 36px; font-weight: 800; color: #fff;
+    margin-bottom: 10px; letter-spacing: -0.3px; line-height: 1.2;
+  }
+  .sec-sub { font-size: 16px; color: var(--sub); max-width: 660px; margin-bottom: 48px; }
+
+  /* ─── EXECUTIVE SUMMARY ─── */
+  .exec-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  }
+  .exec-card {
+    background: var(--surface); border-radius: 16px;
+    padding: 32px; border: 1px solid var(--border);
+    position: relative; overflow: hidden;
+  }
+  .exec-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  }
+  .exec-card.problem::before { background: linear-gradient(90deg, var(--red), #f97316); }
+  .exec-card.solution::before { background: linear-gradient(90deg, var(--green), var(--blue)); }
+  .exec-card h3 {
+    font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 10px;
+  }
+  .exec-card p { font-size: 15px; color: var(--sub); line-height: 1.8; }
+
+  /* ─── METRICS BAR ─── */
+  .metrics-bar {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px;
+    background: var(--border); border-radius: 16px; overflow: hidden;
+    margin: 48px 0;
+  }
+  .metric {
+    background: var(--surface); padding: 28px 20px; text-align: center;
+  }
+  .metric-val {
+    font-size: 32px; font-weight: 800; margin-bottom: 2px;
+  }
+  .metric-val.orange { color: var(--accent); }
+  .metric-val.gold { color: var(--gold); }
+  .metric-val.green { color: var(--green); }
+  .metric-val.purple { color: var(--purple); }
+  .metric-val.blue { color: var(--blue); }
+  .metric-lbl { font-size: 12px; color: var(--sub); font-weight: 500; }
+  .metric-note { font-size: 10px; color: var(--dim); margin-top: 2px; }
+
+  /* ─── CAPABILITY CARDS ─── */
+  .cap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .cap {
+    background: var(--surface); border-radius: 14px; padding: 28px 30px;
+    border: 1px solid var(--border); transition: border-color 0.2s;
+  }
+  .cap:hover { border-color: var(--border2); }
+  .cap-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; margin-bottom: 16px;
+  }
+  .cap-icon.orange { background: rgba(255,107,53,0.12); }
+  .cap-icon.gold { background: rgba(240,197,72,0.12); }
+  .cap-icon.green { background: rgba(62,207,142,0.12); }
+  .cap-icon.purple { background: rgba(139,92,246,0.12); }
+  .cap h4 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .cap p { font-size: 14px; color: var(--sub); line-height: 1.7; }
+  .cap .reg {
+    margin-top: 12px; padding: 8px 12px; border-radius: 8px;
+    background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.15);
+    font-size: 12px; color: var(--purple); font-weight: 600;
+  }
+
+  /* ─── USE CASE ROWS ─── */
+  .uc-grid { display: flex; flex-direction: column; gap: 16px; }
+  .uc {
+    display: grid; grid-template-columns: 200px 1fr 180px; gap: 24px;
+    align-items: center;
+    background: var(--surface); border-radius: 12px; padding: 24px 28px;
+    border: 1px solid var(--border);
+  }
+  .uc-vertical {
+    font-size: 15px; font-weight: 700; color: #fff;
+  }
+  .uc-desc { font-size: 14px; color: var(--sub); line-height: 1.7; }
+  .uc-edges {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .edge-tag {
+    font-size: 11px; font-weight: 600; padding: 4px 10px;
+    border-radius: 6px; background: var(--bg); color: var(--dim);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  /* ─── WEDGE FUNNEL ─── */
+  .funnel { max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  .funnel-row {
+    display: flex; align-items: center; gap: 20px;
+    border-radius: 12px; padding: 22px 28px; border: 1px solid;
+  }
+  .funnel-row.f1 { background: rgba(255,107,53,0.06); border-color: rgba(255,107,53,0.2); }
+  .funnel-row.f2 { background: rgba(240,197,72,0.06); border-color: rgba(240,197,72,0.2); margin: 0 32px; }
+  .funnel-row.f3 { background: rgba(62,207,142,0.06); border-color: rgba(62,207,142,0.2); margin: 0 64px; }
+  .funnel-num {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 16px; color: #fff; flex-shrink: 0;
+  }
+  .funnel-num.o { background: var(--accent); }
+  .funnel-num.y { background: var(--gold); color: var(--bg); }
+  .funnel-num.g { background: var(--green); color: var(--bg); }
+  .funnel-info h4 { font-size: 15px; font-weight: 700; color: #fff; }
+  .funnel-info p { font-size: 13px; color: var(--sub); margin-top: 2px; }
+
+  /* ─── DEMO CALLOUT ─── */
+  .demo-callout {
+    background: linear-gradient(135deg, rgba(255,107,53,0.08), rgba(240,197,72,0.06));
+    border: 1px solid rgba(255,107,53,0.2);
+    border-radius: 16px; padding: 40px 44px;
+    display: flex; align-items: center; gap: 36px;
+    margin: 48px 0;
+  }
+  .demo-callout-text h3 { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  .demo-callout-text p { font-size: 15px; color: var(--sub); line-height: 1.7; }
+  .demo-btn {
+    flex-shrink: 0; padding: 14px 32px; border-radius: 10px;
+    background: var(--accent); color: #fff; font-size: 15px; font-weight: 700;
+    border: none; cursor: pointer; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: transform 0.15s;
+  }
+  .demo-btn:hover { transform: translateY(-2px); }
+
+  /* ─── MOAT ─── */
+  .moat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .moat-card {
+    background: var(--surface); border-radius: 12px; padding: 24px;
+    border: 1px solid var(--border);
+  }
+  .moat-card h4 { font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .moat-card p { font-size: 13px; color: var(--sub); line-height: 1.7; }
+
+  /* ─── REG TABLE ─── */
+  .reg-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    border-radius: 12px; overflow: hidden; border: 1px solid var(--border);
+  }
+  .reg-table th {
+    background: var(--surface2); padding: 14px 20px; text-align: left;
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--dim);
+  }
+  .reg-table td {
+    padding: 14px 20px; font-size: 14px; color: var(--sub);
+    border-top: 1px solid var(--border); background: var(--surface);
+  }
+  .reg-table td:first-child { color: var(--accent2); font-weight: 600; }
+
+  /* ─── CTA ─── */
+  .cta {
+    text-align: center; padding: 80px 0;
+    background: linear-gradient(180deg, var(--bg2) 0%, var(--bg) 100%);
+    border-top: 1px solid var(--border);
+  }
+  .cta h2 { font-size: 36px; font-weight: 800; color: #fff; margin-bottom: 12px; }
+  .cta p { font-size: 16px; color: var(--sub); max-width: 560px; margin: 0 auto 32px; }
+  .cta-links { display: flex; justify-content: center; gap: 12px; }
+  .cta-link {
+    padding: 12px 28px; border-radius: 10px; font-size: 14px; font-weight: 600;
+    text-decoration: none; transition: transform 0.15s;
+  }
+  .cta-link.primary { background: var(--accent); color: #fff; }
+  .cta-link.secondary { background: var(--surface); color: var(--sub); border: 1px solid var(--border2); }
+  .cta-link:hover { transform: translateY(-1px); }
+
+  .footer {
+    padding: 28px 0; text-align: center; font-size: 11px; color: var(--dim);
+    border-top: 1px solid var(--border);
+  }
+
+  @media(max-width:768px) {
+    .hero h1 { font-size: 32px; }
+    .exec-grid, .cap-grid { grid-template-columns: 1fr; }
+    .metrics-bar { grid-template-columns: repeat(2,1fr); }
+    .moat-grid { grid-template-columns: 1fr; }
+    .uc { grid-template-columns: 1fr; }
+    .funnel-row.f2, .funnel-row.f3 { margin: 0; }
+    .demo-callout { flex-direction: column; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ HERO ══════════════════ -->
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-eyebrow"><span class="dot"></span> Use Case</div>
+    <h1>The Integrity Layer<br>for <em>AI-Driven Knowledge</em></h1>
+    <p class="hero-sub">
+      As organizations adopt AI assistants for research, compliance, and clinical operations,
+      a new risk emerges: knowledge that cannot be verified. Smriti is the infrastructure layer
+      that makes every AI-generated claim traceable, every change auditable, and every
+      contradiction visible.
+    </p>
+    <div class="hero-pills">
+      <span class="pill"><strong>Single binary</strong> &mdash; no cloud</span>
+      <span class="pill"><strong>SQLite</strong> &mdash; one file</span>
+      <span class="pill"><strong>Local-first</strong> &mdash; data stays on-premise</span>
+      <span class="pill"><strong>MCP-native</strong> &mdash; plugs into any LLM</span>
+      <span class="pill"><strong>Open source</strong> &mdash; Apache 2.0</span>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════════ THE SHIFT ══════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="sec-label">The Shift</div>
+    <div class="sec-title">AI Is Writing Your Organization's Knowledge.<br>Who Verifies It?</div>
+    <div class="sec-sub">
+      Every enterprise is adopting AI for documentation, research, and compliance.
+      But the tools that store knowledge &mdash; wikis, note apps, databases &mdash; were built
+      before AI could author content. They have no mechanism to verify what the AI wrote.
+    </div>
+
+    <div class="exec-grid">
+      <div class="exec-card problem">
+        <h3>The Problem</h3>
+        <p>
+          AI assistants generate plausible-sounding content that can contain fabricated
+          dates, invented citations, and hallucinated facts. In regulated industries,
+          a single unverified claim can trigger audits, regulatory holds, or litigation.
+          Current knowledge tools &mdash; Notion, Confluence, OneNote, SharePoint &mdash;
+          treat every write as equally trustworthy. They have no provenance, no contradiction
+          detection, and no audit trail that survives scrutiny.
+        </p>
+      </div>
+      <div class="exec-card solution">
+        <h3>The Smriti Approach</h3>
+        <p>
+          Smriti enforces integrity at the point of write, not after the fact.
+          Every claim must cite its source. Every change is hash-chained.
+          Every contradiction is surfaced before it reaches a reviewer.
+          One command verifies the entire knowledge base in seconds.
+          This is not a feature bolted onto a note app &mdash; it is a
+          purpose-built integrity layer for the age of AI-generated knowledge.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ KEY METRICS ══════════════════ -->
+<section style="padding: 0; border: none;">
+  <div class="wrap">
+    <div class="metrics-bar">
+      <div class="metric">
+        <div class="metric-val green">3.2s</div>
+        <div class="metric-lbl">Full Integrity Sweep</div>
+        <div class="metric-note">vs hours of manual review</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val orange">235ns</div>
+        <div class="metric-lbl">Graph Traversal</div>
+        <div class="metric-note">BFS depth-2, in-memory</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val gold">2.5&micro;s</div>
+        <div class="metric-lbl">Key-Value Retrieval</div>
+        <div class="metric-note">Agent memory lookup</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val purple">0</div>
+        <div class="metric-lbl">Cloud Dependencies</div>
+        <div class="metric-note">Fully local, fully offline</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val blue">1</div>
+        <div class="metric-lbl">Binary to Deploy</div>
+        <div class="metric-note">60-second install, any OS</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ FOUR CAPABILITIES ══════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="sec-label">Core Capabilities</div>
+    <div class="sec-title">Four Integrity Primitives, One Binary</div>
+    <div class="sec-sub">
+      Each capability maps to a specific class of risk that AI-generated knowledge introduces.
+      Together, they form a defense-in-depth layer that existing tools do not provide.
+    </div>
+
+    <div class="cap-grid">
+      <div class="cap">
+        <div class="cap-icon orange">&#x23F1;</div>
+        <h4>Bi-Temporal Versioning</h4>
+        <p>
+          Every note records which version of a protocol, guideline, or SOP was active
+          at the time it was written. When rules change, historical notes retain their
+          original context &mdash; not the current one. Eliminates retroactive
+          misattribution across protocol-amendment and safety-reporting workflows.
+        </p>
+        <div class="reg">Maps to: 21 CFR 312.32 &middot; ICH E6(R3) &sect;4.2.4 &middot; GCP amendment control</div>
+      </div>
+      <div class="cap">
+        <div class="cap-icon gold">&#x1F50D;</div>
+        <h4>Enforced Provenance</h4>
+        <p>
+          Every claim in the knowledge base must cite a source. Smriti measures the
+          structural overlap between each claim and its cited source using FACTUM scoring.
+          Claims with weak grounding are flagged automatically. AI-generated content
+          without source attribution is rejected at write time.
+        </p>
+        <div class="reg">Maps to: ICH E6(R3) data integrity &middot; FACTUM arXiv:2601.05866</div>
+      </div>
+      <div class="cap">
+        <div class="cap-icon green">&#x26A0;</div>
+        <h4>Contradiction Detection</h4>
+        <p>
+          When new information conflicts with existing knowledge, Smriti surfaces
+          the contradiction with a confidence score &mdash; but never auto-resolves it.
+          Contradictions land in a human review inbox. This prevents the silent overwrite
+          problem where AI edits erase correct information with plausible-sounding errors.
+        </p>
+        <div class="reg">Maps to: AGM belief revision arXiv:2603.17244 &middot; CIOMS reconciliation</div>
+      </div>
+      <div class="cap">
+        <div class="cap-icon purple">&#x1F512;</div>
+        <h4>Cryptographic Audit Trail</h4>
+        <p>
+          Every write &mdash; create, edit, link, resolve &mdash; appends an event with a
+          SHA-256 hash of the previous event. If any record is tampered with, the chain
+          breaks at the exact point of alteration. One command walks the entire chain
+          and reports integrity status. This is the technical substrate for
+          compliance frameworks that require tamper-evident records.
+        </p>
+        <div class="reg">Maps to: 21 CFR Part 11 &middot; SOC 2 audit evidence &middot; eIDAS qualified logs</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ VERTICALS ══════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="sec-label">Clinical &amp; Biomedical Application</div>
+    <div class="sec-title">One Binary, Five Clinical &amp; Biomedical Applications</div>
+    <div class="sec-sub">
+      The same four integrity primitives address verifiability needs across the
+      biomedical stack, wherever knowledge accuracy has patient-safety or regulatory
+      consequences.
+    </div>
+
+    <div class="uc-grid">
+      <div class="uc">
+        <div class="uc-vertical">Clinical Trials</div>
+        <div class="uc-desc">Protocol amendments tracked bi-temporally. SAE narratives grounded to source notes. Monitor visit prep in 4 seconds. Investigator site notebooks with audit trails that meet FDA intent.</div>
+        <div class="uc-edges">
+          <span class="edge-tag">amended_by</span>
+          <span class="edge-tag">reports_ae</span>
+          <span class="edge-tag">deviates</span>
+        </div>
+      </div>
+      <div class="uc">
+        <div class="uc-vertical">Pharmacovigilance &amp; Drug Safety</div>
+        <div class="uc-desc">Adverse-event narratives linked to MedDRA terms and the source case report with temporal provenance. Detect when a new signal contradicts prior causality assessment. Audit trail for PSUR/DSUR authoring.</div>
+        <div class="uc-edges">
+          <span class="edge-tag">reports_ae</span>
+          <span class="edge-tag">contradicts</span>
+          <span class="edge-tag">cites_case_report</span>
+        </div>
+      </div>
+      <div class="uc">
+        <div class="uc-vertical">Genomics &amp; Biobanking</div>
+        <div class="uc-desc">Variant calls and cohort annotations linked back to assay batch and pipeline version. Sample-to-result lineage tracked across re-analyses. Consent scope enforced at the record, not the folder.</div>
+        <div class="uc-edges">
+          <span class="edge-tag">derived_from</span>
+          <span class="edge-tag">reanalyzed_by</span>
+          <span class="edge-tag">consented_for</span>
+        </div>
+      </div>
+      <div class="uc">
+        <div class="uc-vertical">Translational &amp; Biomedical Research</div>
+        <div class="uc-desc">Literature reviews with enforced citation provenance. Hypothesis evolution tracked bi-temporally. Lab notebook integrity for reproducibility. The "11pm advisor text" problem solved structurally.</div>
+        <div class="uc-edges">
+          <span class="edge-tag">supports</span>
+          <span class="edge-tag">refutes</span>
+          <span class="edge-tag">replicates</span>
+        </div>
+      </div>
+      <div class="uc">
+        <div class="uc-vertical">Care Coordination &amp; Population Health</div>
+        <div class="uc-desc">Care-plan decisions linked to the chart data that informed them. Handoff notes with hash-chained timelines. Risk-stratification memos with source attribution. HIPAA-aligned audit evidence by construction.</div>
+        <div class="uc-edges">
+          <span class="edge-tag">informed_by</span>
+          <span class="edge-tag">supersedes</span>
+          <span class="edge-tag">escalated_to</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ REGULATORY ALIGNMENT ══════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="sec-label">Compliance</div>
+    <div class="sec-title">Regulatory Alignment by Design</div>
+    <div class="sec-sub">
+      Smriti is not "certified" for any framework out of the box. But every feature
+      provides the technical substrate that these frameworks require &mdash; reducing
+      the validation effort from building infrastructure to documenting it.
+    </div>
+
+    <table class="reg-table">
+      <thead>
+        <tr>
+          <th style="width:22%">Smriti Primitive</th>
+          <th style="width:28%">Regulatory Framework</th>
+          <th>What It Provides</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Bi-temporal edges</td>
+          <td>21 CFR 312.32 &middot; ICH E6(R3) &sect;4.2.4</td>
+          <td>Provable answer to "what did the protocol say when this decision was made"</td>
+        </tr>
+        <tr>
+          <td>SHA-256 hash chain</td>
+          <td>21 CFR Part 11 &middot; SOC 2</td>
+          <td>Tamper-evident, append-only audit trail with cryptographic binding</td>
+        </tr>
+        <tr>
+          <td>FACTUM provenance</td>
+          <td>ICH E6(R3) &middot; &sect;4.9 Records</td>
+          <td>Measurable overlap score between every claim and its cited source</td>
+        </tr>
+        <tr>
+          <td>Contradiction inbox</td>
+          <td>CIOMS Working Group VIII &middot; MedWatch (FDA 3500A)</td>
+          <td>Conflicting facts surface for human review, never auto-resolved</td>
+        </tr>
+        <tr>
+          <td>Integrity sweep</td>
+          <td>Pre-audit preparation</td>
+          <td>One command checks every claim, link, hash, and contradiction in seconds</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════ GO-TO-MARKET ══════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="sec-label">Adoption Path</div>
+    <div class="sec-title">Individual Practitioner to Validated Enterprise Deployment</div>
+    <div class="sec-sub">
+      Smriti does not require a validation project to generate value.
+      It starts with one coordinator on one laptop and expands from there.
+    </div>
+
+    <div class="funnel">
+      <div class="funnel-row f1">
+        <div class="funnel-num o">1</div>
+        <div class="funnel-info">
+          <h4>Individual Practitioners &mdash; Day 1</h4>
+          <p>Research coordinators, CRAs, and biomedical researchers install a single binary. No IT ticket. No cloud account. No patient or subject data leaves their machine. Free, open-source.</p>
+        </div>
+      </div>
+      <div class="funnel-row f2">
+        <div class="funnel-num y">2</div>
+        <div class="funnel-info">
+          <h4>Site or Coordinating Center &mdash; Month 6</h4>
+          <p>A coordinating center, core lab, or research team aggregates knowledge across members via WebDAV sync. Nightly integrity sweeps catch drift before the monitor visit does.</p>
+        </div>
+      </div>
+      <div class="funnel-row f3">
+        <div class="funnel-num g">3</div>
+        <div class="funnel-info">
+          <h4>Sponsor or Health System &mdash; Month 18</h4>
+          <p>Validated build for sponsors, CROs, or health-system compliance teams. The pitch writes itself: "Your coordinators already use this." IQ/OQ/PQ validation package included.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ DEMO CALLOUT ══════════════════ -->
+<section style="border:none; padding-top: 40px; padding-bottom: 40px;">
+  <div class="wrap">
+    <div class="demo-callout">
+      <div class="demo-callout-text">
+        <h3>See It in Action: Clinical Trial Operations Demo</h3>
+        <p>
+          An interactive 6-step walkthrough showing how a site coordinator uses Smriti
+          to handle protocol versioning, catch AI hallucinations in safety narratives,
+          resolve sponsor queries, and run a pre-monitor integrity sweep &mdash; all with
+          real synthetic trial data loaded into a live Smriti instance.
+        </p>
+      </div>
+      <a class="demo-btn" href="./clinical-trial-demo.html" target="_blank">
+        Launch Demo &rarr;
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ COMPETITIVE MOAT ══════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="sec-label">Defensibility</div>
+    <div class="sec-title">Why This Wins Now</div>
+    <div class="sec-sub">
+      Three structural tailwinds that did not exist 18 months ago.
+    </div>
+
+    <div class="moat-grid">
+      <div class="moat-card">
+        <h4>AI Grounding Is the New Requirement</h4>
+        <p>
+          Every organization adopting AI for documentation faces the same question:
+          "how do we prove the AI didn't hallucinate?" Smriti's provenance scoring
+          provides a structural, measurable answer. This need is net-new and growing
+          with every AI deployment.
+        </p>
+      </div>
+      <div class="moat-card">
+        <h4>Local-First Is the Compliance Shortcut</h4>
+        <p>
+          Cloud AI tools face BAA/DPA review cycles of 6&ndash;12 months in regulated industries.
+          Smriti runs entirely on-premise with zero cloud dependencies. Data never leaves
+          the machine. This eliminates the single longest blocker in enterprise adoption
+          of AI-adjacent tooling.
+        </p>
+      </div>
+      <div class="moat-card">
+        <h4>Graph + Integrity Is Unoccupied</h4>
+        <p>
+          Obsidian has the graph, but no integrity. Mem0 has the agent memory, but no provenance.
+          Neo4j has the database, but requires a server. Smriti is the only tool that combines
+          a knowledge graph, agent memory, enforced provenance, and a cryptographic audit trail
+          in a single local binary. The combination is the moat.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ RESEARCH FOUNDATION ══════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="sec-label">Research Foundation</div>
+    <div class="sec-title">Peer-Reviewed Design Decisions</div>
+    <div class="sec-sub">
+      Every integrity feature traces to published research.
+      This is not a prototype &mdash; it is a deliberate implementation of verified approaches.
+    </div>
+
+    <table class="reg-table">
+      <thead><tr><th>Capability</th><th>Research Basis</th><th>Key Finding</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Bi-temporal edges</td>
+          <td>Zep / Graphiti (arXiv:2501.13956)</td>
+          <td>18.5% improvement on LongMemEval with temporal awareness</td>
+        </tr>
+        <tr>
+          <td>Provenance scoring</td>
+          <td>FACTUM (arXiv:2601.05866)</td>
+          <td>Structural citation verification without LLM-as-judge</td>
+        </tr>
+        <tr>
+          <td>Contradiction detection</td>
+          <td>MemoTime (arXiv:2510.13614)</td>
+          <td>Confidence-weighted scoring prevents silent overwrites</td>
+        </tr>
+        <tr>
+          <td>Conflict resolution</td>
+          <td>AGM Belief Revision (arXiv:2603.17244)</td>
+          <td>Formal postulates for knowledge base contraction and revision</td>
+        </tr>
+        <tr>
+          <td>Hybrid retrieval</td>
+          <td>Graph Memory Survey (arXiv:2602.05665)</td>
+          <td>Graph + BM25 hybrid outperforms pure vector for multi-hop tasks</td>
+        </tr>
+        <tr>
+          <td>Typed graph layers</td>
+          <td>MAGMA (arXiv:2601.03236)</td>
+          <td>Semantic/temporal/causal layers reduce token usage by 95%</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════ CTA ══════════════════ -->
+<div class="cta">
+  <div class="wrap">
+    <h2>Knowledge Your Organization<br>Can Actually Verify</h2>
+    <p>
+      Single binary. Zero cloud. Enforced provenance. Cryptographic audit trail.
+      The integrity layer for the next generation of AI-driven workflows.
+    </p>
+    <div class="cta-links">
+      <a class="cta-link primary" href="https://github.com/biosync-tech/smriti">View on GitHub</a>
+      <a class="cta-link secondary" href="./clinical-trial-demo.html">Interactive Demo</a>
+      <a class="cta-link secondary" href="./use-case-grounded-research-memory.md">Research Use Case</a>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="wrap">
+    Smriti &mdash; Single binary &middot; SQLite &middot; Local-first &middot; MCP-native &middot; Apache 2.0 &middot; github.com/biosync-tech/smriti
+  </div>
+</div>
+
+</body>
+</html>

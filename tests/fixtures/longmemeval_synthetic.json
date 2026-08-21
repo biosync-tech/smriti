@@ -1,0 +1,158 @@
+{
+  "version": "0.3-synthetic",
+  "sessions": [
+    {
+      "session_id": "s1",
+      "ts": "2026-01-15T09:00:00Z",
+      "notes": [
+        { "id": "n_s1_1", "title": "Protocol v3.0 summary", "content": "Phase II trial of tarlozumab in advanced solid tumours opened under protocol v3.0 on 2026-01-15. Primary endpoint: objective response rate at 12 weeks. Secondary endpoint: progression-free survival at 6 months." },
+        { "id": "n_s1_2", "title": "Initial eligibility criteria v3.0", "content": "Inclusion: ECOG performance status 0-2, age 18-65, measurable disease per RECIST 1.1, adequate organ function. Exclusion: prior anti-PD-1 therapy within 6 months." },
+        { "id": "n_s1_3", "title": "Patient-14 enrolment", "content": "Patient-14 enrolled on 2026-01-15 into Cohort A (tarlozumab monotherapy). Inclusion criteria met under protocol v3.0. ECOG 1, age 58." },
+        { "id": "n_s1_4", "title": "Adverse event grading reference", "content": "All adverse events to be graded per CTCAE v5.0 throughout the trial. Reporting via the OnCore EDC system within 24 hours for grade 3+ events." }
+      ]
+    },
+    {
+      "session_id": "s2",
+      "ts": "2026-02-02T10:00:00Z",
+      "notes": [
+        { "id": "n_s2_1", "title": "Patient-7 enrolment", "content": "Patient-7 enrolled 2026-02-02 into Cohort A. ECOG 0, age 62. Inclusion under protocol v3.0; no concomitant medications of concern." },
+        { "id": "n_s2_2", "title": "Patient-14 first dose", "content": "Patient-14 received first tarlozumab infusion on 2026-02-02 at the protocol-specified 200 mg q3w dose. Tolerated without infusion-reaction events; vital signs stable." },
+        { "id": "n_s2_3", "title": "Vemexine specification (rescue agent)", "content": "Vemexine 50 mg PRN reserved as the cohort B rescue agent for tarlozumab-related infusion reactions. Not stocked at the cohort A site as of 2026-02-02." },
+        { "id": "n_s2_4", "title": "Pharmacokinetic sampling schedule v3.0", "content": "PK samples drawn pre-dose, 1h, 4h, and 24h post-infusion at cycle 1 day 1 only. Trough levels at each subsequent cycle. Schedule per protocol v3.0 §7.4." }
+      ]
+    },
+    {
+      "session_id": "s3",
+      "ts": "2026-02-20T14:00:00Z",
+      "notes": [
+        { "id": "n_s3_1", "title": "Amendment v3.2 — upper age limit raised", "content": "Protocol amendment v3.2 effective 2026-02-20. Upper age limit for inclusion raised from 65 to 75 to broaden enrolment to fit the population data. All other eligibility criteria unchanged." },
+        { "id": "n_s3_2", "title": "Cohort A dosing schedule", "content": "Cohort A receives tarlozumab 200 mg by IV infusion every three weeks (q3w) for up to 12 cycles, with dose modifications per the toxicity table in protocol §6.3." },
+        { "id": "n_s3_3", "title": "Cohort A roster (as of 2026-02-20)", "content": "Cohort A active participants: Patient-7 (enrolled 2026-02-02), Patient-14 (enrolled 2026-01-15). Both currently on study." }
+      ]
+    },
+    {
+      "session_id": "s4",
+      "ts": "2026-03-05T11:00:00Z",
+      "notes": [
+        { "id": "n_s4_1", "title": "Patient-22 enrolment", "content": "Patient-22 enrolled 2026-03-05 into Cohort B (tarlozumab plus vemexine combination). ECOG 1, age 71. Eligibility confirmed under amendment v3.2 raised age limit." },
+        { "id": "n_s4_2", "title": "DSMB Q1 2026 outcome", "content": "Data Safety Monitoring Board Q1 2026 review held 2026-03-04. Outcome: no safety signals warranting protocol modification. Continue per current protocol." },
+        { "id": "n_s4_3", "title": "Cohort B opens for enrolment", "content": "Cohort B opened for enrolment on 2026-03-05 following protocol §3.2 milestone (Cohort A first cycle complete without grade-4 events). Combination arm uses tarlozumab plus vemexine rescue." },
+        { "id": "n_s4_4", "title": "Cohort B dosing schedule", "content": "Cohort B dosing begins 30 days post-enrolment to allow drug-interaction screening and baseline PK. Dose: tarlozumab 200 mg q3w plus vemexine 50 mg PRN per investigator discretion for grade 2+ infusion reactions." }
+      ]
+    },
+    {
+      "session_id": "s5",
+      "ts": "2026-03-20T13:00:00Z",
+      "notes": [
+        { "id": "n_s5_1", "title": "Amendment v3.4 — ECOG range expanded", "content": "Protocol amendment v3.4 effective 2026-03-20. ECOG performance status inclusion range expanded from 0-2 to 0-3 following Q1 DSMB review. Justification: enrol patients with worse performance status who remain candidates for systemic therapy." },
+        { "id": "n_s5_2", "title": "Patient-7 grade-2 fatigue AE", "content": "Patient-7 reported grade-2 fatigue beginning 2026-03-15, attributed by investigator as possibly related to tarlozumab. No dose modification required per protocol toxicity table. Symptomatic management ongoing." },
+        { "id": "n_s5_3", "title": "Patient-14 grade-3 neutropenia and dose hold", "content": "Patient-14 developed grade-3 neutropenia (ANC 0.8) on 2026-03-18 after cycle 3. Tarlozumab dose held per protocol §6.3 dose-modification rules. G-CSF support initiated. Recovery expected within 7-10 days." },
+        { "id": "n_s5_4", "title": "Vemexine availability extended to Cohort A", "content": "As of 2026-03-20 vemexine 50 mg PRN is now stocked at all sites and available as a rescue agent for any cohort experiencing grade 2+ infusion reactions, not only Cohort B. Decision driven by site-monitoring feedback." }
+      ]
+    },
+    {
+      "session_id": "s6",
+      "ts": "2026-04-02T10:00:00Z",
+      "notes": [
+        { "id": "n_s6_1", "title": "Patient-31 enrolment", "content": "Patient-31 enrolled 2026-04-02 into Cohort B. ECOG 2, age 68. Eligibility confirmed under amendments v3.2 (age) and v3.4 (ECOG range)." },
+        { "id": "n_s6_2", "title": "Patient-22 first dose", "content": "Patient-22 received first tarlozumab plus vemexine PRN combination dose on 2026-04-04, 30 days after enrolment per Cohort B protocol. No infusion reaction; vemexine not administered." },
+        { "id": "n_s6_3", "title": "Cohort B PK results — initial", "content": "Cohort B initial PK from Patient-22 cycle 1: tarlozumab Cmax 78 µg/mL at 1h, AUC 0-24h 645 µg·h/mL. Within expected range from Cohort A monotherapy data." },
+        { "id": "n_s6_4", "title": "DSMB schedule revision", "content": "DSMB cadence revised on 2026-04-02 from quarterly to bi-monthly through end of 2026 following Q1 review recommendation. Rationale: closer monitoring as Cohort B accrues." }
+      ]
+    },
+    {
+      "session_id": "s7",
+      "ts": "2026-04-15T15:00:00Z",
+      "notes": [
+        { "id": "n_s7_1", "title": "Amendment v4.0 — tertiary endpoint added", "content": "Protocol amendment v4.0 effective 2026-04-15. Tertiary endpoint added to capture quality-of-life data via the EORTC QLQ-C30 instrument at baseline, week 12, and end-of-treatment. Existing primary and secondary endpoints unchanged." },
+        { "id": "n_s7_2", "title": "Tertiary endpoint definition", "content": "Tertiary endpoint per amendment v4.0: change from baseline in EORTC QLQ-C30 global health status / QoL score at week 12 and end-of-treatment. Mean change with 95% CI to be reported per cohort." },
+        { "id": "n_s7_3", "title": "Patient-22 grade-1 nausea AE", "content": "Patient-22 reported grade-1 nausea beginning 2026-04-12 following cycle 2. Resolved within 48 hours with standard antiemetics. No dose modification; continue per schedule." },
+        { "id": "n_s7_4", "title": "Cohort C planning notes", "content": "Cohort C (tarlozumab plus standard-of-care chemotherapy) planning underway as of 2026-04-15. Anticipated open date end of Q2 2026 pending DSMB sign-off and supply of co-administered SoC agent." }
+      ]
+    },
+    {
+      "session_id": "s8",
+      "ts": "2026-04-25T11:00:00Z",
+      "notes": [
+        { "id": "n_s8_1", "title": "Cohort A PK results — pooled cycles 1-3", "content": "Pooled Cohort A PK across Patient-7 and Patient-14 cycles 1-3: mean Cmax 82 µg/mL, mean AUC 0-24h 689 µg·h/mL, trough at cycle 3 averaging 12 µg/mL. Consistent with prior Phase I data." },
+        { "id": "n_s8_2", "title": "Patient-14 PK April update", "content": "Patient-14 PK at cycle 3 (drawn 2026-04-22 during dose-hold recovery): trough 8 µg/mL. Lower than Cohort A average reflecting the held dose. Resume dosing planned once ANC recovers above 1.5." },
+        { "id": "n_s8_3", "title": "Patient-7 PK April update", "content": "Patient-7 PK at cycle 4 (drawn 2026-04-22): trough 14 µg/mL, on schedule. No PK-related dose adjustment indicated." },
+        { "id": "n_s8_4", "title": "Patient-14 dose resumption", "content": "Patient-14 ANC recovered to 1.8 on 2026-04-25. Tarlozumab dosing resumed at the same 200 mg q3w dose per protocol §6.3 (no permanent reduction required after first grade-3 neutropenia event)." }
+      ]
+    },
+    {
+      "session_id": "s9",
+      "ts": "2026-05-01T10:00:00Z",
+      "notes": [
+        { "id": "n_s9_1", "title": "Patient-45 screening", "content": "Patient-45 screened 2026-05-01 for potential Cohort C enrolment. ECOG 3, age 73. Eligible under current amendments v3.2 (age 75 ceiling) and v3.4 (ECOG 0-3 range). Awaiting Cohort C open." },
+        { "id": "n_s9_2", "title": "Amendment v4.1 — PK schedule clarification", "content": "Protocol amendment v4.1 effective 2026-05-01. PK sampling schedule clarified: pre-dose, 1h, 4h, 8h, and 24h post-infusion at cycle 1 day 1 (8h timepoint added). Subsequent-cycle troughs unchanged." },
+        { "id": "n_s9_3", "title": "Site monitoring visit findings", "content": "Site monitoring visit conducted 2026-04-29. Findings: source-data verification 100% match for the 4 active patients; one minor query on PK draw timing for Patient-22 cycle 1 (resolved). No major or critical findings." },
+        { "id": "n_s9_4", "title": "AE grading scale update to CTCAE v5.1", "content": "Effective 2026-05-01 all adverse events to be graded per CTCAE v5.1 in line with sponsor-wide harmonisation. Replaces the v5.0 reference active since trial open. Existing AE records remapped per the v5.0→v5.1 crosswalk." }
+      ]
+    },
+    {
+      "session_id": "s10",
+      "ts": "2026-05-05T14:00:00Z",
+      "notes": [
+        { "id": "n_s10_1", "title": "Cohort B status update", "content": "Cohort B status as of 2026-05-05: 2 active participants (Patient-22, Patient-31). No grade 3+ AEs reported in Cohort B to date. Vemexine PRN not yet required for any combination dose." },
+        { "id": "n_s10_2", "title": "Cohort C status update — open delayed", "content": "Cohort C open date pushed from end-Q2 to mid-Q3 2026 per 2026-05-05 update. Driver: standard-of-care agent supply chain delay. Patient-45 screening remains valid for 60 days." },
+        { "id": "n_s10_3", "title": "Cohort B roster (as of 2026-05-05)", "content": "Cohort B active participants: Patient-22 (enrolled 2026-03-05, dosing since 2026-04-04), Patient-31 (enrolled 2026-04-02, dosing scheduled 2026-05-02). Both on study." },
+        { "id": "n_s10_4", "title": "Missing-data audit summary", "content": "Quarterly missing-data audit completed 2026-05-05. Overall completeness 99.2% across all CRFs and patients. Two missing PK timepoints (Patient-22 cycle 1 4h, resolved by site visit) and one missing QLQ-C30 baseline (Patient-31, captured retrospectively under v4.0)." }
+      ]
+    }
+  ],
+  "questions": [
+    { "id": "q1",  "prompt": "What was the upper age limit for inclusion before the v3.2 amendment?", "answer_note_ids": ["n_s1_2"], "category": "single-hop" },
+    { "id": "q2",  "prompt": "What was the upper age limit set by amendment v3.2?", "answer_note_ids": ["n_s3_1"], "category": "single-hop" },
+    { "id": "q3",  "prompt": "When was Patient-14 enrolled?", "answer_note_ids": ["n_s1_3"], "category": "single-hop" },
+    { "id": "q4",  "prompt": "Which cohort is Patient-14 in?", "answer_note_ids": ["n_s1_3"], "category": "single-hop" },
+    { "id": "q5",  "prompt": "What dose of tarlozumab is Cohort A receiving?", "answer_note_ids": ["n_s3_2"], "category": "single-hop" },
+    { "id": "q6",  "prompt": "What is the rescue agent reserved for Cohort B?", "answer_note_ids": ["n_s2_3"], "category": "single-hop" },
+    { "id": "q7",  "prompt": "Which patient experienced grade-3 neutropenia?", "answer_note_ids": ["n_s5_3"], "category": "single-hop" },
+    { "id": "q8",  "prompt": "When did Patient-22 enrol?", "answer_note_ids": ["n_s4_1"], "category": "single-hop" },
+    { "id": "q9",  "prompt": "What was the outcome of the Q1 2026 DSMB meeting?", "answer_note_ids": ["n_s4_2"], "category": "single-hop" },
+    { "id": "q10", "prompt": "What did amendment v3.4 change in the eligibility criteria?", "answer_note_ids": ["n_s5_1"], "category": "single-hop" },
+    { "id": "q11", "prompt": "What did amendment v4.0 add to the trial endpoints?", "answer_note_ids": ["n_s7_1"], "category": "single-hop" },
+    { "id": "q12", "prompt": "What did amendment v4.1 clarify?", "answer_note_ids": ["n_s9_2"], "category": "single-hop" },
+    { "id": "q13", "prompt": "Was Patient-7 enrolled in February 2026?", "answer_note_ids": ["n_s2_1"], "category": "single-hop" },
+    { "id": "q14", "prompt": "What grade adverse event of fatigue did Patient-7 experience?", "answer_note_ids": ["n_s5_2"], "category": "single-hop" },
+    { "id": "q15", "prompt": "Which inclusion criterion did amendment v3.4 expand?", "answer_note_ids": ["n_s5_1"], "category": "single-hop" },
+    { "id": "q16", "prompt": "When did Cohort B open for enrolment?", "answer_note_ids": ["n_s4_3"], "category": "single-hop" },
+    { "id": "q17", "prompt": "What instrument is used to capture the tertiary endpoint added by v4.0?", "answer_note_ids": ["n_s7_2"], "category": "single-hop" },
+    { "id": "q18", "prompt": "When was Patient-31 enrolled?", "answer_note_ids": ["n_s6_1"], "category": "single-hop" },
+    { "id": "q19", "prompt": "Was Patient-22 dosed in April 2026?", "answer_note_ids": ["n_s6_2"], "category": "single-hop" },
+    { "id": "q20", "prompt": "What grade adverse event of nausea did Patient-22 experience?", "answer_note_ids": ["n_s7_3"], "category": "single-hop" },
+    { "id": "q21", "prompt": "On what date did amendment v3.2 become effective?", "answer_note_ids": ["n_s3_1"], "category": "single-hop" },
+    { "id": "q22", "prompt": "What is the dose and frequency of the vemexine rescue medication?", "answer_note_ids": ["n_s2_3"], "category": "single-hop" },
+    { "id": "q23", "prompt": "Which patient required a tarlozumab dose hold for neutropenia?", "answer_note_ids": ["n_s5_3"], "category": "single-hop" },
+    { "id": "q24", "prompt": "When was Patient-45 screened for Cohort C?", "answer_note_ids": ["n_s9_1"], "category": "single-hop" },
+    { "id": "q25", "prompt": "What did the 2026-04-29 site monitoring visit find regarding source-data verification?", "answer_note_ids": ["n_s9_3"], "category": "single-hop" },
+
+    { "id": "q26", "prompt": "What ECOG performance-status range qualifies a patient for inclusion as of late March 2026?", "answer_note_ids": ["n_s1_2", "n_s5_1"], "category": "multi-hop" },
+    { "id": "q27", "prompt": "When does Patient-22 begin dosing given Cohort B's protocol?", "answer_note_ids": ["n_s4_1", "n_s4_4", "n_s6_2"], "category": "multi-hop" },
+    { "id": "q28", "prompt": "Was Patient-14 still receiving full-dose tarlozumab in late April 2026?", "answer_note_ids": ["n_s5_3", "n_s8_2", "n_s8_4"], "category": "multi-hop" },
+    { "id": "q29", "prompt": "How many participants are active in Cohort A as of late February 2026?", "answer_note_ids": ["n_s1_3", "n_s2_1", "n_s3_3"], "category": "multi-hop" },
+    { "id": "q30", "prompt": "How does the Cohort A treatment differ from the Cohort B treatment regimen?", "answer_note_ids": ["n_s3_2", "n_s4_4"], "category": "multi-hop" },
+    { "id": "q31", "prompt": "Which protocol amendments occurred between Patient-14's enrolment and Patient-22's enrolment?", "answer_note_ids": ["n_s1_3", "n_s4_1", "n_s3_1"], "category": "multi-hop" },
+    { "id": "q32", "prompt": "What were Patient-22's first-dose pharmacokinetic results?", "answer_note_ids": ["n_s6_2", "n_s6_3"], "category": "multi-hop" },
+    { "id": "q33", "prompt": "Which patients were enrolled before the v3.2 age-limit amendment took effect?", "answer_note_ids": ["n_s1_3", "n_s2_1", "n_s3_1"], "category": "multi-hop" },
+    { "id": "q34", "prompt": "What does the tertiary endpoint added by amendment v4.0 measure and when is it captured?", "answer_note_ids": ["n_s7_1", "n_s7_2"], "category": "multi-hop" },
+    { "id": "q35", "prompt": "What is the most recent protocol amendment as of 2026-05-05?", "answer_note_ids": ["n_s7_1", "n_s9_2"], "category": "multi-hop" },
+    { "id": "q36", "prompt": "Which patients are active in Cohort B as of early May 2026?", "answer_note_ids": ["n_s4_1", "n_s6_1", "n_s10_3"], "category": "multi-hop" },
+    { "id": "q37", "prompt": "Has Patient-7 experienced any grade-3 or higher adverse events?", "answer_note_ids": ["n_s5_2", "n_s8_3"], "category": "multi-hop" },
+    { "id": "q38", "prompt": "Which patients have experienced any reported adverse event so far?", "answer_note_ids": ["n_s5_2", "n_s5_3", "n_s7_3"], "category": "multi-hop" },
+    { "id": "q39", "prompt": "On what date did Cohort B open for enrolment relative to Patient-22's enrolment date?", "answer_note_ids": ["n_s4_1", "n_s4_3"], "category": "multi-hop" },
+    { "id": "q40", "prompt": "Is Patient-45 eligible under the most recent inclusion criteria?", "answer_note_ids": ["n_s9_1", "n_s3_1", "n_s5_1"], "category": "multi-hop" },
+
+    { "id": "q41", "prompt": "What is the current upper age limit for inclusion in the trial?", "answer_note_ids": ["n_s1_2", "n_s3_1"], "category": "temporal-contradiction" },
+    { "id": "q42", "prompt": "What is the current upper bound on ECOG performance status for inclusion?", "answer_note_ids": ["n_s1_2", "n_s5_1"], "category": "temporal-contradiction" },
+    { "id": "q43", "prompt": "What is Patient-14's most recent dosing status as of late April 2026?", "answer_note_ids": ["n_s2_2", "n_s5_3", "n_s8_4"], "category": "temporal-contradiction" },
+    { "id": "q44", "prompt": "Is Cohort C currently open for enrolment?", "answer_note_ids": ["n_s7_4", "n_s10_2"], "category": "temporal-contradiction" },
+    { "id": "q45", "prompt": "What is the current cycle 1 day 1 PK sampling schedule?", "answer_note_ids": ["n_s2_4", "n_s9_2"], "category": "temporal-contradiction" },
+    { "id": "q46", "prompt": "How many endpoints does the trial currently have?", "answer_note_ids": ["n_s1_1", "n_s7_1"], "category": "temporal-contradiction" },
+    { "id": "q47", "prompt": "What is the current DSMB review cadence?", "answer_note_ids": ["n_s4_2", "n_s6_4"], "category": "temporal-contradiction" },
+    { "id": "q48", "prompt": "Which cohorts currently have access to vemexine as a rescue agent?", "answer_note_ids": ["n_s2_3", "n_s5_4"], "category": "temporal-contradiction" },
+    { "id": "q49", "prompt": "Which CTCAE version is currently in use for AE grading?", "answer_note_ids": ["n_s1_4", "n_s9_4"], "category": "temporal-contradiction" },
+    { "id": "q50", "prompt": "What was Patient-14's most recent dose modification outcome?", "answer_note_ids": ["n_s5_3", "n_s8_4"], "category": "temporal-contradiction" }
+  ]
+}

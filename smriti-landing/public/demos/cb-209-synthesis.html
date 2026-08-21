@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smriti — CB-209 Dose Synthesis Demo</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2714%27 fill=%27%231F4D3A%27/%3E%3Ctext x=%2732%27 y=%2742%27 font-family=%27Georgia,serif%27 font-style=%27italic%27 font-size=%2730%27 fill=%27%23FBFAF7%27 text-anchor=%27middle%27%3ES.%3C/text%3E%3C/svg%3E" />
+<meta name="description" content="Pick any dose on the CB-209 trial. See the efficacy, safety profile, and the AI's grounded recommendation, replayable from stored evidence. IND-amendment ready." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #141b2e;
+    --surface2: #1e2742;
+    --border: rgba(255,255,255,0.08);
+    --amber: #f0b546;
+    --amber-bri: #f7c948;
+    --cyan: #60a5fa;
+    --green: #3ecf8e;
+    --red: #ef4444;
+    --text: #f1f5f9;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --font: 'Space Grotesk', system-ui, sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; text-decoration: none; }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand {
+    font-family: var(--mono); font-size: 14px; font-weight: 600;
+    color: var(--amber); letter-spacing: 2px; text-transform: lowercase;
+  }
+  .back {
+    font-family: var(--mono); font-size: 12px;
+    color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase;
+    transition: color 0.15s;
+  }
+  .back:hover { color: var(--text); }
+  main {
+    flex: 1;
+    max-width: 920px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 48px 28px 32px;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    color: var(--amber); letter-spacing: 3px; text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-size: clamp(1.8rem, 3.5vw, 2.4rem); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15;
+    margin-bottom: 14px;
+  }
+  h1 em { color: var(--amber-bri); font-style: italic; }
+  .lede {
+    color: var(--text2); font-size: 1.05rem; max-width: 660px;
+    margin-bottom: 36px;
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+  }
+  .panel-label {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    color: var(--text3); letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .input-row {
+    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+    margin-bottom: 22px;
+  }
+  .dose-btn {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 24px;
+    font-family: var(--mono); font-size: 14px; font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex: 1;
+    min-width: 110px;
+  }
+  .dose-btn:hover { color: var(--text); border-color: var(--amber); }
+  .dose-btn.active {
+    background: var(--surface2);
+    color: var(--amber);
+    border-color: var(--amber);
+  }
+  .dose-btn .label {
+    display: block; font-size: 18px; margin-bottom: 4px;
+  }
+  .dose-btn .sub {
+    display: block; font-size: 9px; color: var(--text3);
+    letter-spacing: 1.5px; text-transform: uppercase;
+  }
+  .axis {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px 24px 20px;
+    margin-bottom: 22px;
+    position: relative;
+  }
+  .axis-segments {
+    position: relative;
+    height: 90px;
+    margin: 8px 0 6px;
+  }
+  .axis-bar {
+    position: absolute;
+    top: 38px;
+    height: 8px;
+    border-radius: 2px;
+  }
+  .axis-bar.safe { left: 0; width: 50%; background: var(--green); }
+  .axis-bar.toxic { left: 50%; width: 50%; background: var(--cyan); }
+  .axis-label {
+    position: absolute; top: 6px;
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 1px;
+  }
+  .axis-label.safe { left: 0; color: var(--green); }
+  .axis-label.toxic { left: 50%; color: var(--cyan); }
+  .axis-marker {
+    position: absolute; top: 22px; bottom: 8px;
+    width: 2px;
+    background: var(--amber);
+    transform: translateX(-1px);
+    transition: left 0.4s cubic-bezier(.4,.2,.2,1);
+  }
+  .axis-marker::after {
+    content: '';
+    position: absolute; top: 14px; left: -7px;
+    width: 16px; height: 16px;
+    background: var(--amber);
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px rgba(240,181,70,0.18);
+  }
+  .axis-marker-label {
+    position: absolute; top: 60px; left: -64px;
+    width: 128px; text-align: center;
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    color: var(--amber); letter-spacing: 1px;
+  }
+  .axis-ticks {
+    display: flex; justify-content: space-between;
+    font-family: var(--mono); font-size: 10px; color: var(--text3);
+    border-top: 1px solid var(--border);
+    padding-top: 8px;
+    margin-top: 4px;
+  }
+  .result {
+    background: var(--surface2);
+    border: 1px solid var(--green);
+    border-radius: 10px;
+    padding: 18px 22px;
+    display: none;
+  }
+  .result.show { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .result-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .check {
+    width: 22px; height: 22px;
+    background: var(--green);
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px; color: var(--bg); font-weight: 700;
+    flex-shrink: 0;
+  }
+  .check.warn { background: var(--cyan); }
+  .check.stop { background: var(--red); }
+  .result-title { font-size: 1.05rem; font-weight: 600; }
+  .result-title em { color: var(--green); font-style: normal; }
+  .result-title em.warn { color: var(--cyan); }
+  .result-title em.stop { color: var(--red); }
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 22px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .result-cell .k {
+    font-family: var(--mono); font-size: 10px; color: var(--text3);
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px;
+  }
+  .result-cell .v {
+    font-family: var(--mono); font-size: 13px; color: var(--text);
+  }
+  .result-cell .v.ok { color: var(--green); }
+  .result-cell .v.warn { color: var(--cyan); }
+  .result-cell .v.stop { color: var(--red); }
+  .result-cell .v.muted { color: var(--text2); }
+  .cta-strip {
+    margin-top: 28px;
+    padding: 18px 22px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: linear-gradient(180deg, var(--surface) 0%, transparent 100%);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .cta-strip .ct { color: var(--text2); font-size: 0.95rem; }
+  .cta-strip .ct strong { color: var(--text); }
+  .cta-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--amber); color: var(--bg);
+    padding: 10px 18px; border-radius: 8px;
+    font-weight: 600; font-size: 13px;
+    letter-spacing: 1px; text-transform: uppercase;
+    transition: transform 0.15s;
+  }
+  .cta-btn:hover { transform: translateY(-1px); }
+  footer {
+    text-align: center; padding: 20px;
+    font-family: var(--mono); font-size: 11px; color: var(--text3);
+    letter-spacing: 1px;
+  }
+  @media (max-width: 600px) {
+    .result-grid { grid-template-columns: 1fr; }
+    .dose-btn { flex-basis: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/" class="brand">smriti</a>
+  <a href="/" class="back">← Back to site</a>
+</div>
+
+<main>
+  <div class="eyebrow">Live demo · Dose synthesis · IND amendment</div>
+  <h1>What dose ships when 100 mg is sub-efficacious and 300 mg <em>triggers DLT?</em></h1>
+  <p class="lede">Pick a dose. Smriti traverses the compound graph — efficacy, biomarker, adverse event — and returns the AI-generated recommendation with a verifiable evidence chain. Bit-identical replay against stored metadata. IND-amendment ready.</p>
+
+  <div class="panel">
+    <div class="panel-label">Choose a CB-209 dose arm</div>
+    <div class="input-row">
+      <button class="dose-btn" data-dose="100">
+        <span class="label">100 mg</span>
+        <span class="sub">Safe arm</span>
+      </button>
+      <button class="dose-btn active" data-dose="200">
+        <span class="label">200 mg</span>
+        <span class="sub">Recommended MTD</span>
+      </button>
+      <button class="dose-btn" data-dose="300">
+        <span class="label">300 mg</span>
+        <span class="sub">DLT arm</span>
+      </button>
+    </div>
+
+    <div class="axis">
+      <div class="axis-segments">
+        <div class="axis-label safe">SAFE · 100 mg · 18% CRP · NO DLT</div>
+        <div class="axis-label toxic">TOXIC · 300 mg · 38% CRP · DLT 29%</div>
+        <div class="axis-bar safe"></div>
+        <div class="axis-bar toxic"></div>
+        <div class="axis-marker" id="marker" style="left: 50%;">
+          <div class="axis-marker-label" id="markerLabel">200 mg<br>RECOMMENDED</div>
+        </div>
+      </div>
+      <div class="axis-ticks">
+        <span>100 mg</span>
+        <span>200 mg</span>
+        <span>300 mg</span>
+      </div>
+    </div>
+
+    <div class="result show" id="result">
+      <div class="result-head">
+        <span class="check" id="resultCheck">✓</span>
+        <div class="result-title">Verdict: <em id="verdictLabel">200 mg — MAXIMUM TOLERATED DOSE</em></div>
+      </div>
+      <div class="result-grid">
+        <div class="result-cell">
+          <div class="k">Source documents</div>
+          <div class="v" id="sourceDoc">Protocol CB-209-001 + Troponin-T ref</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Provenance score</div>
+          <div class="v ok" id="provScore">1.00 — literal-match (2 claim spans)</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Efficacy (CRP reduction)</div>
+          <div class="v muted" id="efficacy">~32% at Week 8 — meets endpoint (interpolated)</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Safety (Troponin-T)</div>
+          <div class="v" id="safety">Projected below 0.10 ng/mL stopping rule</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Replay anchor</div>
+          <div class="v ok">call_7d3a · SHA-256 verified · bit-identical</div>
+        </div>
+        <div class="result-cell">
+          <div class="k">Filed</div>
+          <div class="v ok" id="filedStatus">FDA IND amendment 2024-11-22</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta-strip">
+    <div class="ct">Every dose recommendation in your trial should reconstruct itself in front of an FDA reviewer. <strong>Smriti makes that the default.</strong></div>
+    <a class="cta-btn" href="mailto:hello@bio-sync.tech?subject=Smriti%20discovery%20call%20%E2%80%94%20lab-trial%20synthesis">Book a 20-min call →</a>
+  </div>
+</main>
+
+<footer>smriti — audit-ready knowledge for AI-driven clinical work</footer>
+
+<script>
+  const marker = document.getElementById('marker');
+  const markerLabel = document.getElementById('markerLabel');
+  const result = document.getElementById('result');
+  const resultCheck = document.getElementById('resultCheck');
+  const verdictLabel = document.getElementById('verdictLabel');
+  const sourceDoc = document.getElementById('sourceDoc');
+  const provScore = document.getElementById('provScore');
+  const efficacy = document.getElementById('efficacy');
+  const safety = document.getElementById('safety');
+  const filedStatus = document.getElementById('filedStatus');
+  const buttons = document.querySelectorAll('.dose-btn');
+
+  function setActive(dose) {
+    buttons.forEach(b => b.classList.toggle('active', b.dataset.dose === String(dose)));
+
+    if (dose === 100) {
+      marker.style.left = '0%';
+      markerLabel.innerHTML = '100 mg<br>SAFE';
+      result.style.borderColor = 'var(--green)';
+      resultCheck.className = 'check';
+      resultCheck.textContent = '✓';
+      verdictLabel.innerHTML = '100 mg — SAFE BUT SUB-EFFICACIOUS';
+      verdictLabel.className = '';
+      sourceDoc.textContent = 'Protocol CB-209-001 §efficacy';
+      provScore.textContent = '1.00 — literal-match (1 claim span)';
+      efficacy.textContent = '18% at Week 8 — below 30% endpoint';
+      efficacy.className = 'v warn';
+      safety.textContent = 'Max Troponin-T 0.04 ng/mL — within safe range';
+      safety.className = 'v ok';
+      filedStatus.textContent = 'Cohort completed; arm closed for efficacy';
+      filedStatus.className = 'v muted';
+    } else if (dose === 200) {
+      marker.style.left = '50%';
+      markerLabel.innerHTML = '200 mg<br>RECOMMENDED';
+      result.style.borderColor = 'var(--green)';
+      resultCheck.className = 'check';
+      resultCheck.textContent = '✓';
+      verdictLabel.innerHTML = '200 mg — MAXIMUM TOLERATED DOSE';
+      verdictLabel.className = '';
+      sourceDoc.textContent = 'Protocol CB-209-001 + Troponin-T ref';
+      provScore.textContent = '1.00 — literal-match (2 claim spans)';
+      efficacy.textContent = '~32% at Week 8 — meets endpoint (interpolated)';
+      efficacy.className = 'v ok';
+      safety.textContent = 'Projected below 0.10 ng/mL stopping rule';
+      safety.className = 'v ok';
+      filedStatus.textContent = 'FDA IND amendment 2024-11-22 — accepted';
+      filedStatus.className = 'v ok';
+    } else {
+      marker.style.left = '100%';
+      markerLabel.innerHTML = '300 mg<br>DLT TRIGGERED';
+      result.style.borderColor = 'var(--red)';
+      resultCheck.className = 'check stop';
+      resultCheck.textContent = '!';
+      verdictLabel.innerHTML = '300 mg — DLT TRIGGERED; ABOVE MTD';
+      verdictLabel.className = 'stop';
+      sourceDoc.textContent = 'Protocol CB-209-001 §safety stopping rule';
+      provScore.textContent = '1.00 — literal-match (1 claim span)';
+      efficacy.textContent = '38% at Week 8 — exceeds 30% endpoint';
+      efficacy.className = 'v ok';
+      safety.textContent = 'Troponin-T >0.10 ng/mL in 29% of subjects — DLT';
+      safety.className = 'v stop';
+      filedStatus.textContent = 'Cohort closed early (n=24) at stopping rule';
+      filedStatus.className = 'v stop';
+    }
+    result.classList.add('show');
+  }
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => setActive(parseInt(btn.dataset.dose, 10)));
+  });
+
+  setActive(200);
+</script>
+
+</body>
+</html>
