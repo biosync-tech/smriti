@@ -1,7 +1,7 @@
-//! Ollama backend — connects to a local Ollama instance
+//! Ollama backend — any model Ollama can serve
 //!
-//! Ollama must be running separately. This backend sends HTTP requests
-//! to Ollama's REST API for generation and embedding.
+//! Chat and embed model names come from config (`ollama.model`,
+//! `ollama.embed_model`). Smriti does not pin a required tag.
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};

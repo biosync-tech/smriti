@@ -64,7 +64,10 @@ pub async fn list_models(
 
     Ok(Json(serde_json::json!({
         "models": models,
-        "default": state.inference_config.model,
+        "backend": state.inference_config.backend,
+        "chat_model": state.inference_config.chat_model(),
+        "embed_model": state.inference_config.embed_model(),
+        "default": state.inference_config.chat_model(),
     })))
 }
 

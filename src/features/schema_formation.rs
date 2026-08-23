@@ -10,6 +10,8 @@
 //! Episodes are never deleted. `parent_schema_id` is set so retrieval can
 //! pull the schema first. ICH E6(R3) trail stays reconstructable.
 
+use std::collections::HashSet;
+
 use chrono::Utc;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
@@ -155,12 +157,25 @@ pub fn context_diversity(conn: &Connection, note_id: &str) -> AppResult<f32> {
 }
 
 /// Run schema formation over episode notes that already have embeddings.
+///
+/// `eligible_ids` is the promotion allowlist from the scoring pass:
+///   * `None` — cluster every unparented episode that has an embedding
+///     (standalone / tests).
+///   * `Some(ids)` — only those notes. An empty slice yields no clusters.
+///
+/// Consolidation must pass the notes that cleared `promote_above`. Filtering
+/// only on persisted `consolidation_score` would miss dry-run scores.
 pub fn form_schemas(
     conn: &Connection,
     cfg: &SchemaFormationConfig,
     dry_run: bool,
+    eligible_ids: Option<&[String]>,
 ) -> AppResult<SchemaFormationReport> {
-    let items = load_episode_embeddings(conn)?;
+    let mut items = load_episode_embeddings(conn)?;
+    if let Some(allow) = eligible_ids {
+        let allow: HashSet<&str> = allow.iter().map(String::as_str).collect();
+        items.retain(|(id, _)| allow.contains(id.as_str()));
+    }
     let clusters = cluster_embeddings(&items, cfg.min_similarity, cfg.min_cluster_size);
 
     let mut report = SchemaFormationReport {
@@ -430,6 +445,7 @@ mod tests {
                         mode: AbstractionMode::Extractive,
                     },
                     false,
+                    None,
                 )
             })
             .unwrap();
@@ -444,5 +460,42 @@ mod tests {
         }
         let schema = db.get_note(&schema_id).unwrap();
         assert_eq!(schema.node_type, NodeType::Schema);
+    }
+
+    #[test]
+    fn form_schemas_allowlist_excludes_unlisted_episodes() {
+        let db = Database::new(":memory:").unwrap();
+        let mut ids = Vec::new();
+        for title in ["a", "b", "c"] {
+            let n = db
+                .create_note(CreateNoteRequest {
+                    title: title.into(),
+                    content: "same".into(),
+                    tags: vec![],
+                })
+                .unwrap();
+            db.store_embedding(&n.id, &vec![1.0; 384], Some("test"))
+                .unwrap();
+            ids.push(n.id);
+        }
+
+        let report = db
+            .execute(|conn| {
+                form_schemas(
+                    conn,
+                    &SchemaFormationConfig {
+                        min_cluster_size: 3,
+                        min_similarity: 0.9,
+                        mode: AbstractionMode::Extractive,
+                    },
+                    false,
+                    Some(&[]),
+                )
+            })
+            .unwrap();
+        assert!(report.created.is_empty());
+        for id in &ids {
+            assert!(db.get_note(id).unwrap().parent_schema_id.is_none());
+        }
     }
 }

@@ -1,0 +1,39 @@
+# Plug in any model Smriti can reach. Names are opaque strings — nothing
+# in the binary requires llama3.2 or all-minilm. Those are only defaults.
+#
+# Copy the [inference] block into your smriti config, or set the SMRITI_*
+# env vars below. Feature code always talks to InferenceBackend.
+
+[inference]
+# Transport, not a model:
+#   ollama                         — local Ollama
+#   openai | custom | lmstudio | vllm | groq | together | openrouter
+#                                  — any OpenAI-compatible HTTP API
+#   local | gguf                   — optional in-process GGUF
+backend = "ollama"
+
+[inference.ollama]
+host = "http://localhost:11434"
+model = "llama3.2"            # qwen2.5:14b, mistral, phi4, …
+embed_model = "all-minilm"    # nomic-embed-text, mxbai-embed-large, …
+
+[inference.openai]
+# LM Studio, vLLM, llama.cpp server, Groq, OpenRouter, OpenAI, …
+api_url = "http://localhost:8080/v1"
+api_key = ""
+model = "gpt-4o-mini"
+embed_model = "text-embedding-3-small"
+
+[inference.embedding]
+auto_embed = true
+# Must match the embed model width and the notes_vec table (default 384).
+dimensions = 384
+
+# Env overrides (no config edit required):
+#   SMRITI_INFERENCE_BACKEND=custom
+#   SMRITI_CHAT_MODEL=qwen2.5:14b
+#   SMRITI_EMBED_MODEL=nomic-embed-text
+#   SMRITI_EMBED_DIMENSIONS=768
+#   SMRITI_OLLAMA_HOST=http://127.0.0.1:11434
+#   SMRITI_OPENAI_API_URL=http://127.0.0.1:1234/v1
+#   SMRITI_OPENAI_API_KEY=sk-...

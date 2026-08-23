@@ -1,8 +1,8 @@
 //! OpenAI-compatible API backend
 //!
-//! Works with any server that implements the OpenAI API spec:
-//! - vLLM, llama.cpp server, LocalAI, LM Studio, etc.
-//! - Also works with actual OpenAI API (but defeats the "local" purpose)
+//! Chat and embed model names come from config. Works with any server
+//! that implements the OpenAI HTTP spec: OpenAI, LM Studio, vLLM,
+//! llama.cpp, Groq, Together, OpenRouter, LocalAI, …
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};

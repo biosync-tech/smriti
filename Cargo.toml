@@ -71,14 +71,16 @@ hostname = "0.4"
 # Vector byte casting
 zerocopy = "0.8"
 
-# Local LLM inference (Gemma 4 via GGUF) — optional, feature-gated
+# Optional in-process GGUF (any llama.cpp-compatible model)
 llama-gguf = { version = "0.14", optional = true }
 
 [features]
 default = ["interactive", "webui"]
 interactive = ["dep:dialoguer", "dep:indicatif", "dep:console"]
 webui = ["dep:include_dir", "dep:mime_guess"]
-gemma = ["dep:llama-gguf"]
+gguf = ["dep:llama-gguf"]
+# Deprecated alias for `gguf`
+gemma = ["gguf"]
 
 [dev-dependencies]
 tokio-test = "0.4"

@@ -1,5 +1,5 @@
 use chrono::Utc;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use uuid::Uuid;
 
 use crate::errors::{AppError, AppResult};
@@ -779,6 +779,25 @@ impl Database {
         let _ = self.get_note(note_id)?;
 
         self.execute(|conn| {
+            let existing_dim: Option<i64> = conn
+                .query_row(
+                    "SELECT dimensions FROM note_embeddings_meta LIMIT 1",
+                    [],
+                    |r| r.get(0),
+                )
+                .optional()?;
+            if let Some(width) = existing_dim {
+                if width as usize != embedding.len() {
+                    return Err(AppError::BadRequest(format!(
+                        "embedding is {}-d but this database already stores {}-d vectors. \
+                         Plug in any embed model whose width matches, or start a new db \
+                         / recreate notes_vec after a full re-embed.",
+                        embedding.len(),
+                        width
+                    )));
+                }
+            }
+
             let byte_slice = zerocopy::IntoBytes::as_bytes(embedding);
 
             // Delete existing embedding if any, then insert new one
@@ -1747,6 +1766,28 @@ mod tests {
         let query = vec![0.5_f32; 384];
         let results = db.semantic_search(&query, 10).unwrap();
         assert_eq!(results.len(), 1);
+    }
+
+    #[test]
+    fn store_embedding_rejects_width_mismatch() {
+        let db = test_db();
+        let note = db
+            .create_note(CreateNoteRequest {
+                title: "Width".into(),
+                content: "c".into(),
+                tags: vec![],
+            })
+            .unwrap();
+        db.store_embedding(&note.id, &vec![0.1_f32; 384], Some("all-minilm"))
+            .unwrap();
+        let err = db
+            .store_embedding(&note.id, &vec![0.1_f32; 8], Some("toy-model"))
+            .unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("8-d") && msg.contains("384-d"),
+            "expected width mismatch, got {msg}"
+        );
     }
 
     #[test]

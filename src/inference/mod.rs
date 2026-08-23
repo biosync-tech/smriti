@@ -1,9 +1,12 @@
 //! AI Inference Layer — pluggable backends for LLM inference
 //!
-//! Architecture: InferenceBackend trait with three implementations:
-//! - LocalGemmaBackend: Optional in-process GGUF (feature `gemma`, not the default)
-//! - OllamaBackend: Connects to local Ollama instance
-//! - OpenAICompatibleBackend: Any OpenAI-compatible API
+//! Feature code talks only to [`InferenceBackend`]. Swap the transport and
+//! model names in config / `SMRITI_*` env — never in Rust.
+//!
+//! Transports ([`BackendKind`]):
+//! - [`ollama::OllamaBackend`] — any Ollama tag
+//! - [`openai::OpenAICompatibleBackend`] — OpenAI, LM Studio, vLLM, Groq, …
+//! - [`local::LocalGgufBackend`] — optional in-process GGUF (`gguf` feature)
 //!
 //! Research ref: Graph-Based Memory Survey arXiv:2602.05665 — hybrid beats pure vector
 
@@ -24,7 +27,8 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 // Re-exports
-pub use config::InferenceConfig;
+pub use config::{BackendKind, InferenceConfig};
+pub use local::LocalGgufBackend;
 pub use manager::ModelManager;
 pub use audited::{AuditedInference, CallContext};
 
@@ -168,30 +172,37 @@ pub enum InferenceError {
 /// Type alias for a shared inference backend
 pub type SharedBackend = Arc<dyn InferenceBackend>;
 
-/// Create the appropriate backend based on configuration
+/// Create the appropriate backend based on configuration.
+/// Model names stay on the config object; this only picks a transport.
 pub async fn create_backend(config: &InferenceConfig) -> Result<SharedBackend, InferenceError> {
-    match config.backend.as_str() {
-        "local" => {
-            tracing::info!("Initializing optional local GGUF backend");
-            let backend = local::LocalGemmaBackend::new(config).await?;
+    match config.kind().map_err(InferenceError::ConfigError)? {
+        BackendKind::Local => {
+            tracing::info!(
+                "Initializing optional local GGUF backend (model={})",
+                config.chat_model()
+            );
+            let backend = local::LocalGgufBackend::new(config).await?;
             Ok(Arc::new(backend))
         }
-        "ollama" => {
-            tracing::info!("Connecting to Ollama backend at {}", config.ollama.host);
+        BackendKind::Ollama => {
+            tracing::info!(
+                "Connecting to Ollama at {} (chat={}, embed={})",
+                config.ollama.host,
+                config.chat_model(),
+                config.embed_model()
+            );
             let backend = ollama::OllamaBackend::new(config)?;
             Ok(Arc::new(backend))
         }
-        "openai" => {
+        BackendKind::OpenAiCompatible => {
             tracing::info!(
-                "Connecting to OpenAI-compatible backend at {}",
-                config.openai.api_url
+                "Connecting to OpenAI-compatible API at {} (chat={}, embed={})",
+                config.openai.api_url,
+                config.chat_model(),
+                config.embed_model()
             );
             let backend = openai::OpenAICompatibleBackend::new(config)?;
             Ok(Arc::new(backend))
         }
-        other => Err(InferenceError::ConfigError(format!(
-            "Unknown backend '{}'. Use 'local', 'ollama', or 'openai'",
-            other
-        ))),
     }
 }

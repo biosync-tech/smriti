@@ -314,6 +314,7 @@ pub fn run_consolidation_pass(
         archived: Vec::new(),
         reasons: HashMap::new(),
     };
+    let mut eligible_ids: Vec<String> = Vec::new();
 
     for row in rows {
         let (id, score_before, degree) = row?;
@@ -392,16 +393,17 @@ pub fn run_consolidation_pass(
         // an embedding cluster) happens in a separate module; this just
         // records which episodes cleared the bar so the cluster pass can
         // pick them up.
-        if new_score > thresholds.promote_above
-            && policy != ConsolidationPolicy::Conservative
-        {
-            report.reasons.insert(
-                id.clone(),
-                format!(
-                    "score {:.3} > promote_above {:.3} — eligible for schema formation",
-                    new_score, thresholds.promote_above,
-                ),
-            );
+        if new_score > thresholds.promote_above {
+            eligible_ids.push(id.clone());
+            if policy != ConsolidationPolicy::Conservative {
+                report.reasons.insert(
+                    id.clone(),
+                    format!(
+                        "score {:.3} > promote_above {:.3} — eligible for schema formation",
+                        new_score, thresholds.promote_above,
+                    ),
+                );
+            }
         }
 
         // Score-change audit even when nothing else happened — cheap, useful
@@ -432,7 +434,12 @@ pub fn run_consolidation_pass(
         },
         ..crate::features::schema_formation::SchemaFormationConfig::default()
     };
-    match crate::features::schema_formation::form_schemas(conn, &schema_cfg, dry_run) {
+    match crate::features::schema_formation::form_schemas(
+        conn,
+        &schema_cfg,
+        dry_run,
+        Some(&eligible_ids),
+    ) {
         Ok(formed) => {
             for cluster in &formed.flagged {
                 report.reasons.insert(
