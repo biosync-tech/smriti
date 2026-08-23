@@ -36,33 +36,7 @@ pub(crate) fn sanitize_fts5_query(raw: &str) -> String {
 
 impl Database {
     pub fn create_note(&self, req: CreateNoteRequest) -> AppResult<Note> {
-        let note = Note::new(req.title, req.content, req.tags.clone());
-        self.execute(|conn| {
-            conn.execute(
-                "INSERT INTO notes (id, title, content, created_at, updated_at, node_type)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                params![
-                    note.id,
-                    note.title,
-                    note.content,
-                    note.created_at.to_rfc3339(),
-                    note.updated_at.to_rfc3339(),
-                    note.node_type.as_str(),
-                ],
-            )?;
-
-            // Insert tags
-            for tag_name in &req.tags {
-                ensure_tag(conn, tag_name)?;
-                let tag_id = get_tag_id(conn, tag_name)?;
-                conn.execute(
-                    "INSERT OR IGNORE INTO note_tags (note_id, tag_id) VALUES (?1, ?2)",
-                    params![note.id, tag_id],
-                )?;
-            }
-
-            Ok(note)
-        })
+        self.execute(|conn| insert_note_with_tags(conn, req))
     }
 
     pub fn get_note(&self, id: &str) -> AppResult<Note> {
@@ -324,23 +298,87 @@ impl Database {
         target_id: &str,
         link_type: LinkType,
     ) -> AppResult<Link> {
-        let link = Link::new(source_id.to_string(), target_id.to_string(), link_type);
+        self.execute(|conn| insert_link_on_conn(conn, source_id, target_id, link_type))
+    }
+
+    /// BFS over currently-valid links. Does not load the full note table.
+    pub fn graph_neighbors(
+        &self,
+        seed_ids: &[&str],
+        depth: usize,
+        limit: usize,
+    ) -> AppResult<Vec<String>> {
+        if depth == 0 || seed_ids.is_empty() || limit == 0 {
+            return Ok(Vec::new());
+        }
         self.execute(|conn| {
-            conn.execute(
-                "INSERT OR IGNORE INTO links (id, source_note_id, target_note_id, link_type, created_at, valid_from, valid_until)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-                params![
-                    link.id,
-                    link.source_note_id,
-                    link.target_note_id,
-                    link.link_type.as_str(),
-                    link.created_at.to_rfc3339(),
-                    link.valid_from.map(|dt| dt.to_rfc3339()),
-                    link.valid_until.map(|dt| dt.to_rfc3339()),
-                ],
-            )?;
-            Ok(link)
+            let mut frontier: Vec<String> = seed_ids.iter().map(|s| (*s).to_string()).collect();
+            let mut seen: std::collections::HashSet<String> =
+                frontier.iter().cloned().collect();
+            let mut out: Vec<String> = Vec::new();
+
+            for _ in 0..depth {
+                if frontier.is_empty() || out.len() >= limit {
+                    break;
+                }
+                let mut next = Vec::new();
+                for id in &frontier {
+                    let mut stmt = conn.prepare(
+                        "SELECT target_note_id FROM links
+                         WHERE source_note_id = ?1 AND valid_until IS NULL
+                         UNION
+                         SELECT source_note_id FROM links
+                         WHERE target_note_id = ?1 AND valid_until IS NULL",
+                    )?;
+                    let rows = stmt.query_map(params![id], |r| r.get::<_, String>(0))?;
+                    for row in rows {
+                        let nid = row?;
+                        if seen.insert(nid.clone()) {
+                            next.push(nid.clone());
+                            out.push(nid);
+                            if out.len() >= limit {
+                                return Ok(out);
+                            }
+                        }
+                    }
+                }
+                frontier = next;
+            }
+            Ok(out)
         })
+    }
+
+    /// Notes that have no row in `note_embeddings_meta` — one query, no N+1.
+    pub fn list_note_ids_missing_embeddings(&self) -> AppResult<Vec<String>> {
+        self.execute(|conn| {
+            let mut stmt = conn.prepare(
+                "SELECT n.id FROM notes n
+                 LEFT JOIN note_embeddings_meta m ON m.note_id = n.id
+                 WHERE m.note_id IS NULL",
+            )?;
+            let rows = stmt.query_map([], |r| r.get(0))?;
+            let mut ids = Vec::new();
+            for row in rows {
+                ids.push(row?);
+            }
+            Ok(ids)
+        })
+    }
+
+    /// Fetch many notes in one lock. Order follows `ids`. Missing ids are skipped.
+    pub fn get_notes_by_ids(&self, ids: &[String]) -> AppResult<Vec<Note>> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let mut notes = Vec::with_capacity(ids.len());
+        for id in ids {
+            match self.get_note(id) {
+                Ok(n) => notes.push(n),
+                Err(AppError::NoteNotFound(_)) => {}
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(notes)
     }
 
     pub fn get_backlinks(&self, note_id: &str) -> AppResult<Vec<NoteSummary>> {
@@ -970,6 +1008,7 @@ impl Database {
             b.score
                 .partial_cmp(&a.score)
                 .unwrap_or(std::cmp::Ordering::Equal)
+                .then_with(|| a.id.cmp(&b.id))
         });
         results.truncate(limit);
 
@@ -1019,6 +1058,57 @@ fn archive_old_memory(
     }
 
     Ok(())
+}
+
+pub(crate) fn insert_note_with_tags(
+    conn: &Connection,
+    req: CreateNoteRequest,
+) -> AppResult<Note> {
+    let note = Note::new(req.title, req.content, req.tags.clone());
+    conn.execute(
+        "INSERT INTO notes (id, title, content, created_at, updated_at, node_type)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        params![
+            note.id,
+            note.title,
+            note.content,
+            note.created_at.to_rfc3339(),
+            note.updated_at.to_rfc3339(),
+            note.node_type.as_str(),
+        ],
+    )?;
+    for tag_name in &req.tags {
+        ensure_tag(conn, tag_name)?;
+        let tag_id = get_tag_id(conn, tag_name)?;
+        conn.execute(
+            "INSERT OR IGNORE INTO note_tags (note_id, tag_id) VALUES (?1, ?2)",
+            params![note.id, tag_id],
+        )?;
+    }
+    Ok(note)
+}
+
+pub(crate) fn insert_link_on_conn(
+    conn: &Connection,
+    source_id: &str,
+    target_id: &str,
+    link_type: LinkType,
+) -> AppResult<Link> {
+    let link = Link::new(source_id.to_string(), target_id.to_string(), link_type);
+    conn.execute(
+        "INSERT OR IGNORE INTO links (id, source_note_id, target_note_id, link_type, created_at, valid_from, valid_until)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        params![
+            link.id,
+            link.source_note_id,
+            link.target_note_id,
+            link.link_type.as_str(),
+            link.created_at.to_rfc3339(),
+            link.valid_from.map(|dt| dt.to_rfc3339()),
+            link.valid_until.map(|dt| dt.to_rfc3339()),
+        ],
+    )?;
+    Ok(link)
 }
 
 fn ensure_tag(conn: &Connection, name: &str) -> AppResult<()> {
@@ -2005,6 +2095,67 @@ mod tests {
             "a fresh, strongly-matching note must outrank a stale, weakly-matching \
              note regardless of how consolidated the stale note is"
         );
+    }
+
+    #[test]
+    fn graph_neighbors_walks_requested_depth_without_loading_all_notes() {
+        let db = test_db();
+        let a = db
+            .create_note(CreateNoteRequest {
+                title: "A".into(),
+                content: "a".into(),
+                tags: vec![],
+            })
+            .unwrap();
+        let b = db
+            .create_note(CreateNoteRequest {
+                title: "B".into(),
+                content: "b".into(),
+                tags: vec![],
+            })
+            .unwrap();
+        let c = db
+            .create_note(CreateNoteRequest {
+                title: "C".into(),
+                content: "c".into(),
+                tags: vec![],
+            })
+            .unwrap();
+        db.create_link(&a.id, &b.id, LinkType::WikiLink).unwrap();
+        db.create_link(&b.id, &c.id, LinkType::WikiLink).unwrap();
+
+        let depth1 = db.graph_neighbors(&[&a.id], 1, 20).unwrap();
+        assert_eq!(depth1, vec![b.id.clone()]);
+
+        let depth2 = db.graph_neighbors(&[&a.id], 2, 20).unwrap();
+        assert!(depth2.contains(&b.id));
+        assert!(depth2.contains(&c.id));
+        assert!(!depth2.contains(&a.id));
+    }
+
+    #[test]
+    fn list_note_ids_missing_embeddings_is_single_query() {
+        let db = test_db();
+        let with_emb = db
+            .create_note(CreateNoteRequest {
+                title: "Has".into(),
+                content: "yes".into(),
+                tags: vec![],
+            })
+            .unwrap();
+        let missing = db
+            .create_note(CreateNoteRequest {
+                title: "Missing".into(),
+                content: "no".into(),
+                tags: vec![],
+            })
+            .unwrap();
+        db.store_embedding(&with_emb.id, &vec![0.1_f32; 384], Some("test"))
+            .unwrap();
+
+        let ids = db.list_note_ids_missing_embeddings().unwrap();
+        assert_eq!(ids.len(), 1);
+        assert_eq!(ids[0], missing.id);
     }
 }
 

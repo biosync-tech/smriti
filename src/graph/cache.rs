@@ -60,18 +60,29 @@ impl GraphCache {
         let links = db.get_all_links()?;
 
         // ASSUMES: NoteListQuery, SortOrder are the query types from src/models/note.rs
-        let notes = db.list_notes(&NoteListQuery {
-            limit: 10000,
-            offset: 0,
-            sort: SortOrder::UpdatedDesc,
-            tag: None,
-        })?;
-
-        let mut titles: HashMap<String, String> = HashMap::with_capacity(notes.len());
-        let mut tag_counts: HashMap<String, usize> = HashMap::with_capacity(notes.len());
-        for note in &notes {
-            titles.insert(note.id.clone(), note.title.clone());
-            tag_counts.insert(note.id.clone(), note.tag_count);
+        let mut titles: HashMap<String, String> = HashMap::new();
+        let mut tag_counts: HashMap<String, usize> = HashMap::new();
+        let page = 5_000usize;
+        let mut offset = 0usize;
+        loop {
+            let notes = db.list_notes(&NoteListQuery {
+                limit: page,
+                offset,
+                sort: SortOrder::UpdatedDesc,
+                tag: None,
+            })?;
+            if notes.is_empty() {
+                break;
+            }
+            let n = notes.len();
+            for note in notes {
+                titles.insert(note.id.clone(), note.title);
+                tag_counts.insert(note.id, note.tag_count);
+            }
+            offset += n;
+            if n < page {
+                break;
+            }
         }
 
         self.graph = KnowledgeGraph::from_links(&links, &titles, &tag_counts);

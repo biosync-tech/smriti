@@ -251,10 +251,11 @@ pub fn explain_score(
         &crate::features::cascade::CascadeConfig::default(),
         now,
     )?;
+    let diversity = crate::features::schema_formation::context_diversity(conn, note_id)?;
     let mut b = compute_score(
         salience,
         degree as u32,
-        0.0, // context_diversity wired in once embedding clustering ships
+        diversity,
         weights,
     );
     b.note_id = note_id.to_string();
@@ -321,7 +322,8 @@ pub fn run_consolidation_pass(
         let salience = crate::features::cascade::salience_peek_for_note(
             conn, &id, &cascade_cfg, now,
         )?;
-        let breakdown = compute_score(salience, degree, 0.0, weights);
+        let diversity = crate::features::schema_formation::context_diversity(conn, &id)?;
+        let breakdown = compute_score(salience, degree, diversity, weights);
         let new_score = breakdown.score;
 
         if !dry_run {
@@ -413,6 +415,53 @@ pub fn run_consolidation_pass(
                 new_score,
                 "score changed > 0.01",
             )?;
+        }
+    }
+
+    // CLS Phase 3 — cluster eligible episodes into schemas. Conservative
+    // only flags. Standard/Aggressive write extractive schemas + lineage
+    // (never deletes source episodes).
+    let schema_cfg = crate::features::schema_formation::SchemaFormationConfig {
+        mode: match policy {
+            ConsolidationPolicy::Conservative => {
+                crate::features::schema_formation::AbstractionMode::FlagOnly
+            }
+            ConsolidationPolicy::Standard | ConsolidationPolicy::Aggressive => {
+                crate::features::schema_formation::AbstractionMode::Extractive
+            }
+        },
+        ..crate::features::schema_formation::SchemaFormationConfig::default()
+    };
+    match crate::features::schema_formation::form_schemas(conn, &schema_cfg, dry_run) {
+        Ok(formed) => {
+            for cluster in &formed.flagged {
+                report.reasons.insert(
+                    cluster
+                        .member_ids
+                        .first()
+                        .cloned()
+                        .unwrap_or_else(|| "cluster".into()),
+                    format!(
+                        "schema cluster of {} episodes (mean cosine {:.3})",
+                        cluster.member_ids.len(),
+                        cluster.mean_similarity
+                    ),
+                );
+            }
+            for schema in formed.created {
+                report.promoted.push(schema.schema_id.clone());
+                report.reasons.insert(
+                    schema.schema_id,
+                    format!(
+                        "extractive schema over {} episodes: {}",
+                        schema.source_ids.len(),
+                        schema.title
+                    ),
+                );
+            }
+        }
+        Err(e) => {
+            tracing::warn!("schema formation skipped: {}", e);
         }
     }
 

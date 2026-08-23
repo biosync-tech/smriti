@@ -91,7 +91,7 @@ pub fn chunk_text(text: &str, chunk_size: usize, overlap: usize) -> Vec<String> 
         if !current.is_empty() && current.len() + para.len() + 2 > chunk_size {
             chunks.push(current.trim().to_string());
             // Carry overlap from previous chunk
-            let overlap_start = current.len().saturating_sub(overlap);
+            let overlap_start = floor_char_boundary(&current, current.len().saturating_sub(overlap));
             current = current[overlap_start..].to_string();
             current.push('\n');
         }
@@ -103,13 +103,13 @@ pub fn chunk_text(text: &str, chunk_size: usize, overlap: usize) -> Vec<String> 
 
         // If a single paragraph alone exceeds chunk_size, hard-split it
         while current.len() > chunk_size {
-            // Find last whitespace before the limit
-            let split_at = current[..chunk_size]
+            let limit = floor_char_boundary(&current, chunk_size);
+            let split_at = current[..limit]
                 .rfind(|c: char| c.is_whitespace())
-                .unwrap_or(chunk_size);
+                .unwrap_or(limit);
 
             chunks.push(current[..split_at].trim().to_string());
-            let overlap_start = split_at.saturating_sub(overlap);
+            let overlap_start = floor_char_boundary(&current, split_at.saturating_sub(overlap));
             current = current[overlap_start..].to_string();
         }
     }
@@ -193,53 +193,64 @@ impl DocumentIngestor {
             req.path, total_chars, preview
         );
 
-        let parent_note = db.create_note(CreateNoteRequest {
-            title: title.clone(),
-            content: parent_content,
-            tags: base_tags.clone(),
-        })?;
-
-        // ── Chunking ──────────────────────────────────────────────────────
         let chunk_size = req.chunk_size.unwrap_or(DEFAULT_CHUNK_CHARS);
         let chunk_overlap = req.chunk_overlap.unwrap_or(DEFAULT_OVERLAP_CHARS);
         let chunks = chunk_text(&raw, chunk_size, chunk_overlap);
         let total_chunks = chunks.len();
 
-        // ── Chunk notes + ChunkOf links ───────────────────────────────────
-        let mut chunk_note_ids: Vec<String> = Vec::with_capacity(total_chunks);
+        // One SQLite transaction: parent + chunks + ChunkOf links, or nothing.
+        let (parent_id, chunk_note_ids) = db.execute(|conn| {
+            let tx = conn
+                .unchecked_transaction()
+                .map_err(AppError::Database)?;
 
-        for (i, chunk_content) in chunks.iter().enumerate() {
-            let chunk_num = i + 1;
-            let chunk_title = format!("{} — Chunk {}/{}", title, chunk_num, total_chunks);
+            let parent_note = crate::storage::operations::insert_note_with_tags(
+                &tx,
+                CreateNoteRequest {
+                    title: title.clone(),
+                    content: parent_content,
+                    tags: base_tags.clone(),
+                },
+            )?;
 
-            // Tags for chunk: same base tags + "chunk" marker
-            let mut chunk_tags = base_tags.clone();
-            chunk_tags.retain(|t| t != "document");
-            chunk_tags.push("chunk".to_string());
+            let mut chunk_note_ids: Vec<String> = Vec::with_capacity(total_chunks);
+            for (i, chunk_content) in chunks.iter().enumerate() {
+                let chunk_num = i + 1;
+                let chunk_title = format!("{} — Chunk {}/{}", title, chunk_num, total_chunks);
+                let mut chunk_tags = base_tags.clone();
+                chunk_tags.retain(|t| t != "document");
+                chunk_tags.push("chunk".to_string());
+                let content_with_meta = format!(
+                    "> Source: `{}` | Chunk {}/{}\n\n{}",
+                    req.path, chunk_num, total_chunks, chunk_content
+                );
 
-            // Prepend provenance header to chunk content
-            let content_with_meta = format!(
-                "> Source: `{}` | Chunk {}/{}\n\n{}",
-                req.path, chunk_num, total_chunks, chunk_content
-            );
-
-            let chunk_note = db.create_note(CreateNoteRequest {
-                title: chunk_title,
-                content: content_with_meta,
-                tags: chunk_tags,
-            })?;
-
-            // ChunkOf link: chunk → parent document
-            db.create_link(&chunk_note.id, &parent_note.id, LinkType::ChunkOf)
+                let chunk_note = crate::storage::operations::insert_note_with_tags(
+                    &tx,
+                    CreateNoteRequest {
+                        title: chunk_title,
+                        content: content_with_meta,
+                        tags: chunk_tags,
+                    },
+                )?;
+                crate::storage::operations::insert_link_on_conn(
+                    &tx,
+                    &chunk_note.id,
+                    &parent_note.id,
+                    LinkType::ChunkOf,
+                )
                 .map_err(|e| {
                     AppError::BadRequest(format!("Failed to create ChunkOf link: {}", e))
                 })?;
+                chunk_note_ids.push(chunk_note.id);
+            }
 
-            chunk_note_ids.push(chunk_note.id);
-        }
+            tx.commit().map_err(AppError::Database)?;
+            Ok((parent_note.id, chunk_note_ids))
+        })?;
 
         Ok(IngestDocumentResponse {
-            document_note_id: parent_note.id,
+            document_note_id: parent_id,
             chunk_note_ids,
             title,
             chunk_count: total_chunks,
@@ -252,14 +263,24 @@ impl DocumentIngestor {
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /// Truncate `s` to at most `max_chars`, breaking on a whitespace boundary.
+fn floor_char_boundary(s: &str, mut idx: usize) -> usize {
+    if idx >= s.len() {
+        return s.len();
+    }
+    while idx > 0 && !s.is_char_boundary(idx) {
+        idx -= 1;
+    }
+    idx
+}
+
 fn safe_truncate(s: &str, max_chars: usize) -> &str {
     if s.len() <= max_chars {
         return s;
     }
-    // Break at last whitespace before limit to avoid mid-word cuts
-    match s[..max_chars].rfind(|c: char| c.is_whitespace()) {
+    let limit = floor_char_boundary(s, max_chars);
+    match s[..limit].rfind(|c: char| c.is_whitespace()) {
         Some(pos) => &s[..pos],
-        None => &s[..max_chars],
+        None => &s[..limit],
     }
 }
 
@@ -311,6 +332,18 @@ mod tests {
                 chunks[1].contains(tail_of_first.trim()),
                 "Overlap missing between chunk 0 and chunk 1"
             );
+        }
+    }
+
+    #[test]
+    fn chunk_text_does_not_panic_on_multibyte_boundary() {
+        // 3-byte chars; a byte limit that lands mid-character must not panic.
+        let text = "中".repeat(80);
+        let chunks = chunk_text(&text, 50, 10);
+        assert!(!chunks.is_empty());
+        for chunk in &chunks {
+            assert!(chunk.is_char_boundary(chunk.len()));
+            let _ = chunk.chars().count();
         }
     }
 }

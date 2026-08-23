@@ -149,9 +149,9 @@ impl InferenceBackend for LocalGemmaBackend {
         BackendCapabilities {
             text_generation: true,
             embeddings: true,
-            vision: true, // Gemma 4 31B is multimodal
+            vision: false,
             audio: false,
-            function_calling: true,
+            function_calling: false,
             max_context_length: self.config.context_length,
             model_name: self.config.model.clone(),
         }

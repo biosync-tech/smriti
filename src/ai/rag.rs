@@ -1,7 +1,7 @@
 //! RAG Query Engine — "Ask your knowledge graph anything"
 //!
 //! Combines hybrid search (FTS5 + semantic) with graph traversal
-//! to build context, then uses Gemma 4 for answer generation.
+//! to build context, then uses the configured InferenceBackend for generation.
 //! Research ref: Graph-Based Memory Survey arXiv:2602.05665
 
 use std::sync::Arc;
@@ -136,50 +136,51 @@ impl RagEngine {
         // Step 3: Build sources list and fetch full note content
         let mut sources: Vec<RagSource> = Vec::new();
         let mut context_notes: Vec<(String, String, String)> = Vec::new(); // (id, title, content)
+        let hit_ids: Vec<String> = search_results.iter().map(|r| r.id.clone()).collect();
+        let fetched = self.db.get_notes_by_ids(&hit_ids).map_err(|e| {
+            InferenceError::GenerationFailed(format!("Fetch notes failed: {}", e))
+        })?;
+        let notes_by_id: std::collections::HashMap<_, _> =
+            fetched.into_iter().map(|n| (n.id.clone(), n)).collect();
 
         for result in &search_results {
-            match self.db.get_note(&result.id) {
-                Ok(note) => {
-                    sources.push(RagSource {
-                        note_id: note.id.clone(),
-                        title: note.title.clone(),
-                        relevance_score: result.score,
-                        match_type: result.match_source.clone(),
-                        preview: crate::safe_truncate(&note.content, 200).to_string(),
-                    });
-                    context_notes.push((note.id.clone(), note.title.clone(), note.content.clone()));
-                }
-                Err(e) => {
-                    tracing::warn!("Failed to fetch note {}: {}", result.id, e);
-                }
+            if let Some(note) = notes_by_id.get(&result.id) {
+                sources.push(RagSource {
+                    note_id: note.id.clone(),
+                    title: note.title.clone(),
+                    relevance_score: result.score,
+                    match_type: result.match_source.clone(),
+                    preview: crate::safe_truncate(&note.content, 200).to_string(),
+                });
+                context_notes.push((note.id.clone(), note.title.clone(), note.content.clone()));
             }
         }
 
-        // Step 4: Expand context via graph neighborhood
+        // Step 4: Expand context via graph neighborhood (honors graph_depth)
         if config.graph_depth > 0 && !context_notes.is_empty() {
-            let neighbor_ids = self.get_graph_neighbors(
-                &context_notes
-                    .iter()
-                    .map(|(id, _, _)| id.as_str())
-                    .collect::<Vec<_>>(),
-                config.graph_depth,
-            );
+            let seed: Vec<&str> = context_notes.iter().map(|(id, _, _)| id.as_str()).collect();
+            let neighbor_limit = config.top_k.max(5);
+            let neighbor_ids = self
+                .db
+                .graph_neighbors(&seed, config.graph_depth, neighbor_limit)
+                .unwrap_or_default();
 
-            for neighbor_id in &neighbor_ids {
-                // Don't duplicate
-                if context_notes.iter().any(|(id, _, _)| id == neighbor_id) {
+            let neighbor_notes = self
+                .db
+                .get_notes_by_ids(&neighbor_ids)
+                .unwrap_or_default();
+            for note in neighbor_notes {
+                if context_notes.iter().any(|(id, _, _)| id == &note.id) {
                     continue;
                 }
-                if let Ok(note) = self.db.get_note(neighbor_id) {
-                    sources.push(RagSource {
-                        note_id: note.id.clone(),
-                        title: note.title.clone(),
-                        relevance_score: 0.0, // Graph-expanded, no search score
-                        match_type: "graph".into(),
-                        preview: crate::safe_truncate(&note.content, 200).to_string(),
-                    });
-                    context_notes.push((note.id, note.title, note.content));
-                }
+                sources.push(RagSource {
+                    note_id: note.id.clone(),
+                    title: note.title.clone(),
+                    relevance_score: 0.0,
+                    match_type: "graph".into(),
+                    preview: crate::safe_truncate(&note.content, 200).to_string(),
+                });
+                context_notes.push((note.id, note.title, note.content));
             }
         }
 
@@ -249,31 +250,4 @@ impl RagEngine {
         context
     }
 
-    /// Get graph neighbors of the given note IDs
-    fn get_graph_neighbors(&self, note_ids: &[&str], _depth: usize) -> Vec<String> {
-        let mut neighbors = Vec::new();
-
-        for id in note_ids {
-            // Get forward links
-            if let Ok(summaries) = self.db.get_forward_links(id) {
-                for summary in &summaries {
-                    if !note_ids.contains(&summary.id.as_str()) {
-                        neighbors.push(summary.id.clone());
-                    }
-                }
-            }
-            // Get backlinks
-            if let Ok(backlinks) = self.db.get_backlinks(id) {
-                for bl in &backlinks {
-                    if !note_ids.contains(&bl.id.as_str()) {
-                        neighbors.push(bl.id.clone());
-                    }
-                }
-            }
-        }
-
-        neighbors.dedup();
-        neighbors.truncate(5); // Limit graph expansion
-        neighbors
-    }
 }

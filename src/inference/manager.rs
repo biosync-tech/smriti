@@ -1,7 +1,7 @@
-//! Model Manager — download, verify, and cache GGUF model files
+//! Model Manager — optional local GGUF cache
 //!
-//! Handles first-run setup: downloads Gemma 4 GGUF from HuggingFace,
-//! verifies SHA256, stores in ~/.local/share/smriti/models/
+//! Default inference is Ollama. This manager only applies when a user
+//! explicitly opts into the `local` backend and supplies a GGUF on disk.
 
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
@@ -9,50 +9,8 @@ use std::path::{Path, PathBuf};
 use super::config::InferenceConfig;
 use super::InferenceError;
 
-/// Known model registry — maps model+quantization to HuggingFace URLs
-const KNOWN_MODELS: &[ModelEntry] = &[
-    ModelEntry {
-        model: "gemma-4-31b-it",
-        quantization: "Q4_K_M",
-        repo: "bartowski/gemma-4-31b-it-GGUF",
-        filename: "gemma-4-31b-it-Q4_K_M.gguf",
-        size_bytes: 18_500_000_000, // ~18.5 GB
-        sha256: None, // Verified at download time
-    },
-    ModelEntry {
-        model: "gemma-4-31b-it",
-        quantization: "Q5_K_M",
-        repo: "bartowski/gemma-4-31b-it-GGUF",
-        filename: "gemma-4-31b-it-Q5_K_M.gguf",
-        size_bytes: 22_000_000_000,
-        sha256: None,
-    },
-    ModelEntry {
-        model: "gemma-4-31b-it",
-        quantization: "Q8_0",
-        repo: "bartowski/gemma-4-31b-it-GGUF",
-        filename: "gemma-4-31b-it-Q8_0.gguf",
-        size_bytes: 34_000_000_000,
-        sha256: None,
-    },
-    // Smaller models for resource-constrained environments
-    ModelEntry {
-        model: "gemma-4-12b-it",
-        quantization: "Q4_K_M",
-        repo: "bartowski/gemma-4-12b-it-GGUF",
-        filename: "gemma-4-12b-it-Q4_K_M.gguf",
-        size_bytes: 7_400_000_000,
-        sha256: None,
-    },
-    ModelEntry {
-        model: "gemma-4-4b-it",
-        quantization: "Q4_K_M",
-        repo: "bartowski/gemma-4-4b-it-GGUF",
-        filename: "gemma-4-4b-it-Q4_K_M.gguf",
-        size_bytes: 2_800_000_000,
-        sha256: None,
-    },
-];
+/// Opt-in registry. Empty — GGUF files are user-supplied, not shipped.
+const KNOWN_MODELS: &[ModelEntry] = &[];
 
 struct ModelEntry {
     model: &'static str,
@@ -156,7 +114,7 @@ impl ModelManager {
         tracing::info!("Downloading {} from {}", entry.filename, url);
         tracing::info!("Expected size: {:.1} GB", entry.size_bytes as f64 / 1e9);
 
-        let resp = self
+        let mut resp = self
             .client
             .get(&url)
             .send()
@@ -171,18 +129,23 @@ impl ModelManager {
             )));
         }
 
-        // Stream to temporary file, then rename (atomic)
+        // Stream to a temp file — never hold the GGUF in RAM.
         let tmp_path = dest.with_extension("gguf.part");
-
-        let bytes = resp
-            .bytes()
-            .await
-            .map_err(|e| InferenceError::DownloadFailed(e.to_string()))?;
-
-        let downloaded = bytes.len() as u64;
-        tokio::fs::write(&tmp_path, &bytes).await?;
-
-        // Rename temp to final
+        let mut file = tokio::fs::File::create(&tmp_path).await?;
+        let mut downloaded = 0u64;
+        use tokio::io::AsyncWriteExt;
+        loop {
+            let chunk = resp
+                .chunk()
+                .await
+                .map_err(|e| InferenceError::DownloadFailed(e.to_string()))?;
+            let Some(chunk) = chunk else {
+                break;
+            };
+            file.write_all(&chunk).await?;
+            downloaded += chunk.len() as u64;
+        }
+        file.flush().await?;
         tokio::fs::rename(&tmp_path, &dest).await?;
 
         tracing::info!(
@@ -203,10 +166,17 @@ impl ModelManager {
             )));
         }
 
-        // Read file and compute SHA256
-        let bytes = tokio::fs::read(path).await?;
+        use tokio::io::AsyncReadExt;
+        let mut file = tokio::fs::File::open(path).await?;
         let mut hasher = Sha256::new();
-        hasher.update(&bytes);
+        let mut buf = vec![0u8; 1024 * 1024];
+        loop {
+            let n = file.read(&mut buf).await?;
+            if n == 0 {
+                break;
+            }
+            hasher.update(&buf[..n]);
+        }
         let hash = format!("{:x}", hasher.finalize());
 
         tracing::info!("Model SHA256: {}", hash);

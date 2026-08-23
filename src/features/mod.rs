@@ -3,6 +3,7 @@ pub mod consolidation;
 pub mod contradiction;
 pub mod daily_digest;
 pub mod provenance;
+pub mod schema_formation;
 pub mod smart_links;
 pub mod verify;
 pub mod wiki_transaction;

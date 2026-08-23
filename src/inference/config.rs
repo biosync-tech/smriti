@@ -85,11 +85,11 @@ pub struct EmbeddingConfig {
 // --- Defaults ---
 
 fn default_backend() -> String {
-    "local".into()
+    "ollama".into()
 }
 
 fn default_model() -> String {
-    "gemma-4-31b-it".into()
+    "llama3.2".into()
 }
 
 fn default_quantization() -> String {
@@ -119,11 +119,11 @@ fn default_ollama_host() -> String {
 }
 
 fn default_ollama_model() -> String {
-    "gemma4:31b".into()
+    "llama3.2".into()
 }
 
 fn default_ollama_embed_model() -> String {
-    "gemma4:31b".into()
+    "all-minilm".into()
 }
 
 fn default_openai_url() -> String {
@@ -131,7 +131,7 @@ fn default_openai_url() -> String {
 }
 
 fn default_openai_embed_model() -> String {
-    "gemma-4-31b-it".into()
+    "all-minilm".into()
 }
 
 fn default_true() -> bool {
@@ -230,5 +230,38 @@ impl InferenceConfig {
     pub fn model_path(&self) -> PathBuf {
         let filename = format!("{}-{}.gguf", self.model, self.quantization);
         self.models_dir.join(filename)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_backend_is_ollama_not_gemma() {
+        let cfg = InferenceConfig::default();
+        assert_eq!(cfg.backend, "ollama");
+        assert!(
+            !cfg.model.to_lowercase().contains("gemma"),
+            "chat model should not default to Gemma, got {}",
+            cfg.model
+        );
+        assert!(
+            !cfg.ollama.model.to_lowercase().contains("gemma"),
+            "Ollama chat model should not default to Gemma, got {}",
+            cfg.ollama.model
+        );
+        assert!(
+            !cfg.ollama.embed_model.to_lowercase().contains("gemma"),
+            "Ollama embed model should not default to Gemma, got {}",
+            cfg.ollama.embed_model
+        );
+        assert!(
+            !cfg.openai.embed_model.to_lowercase().contains("gemma"),
+            "OpenAI embed model should not default to Gemma, got {}",
+            cfg.openai.embed_model
+        );
+        assert_eq!(cfg.ollama.embed_model, "all-minilm");
+        assert_eq!(cfg.embedding.dimensions, 384);
     }
 }

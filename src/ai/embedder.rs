@@ -7,7 +7,6 @@ use std::sync::Arc;
 
 use crate::inference::{InferenceError, SharedBackend};
 use crate::inference::queue::EmbeddingQueue;
-use crate::models::NoteListQuery;
 use crate::storage::Database;
 
 /// The auto-embedder manages the embedding queue and provides
@@ -21,7 +20,7 @@ pub struct AutoEmbedder {
 impl AutoEmbedder {
     /// Create a new auto-embedder with a background processing queue
     pub fn new(db: Arc<Database>, backend: SharedBackend, batch_size: usize) -> Self {
-        let queue = EmbeddingQueue::new(backend.clone(), batch_size);
+        let queue = EmbeddingQueue::new(db.clone(), backend.clone(), batch_size);
         Self { queue, backend, db }
     }
 
@@ -61,34 +60,10 @@ impl AutoEmbedder {
 
     /// Embed all notes that don't have embeddings yet
     pub async fn embed_missing(&self) -> Result<usize, InferenceError> {
-        let notes = self.db.list_notes(&NoteListQuery {
-            limit: 100_000,
-            offset: 0,
-            sort: crate::models::SortOrder::UpdatedDesc,
-            tag: None,
-        }).map_err(|e| InferenceError::GenerationFailed(e.to_string()))?;
-
-        // Check which notes already have embeddings
-        let mut missing: Vec<String> = Vec::new();
-        for note in &notes {
-            let has_embedding = self
-                .db
-                .execute(|conn| {
-                    let count: i64 = conn
-                        .query_row(
-                            "SELECT COUNT(*) FROM note_embeddings_meta WHERE note_id = ?1",
-                            [&note.id],
-                            |row| row.get(0),
-                        )
-                        .unwrap_or(0);
-                    Ok(count > 0)
-                })
-                .unwrap_or(false);
-
-            if !has_embedding {
-                missing.push(note.id.clone());
-            }
-        }
+        let missing = self
+            .db
+            .list_note_ids_missing_embeddings()
+            .map_err(|e| InferenceError::GenerationFailed(e.to_string()))?;
 
         let count = missing.len();
         if count > 0 {

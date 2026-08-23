@@ -167,10 +167,10 @@ impl InferenceBackend for OllamaBackend {
         BackendCapabilities {
             text_generation: true,
             embeddings: true,
-            vision: false, // TODO: enable when implemented
+            vision: false,
             audio: false,
-            function_calling: true,
-            max_context_length: 131072, // Gemma 4 via Ollama
+            function_calling: false,
+            max_context_length: 131072,
             model_name: self.model.clone(),
         }
     }

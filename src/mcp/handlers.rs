@@ -523,15 +523,18 @@ pub fn handle_retrieve_context(db: &Database, args: &Value) -> Result<Value, Str
             let results = db
                 .hybrid_search(query, emb, top_k, fts_weight)
                 .map_err(|e| e.to_string())?;
+            let ids: Vec<String> = results.iter().map(|r| r.id.clone()).collect();
+            let notes = db.get_notes_by_ids(&ids).map_err(|e| e.to_string())?;
+            let by_id: HashMap<_, _> = notes.into_iter().map(|n| (n.id.clone(), n)).collect();
             for r in results {
-                if let Ok(note) = db.get_note(&r.id) {
+                if let Some(note) = by_id.get(&r.id) {
                     seed_notes.push(ScoredNote {
                         score: r.score,
                         match_type: r.match_source.clone(),
                         consolidation_score: note.consolidation_score,
-                        id: note.id,
-                        title: note.title,
-                        content: note.content,
+                        id: note.id.clone(),
+                        title: note.title.clone(),
+                        content: note.content.clone(),
                     });
                 }
             }
@@ -549,17 +552,19 @@ pub fn handle_retrieve_context(db: &Database, args: &Value) -> Result<Value, Str
             })
             .map_err(|e| e.to_string())?;
         let total = results.len().max(1) as f64;
+        let ids: Vec<String> = results.iter().map(|r| r.id.clone()).collect();
+        let notes = db.get_notes_by_ids(&ids).map_err(|e| e.to_string())?;
+        let by_id: HashMap<_, _> = notes.into_iter().map(|n| (n.id.clone(), n)).collect();
         for (rank, r) in results.into_iter().enumerate() {
-            // Rank-based score: 1.0 for rank 0, decreasing by 1/total steps
             let score = 1.0 - (rank as f64 / total);
-            if let Ok(note) = db.get_note(&r.id) {
+            if let Some(note) = by_id.get(&r.id) {
                 seed_notes.push(ScoredNote {
                     score,
                     match_type: "fts".to_string(),
                     consolidation_score: note.consolidation_score,
-                    id: note.id,
-                    title: note.title,
-                    content: note.content,
+                    id: note.id.clone(),
+                    title: note.title.clone(),
+                    content: note.content.clone(),
                 });
             }
         }
@@ -567,50 +572,20 @@ pub fn handle_retrieve_context(db: &Database, args: &Value) -> Result<Value, Str
 
     // ── Step 3: BFS graph expansion ───────────────────────────────────────────
     if graph_depth > 0 && !seed_notes.is_empty() {
-        let links = db.get_all_links().map_err(|e| e.to_string())?;
-        let notes_list = db
-            .list_notes(&NoteListQuery {
-                limit: 50_000,
-                offset: 0,
-                sort: SortOrder::UpdatedDesc,
-                tag: None,
-            })
-            .map_err(|e| e.to_string())?;
-
-        let mut titles: HashMap<String, String> = HashMap::new();
-        let mut tag_counts: HashMap<String, usize> = HashMap::new();
-        for n in &notes_list {
-            titles.insert(n.id.clone(), n.title.clone());
-            tag_counts.insert(n.id.clone(), n.tag_count);
-        }
-
-        let kg = KnowledgeGraph::from_links(&links, &titles, &tag_counts);
         let seed_ids: Vec<&str> = seed_notes.iter().map(|n| n.id.as_str()).collect();
-        let existing_ids: HashSet<String> = seed_notes.iter().map(|n| n.id.clone()).collect();
-
-        let mut neighbor_ids: Vec<String> = Vec::new();
-        for seed_id in &seed_ids {
-            let subgraph = kg.export_subgraph(seed_id, graph_depth);
-            for node in &subgraph.nodes {
-                if !existing_ids.contains(&node.id) && !neighbor_ids.contains(&node.id) {
-                    neighbor_ids.push(node.id.clone());
-                }
-            }
-        }
-        // Limit graph expansion to avoid context explosion
-        neighbor_ids.truncate(top_k / 2);
-
-        for nid in &neighbor_ids {
-            if let Ok(note) = db.get_note(nid) {
-                seed_notes.push(ScoredNote {
-                    id: note.id,
-                    title: note.title,
-                    content: note.content,
-                    score: 0.0, // graph-expanded, no search score
-                    match_type: "graph".to_string(),
-                    consolidation_score: note.consolidation_score,
-                });
-            }
+        let neighbor_limit = (top_k / 2).max(1);
+        let neighbor_ids = db
+            .graph_neighbors(&seed_ids, graph_depth, neighbor_limit)
+            .map_err(|e| e.to_string())?;
+        for note in db.get_notes_by_ids(&neighbor_ids).map_err(|e| e.to_string())? {
+            seed_notes.push(ScoredNote {
+                id: note.id,
+                title: note.title,
+                content: note.content,
+                score: 0.0,
+                match_type: "graph".to_string(),
+                consolidation_score: note.consolidation_score,
+            });
         }
     }
 

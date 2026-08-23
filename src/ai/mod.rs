@@ -1,9 +1,7 @@
-//! AI-Powered Features — Gemma 4 integration layer
+//! AI-Powered Features
 //!
-//! This module contains the high-level AI features that make Smriti
-//! an AI-native knowledge graph. All features use the pluggable
-//! InferenceBackend trait, so they work with local Gemma 4, Ollama,
-//! or any OpenAI-compatible API.
+//! High-level AI features over the pluggable InferenceBackend trait
+//! (Ollama by default, OpenAI-compatible, or optional local GGUF).
 //!
 //! Research references:
 //! - Graph-Based Memory Survey arXiv:2602.05665 — hybrid search beats pure vector

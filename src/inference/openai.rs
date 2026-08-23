@@ -215,7 +215,7 @@ impl InferenceBackend for OpenAICompatibleBackend {
             embeddings: true,
             vision: false,
             audio: false,
-            function_calling: true,
+            function_calling: false,
             max_context_length: 131072,
             model_name: self.model.clone(),
         }

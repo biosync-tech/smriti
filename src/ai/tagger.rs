@@ -4,7 +4,6 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
 use crate::inference::{AuditedInference, CallContext, GenerateRequest, InferenceError};
-use crate::models::NoteListQuery;
 use crate::storage::Database;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -41,17 +40,6 @@ impl AutoTagger {
         let note = self.db.get_note(note_id).map_err(|e| {
             InferenceError::GenerationFailed(format!("Note not found: {}", e))
         })?;
-
-        // Get some notes in the knowledge base for context
-        let _all_notes = self
-            .db
-            .list_notes(&NoteListQuery {
-                limit: 1000,
-                offset: 0,
-                sort: crate::models::SortOrder::UpdatedDesc,
-                tag: None,
-            })
-            .map_err(|e| InferenceError::GenerationFailed(e.to_string()))?;
 
         let system = format!(
             "You are Smriti AI. Suggest up to {} tags for the following note. \

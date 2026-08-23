@@ -1,7 +1,7 @@
 //! AI Inference Layer — pluggable backends for LLM inference
 //!
 //! Architecture: InferenceBackend trait with three implementations:
-//! - LocalGemmaBackend: Embedded llama-gguf (ships in binary)
+//! - LocalGemmaBackend: Optional in-process GGUF (feature `gemma`, not the default)
 //! - OllamaBackend: Connects to local Ollama instance
 //! - OpenAICompatibleBackend: Any OpenAI-compatible API
 //!
@@ -37,7 +37,7 @@ pub trait InferenceBackend: Send + Sync {
     /// Generate embeddings for one or more texts
     async fn embed(&self, texts: &[String]) -> Result<Vec<Vec<f32>>, InferenceError>;
 
-    /// Describe an image (multimodal — Gemma 4 vision)
+    /// Describe an image (multimodal — only backends that implement vision)
     async fn describe_image(&self, image_bytes: &[u8], prompt: &str) -> Result<String, InferenceError>;
 
     /// Check what this backend can do
@@ -172,7 +172,7 @@ pub type SharedBackend = Arc<dyn InferenceBackend>;
 pub async fn create_backend(config: &InferenceConfig) -> Result<SharedBackend, InferenceError> {
     match config.backend.as_str() {
         "local" => {
-            tracing::info!("Initializing local Gemma 4 backend via llama-gguf");
+            tracing::info!("Initializing optional local GGUF backend");
             let backend = local::LocalGemmaBackend::new(config).await?;
             Ok(Arc::new(backend))
         }

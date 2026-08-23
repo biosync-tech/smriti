@@ -1,7 +1,7 @@
 //! Multimodal Ingestion — create notes from images and other media
 //!
-//! Uses Gemma 4's vision capabilities to describe images and
-//! automatically create notes from them.
+//! Uses the backend's vision capability (when implemented) to describe
+//! images and automatically create notes from them.
 
 use std::sync::Arc;
 use serde::{Deserialize, Serialize};
@@ -40,13 +40,12 @@ impl MultimodalIngestor {
         Self { db, backend }
     }
 
-    /// Create a note from an image using Gemma 4 vision
+    /// Create a note from an image when the backend supports vision
     pub async fn ingest_image(
         &self,
         image_bytes: &[u8],
         request: &IngestImageRequest,
     ) -> Result<IngestResponse, InferenceError> {
-        // Use Gemma 4's vision capability to describe the image
         let prompt = match &request.context {
             Some(ctx) => format!(
                 "Describe this image in detail. Create a knowledge note about it. \
