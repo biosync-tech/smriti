@@ -718,4 +718,97 @@ mod tests {
         assert_eq!(breakdown.cascade_salience, 0.0);
         assert!((breakdown.score - 0.5).abs() < 1e-3, "sigmoid(0) ≈ 0.5");
     }
+
+    fn three_similar_embedded_notes(db: &crate::storage::Database) -> Vec<String> {
+        use crate::models::note::CreateNoteRequest;
+        let mut ids = Vec::new();
+        for title in ["AE aspirin", "AE aspirin follow-up", "AE aspirin monitor"] {
+            let n = db
+                .create_note(CreateNoteRequest {
+                    title: title.into(),
+                    content: "patient continues aspirin 81mg daily".into(),
+                    tags: vec![],
+                })
+                .unwrap();
+            db.store_embedding(&n.id, &vec![1.0; 384], Some("test"))
+                .unwrap();
+            ids.push(n.id);
+        }
+        ids
+    }
+
+    #[test]
+    fn standard_policy_does_not_schema_episodes_below_promote_above() {
+        let db = fresh_db();
+        let ids = three_similar_embedded_notes(&db);
+        // Fresh notes score ≈ 0.5. Default promote_above is 0.80.
+        let report = db
+            .execute(|conn| {
+                run_consolidation_pass(
+                    conn,
+                    ConsolidationPolicy::Standard,
+                    false,
+                    ScoreWeights::default(),
+                    Thresholds::default(),
+                )
+            })
+            .unwrap();
+
+        assert!(
+            report.promoted.is_empty(),
+            "must not create schemas from notes below promote_above: {:?}",
+            report.promoted
+        );
+        for id in &ids {
+            let parent: Option<String> = db
+                .execute(|conn| {
+                    Ok(conn.query_row(
+                        "SELECT parent_schema_id FROM notes WHERE id = ?1",
+                        params![id],
+                        |r| r.get(0),
+                    )?)
+                })
+                .unwrap();
+            assert!(
+                parent.is_none(),
+                "episode {id} was subsumed despite score below promote_above"
+            );
+        }
+    }
+
+    #[test]
+    fn standard_policy_schemas_only_episodes_above_promote_above() {
+        let db = fresh_db();
+        let ids = three_similar_embedded_notes(&db);
+        let thresholds = Thresholds {
+            promote_above: 0.10,
+            flag_below: 0.0,
+            ..Thresholds::default()
+        };
+        let report = db
+            .execute(|conn| {
+                run_consolidation_pass(
+                    conn,
+                    ConsolidationPolicy::Standard,
+                    false,
+                    ScoreWeights::default(),
+                    thresholds,
+                )
+            })
+            .unwrap();
+
+        assert_eq!(report.promoted.len(), 1, "eligible cluster should form one schema");
+        for id in &ids {
+            let parent: Option<String> = db
+                .execute(|conn| {
+                    Ok(conn.query_row(
+                        "SELECT parent_schema_id FROM notes WHERE id = ?1",
+                        params![id],
+                        |r| r.get(0),
+                    )?)
+                })
+                .unwrap();
+            assert_eq!(parent.as_deref(), Some(report.promoted[0].as_str()));
+        }
+    }
 }
