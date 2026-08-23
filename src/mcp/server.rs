@@ -425,10 +425,18 @@ impl McpServer {
             "memory_list" => handlers::handle_memory_list(&self.db, &arguments),
             "memory_history" => handlers::handle_memory_history(&self.db, &arguments),
             "notes_search_semantic" => handlers::handle_notes_search_semantic(&self.db, &arguments),
-            "wiki_transaction_submit" => handlers::handle_wiki_transaction_submit(&self.db, &arguments),
-            "wiki_transaction_commit" => handlers::handle_wiki_transaction_commit(&self.db, &arguments),
-            "wiki_transaction_reject" => handlers::handle_wiki_transaction_reject(&self.db, &arguments),
-            "wiki_transaction_list_pending" => handlers::handle_wiki_transaction_list_pending(&self.db, &arguments),
+            "wiki_transaction_submit" => {
+                handlers::handle_wiki_transaction_submit(&self.db, &arguments)
+            }
+            "wiki_transaction_commit" => {
+                handlers::handle_wiki_transaction_commit(&self.db, &arguments)
+            }
+            "wiki_transaction_reject" => {
+                handlers::handle_wiki_transaction_reject(&self.db, &arguments)
+            }
+            "wiki_transaction_list_pending" => {
+                handlers::handle_wiki_transaction_list_pending(&self.db, &arguments)
+            }
             "wiki_verify" => handlers::handle_wiki_verify(&self.db, &arguments),
             "contradictions_detect" => handlers::handle_contradictions_detect(&self.db, &arguments),
             "contradictions_list" => handlers::handle_contradictions_list(&self.db, &arguments),
@@ -510,11 +518,7 @@ impl McpServer {
     ///
     /// Used by the HTTP MCP endpoint (`POST /mcp`) to reuse the same routing
     /// logic as the stdio transport, keeping both transports in sync.
-    pub fn dispatch_http(
-        &self,
-        method: &str,
-        params: Value,
-    ) -> Result<Value, (i32, String)> {
+    pub fn dispatch_http(&self, method: &str, params: Value) -> Result<Value, (i32, String)> {
         match method {
             "initialize" => self.handle_initialize(&params),
             "tools/list" => self.handle_tools_list(),

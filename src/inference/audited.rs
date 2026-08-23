@@ -29,10 +29,20 @@ fn sha256_hex(input: &str) -> String {
 fn hash_request(req: &GenerateRequest) -> String {
     // Deterministic concatenation. Only fields that affect output are included.
     let mut s = String::new();
-    s.push_str("prompt:"); s.push_str(&req.prompt); s.push('\n');
-    if let Some(sys) = &req.system { s.push_str("sys:"); s.push_str(sys); s.push('\n'); }
-    if let Some(t) = req.temperature { s.push_str(&format!("t:{}\n", t)); }
-    if let Some(m) = req.max_tokens { s.push_str(&format!("m:{}\n", m)); }
+    s.push_str("prompt:");
+    s.push_str(&req.prompt);
+    s.push('\n');
+    if let Some(sys) = &req.system {
+        s.push_str("sys:");
+        s.push_str(sys);
+        s.push('\n');
+    }
+    if let Some(t) = req.temperature {
+        s.push_str(&format!("t:{}\n", t));
+    }
+    if let Some(m) = req.max_tokens {
+        s.push_str(&format!("m:{}\n", m));
+    }
     sha256_hex(&s)
 }
 
@@ -278,8 +288,12 @@ mod tests {
         let audited = AuditedInference::new(mock.clone(), db.clone());
         let req = GenerateRequest {
             prompt: "test prompt".into(),
-            system: None, max_tokens: None, temperature: Some(0.0),
-            top_p: None, stop: None, thinking: None,
+            system: None,
+            max_tokens: None,
+            temperature: Some(0.0),
+            top_p: None,
+            stop: None,
+            thinking: None,
         };
         let ctx = CallContext::new("notes_summarize")
             .with_agent("agent_x")
@@ -309,15 +323,27 @@ mod tests {
         let db = Arc::new(Database::new(":memory:").unwrap());
         let audited = AuditedInference::new(mock, db.clone());
         let req = GenerateRequest {
-            prompt: "p".into(), system: None, max_tokens: None,
-            temperature: Some(0.0), top_p: None, stop: None, thinking: None,
+            prompt: "p".into(),
+            system: None,
+            max_tokens: None,
+            temperature: Some(0.0),
+            top_p: None,
+            stop: None,
+            thinking: None,
         };
-        let _ = audited.generate_audited(&req, &CallContext::new("t1")).await.unwrap();
+        let _ = audited
+            .generate_audited(&req, &CallContext::new("t1"))
+            .await
+            .unwrap();
 
         let conn = db.conn.lock().unwrap();
-        let count: i64 = conn.query_row(
-            "SELECT count(*) FROM events WHERE event_type='llm_call'",
-            [], |r| r.get(0)).unwrap();
+        let count: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM events WHERE event_type='llm_call'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
         assert_eq!(count, 1);
     }
 }

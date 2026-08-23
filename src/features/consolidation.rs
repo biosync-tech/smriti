@@ -252,12 +252,7 @@ pub fn explain_score(
         now,
     )?;
     let diversity = crate::features::schema_formation::context_diversity(conn, note_id)?;
-    let mut b = compute_score(
-        salience,
-        degree as u32,
-        diversity,
-        weights,
-    );
+    let mut b = compute_score(salience, degree as u32, diversity, weights);
     b.note_id = note_id.to_string();
     Ok(b)
 }
@@ -320,9 +315,8 @@ pub fn run_consolidation_pass(
         let (id, score_before, degree) = row?;
         report.scanned += 1;
 
-        let salience = crate::features::cascade::salience_peek_for_note(
-            conn, &id, &cascade_cfg, now,
-        )?;
+        let salience =
+            crate::features::cascade::salience_peek_for_note(conn, &id, &cascade_cfg, now)?;
         let diversity = crate::features::schema_formation::context_diversity(conn, &id)?;
         let breakdown = compute_score(salience, degree, diversity, weights);
         let new_score = breakdown.score;
@@ -341,10 +335,7 @@ pub fn run_consolidation_pass(
                 id.clone(),
                 format!(
                     "score {:.3} < flag_below {:.3} (salience={:.4} degree={})",
-                    new_score,
-                    thresholds.flag_below,
-                    breakdown.cascade_salience,
-                    degree,
+                    new_score, thresholds.flag_below, breakdown.cascade_salience, degree,
                 ),
             );
             if !dry_run {
@@ -533,7 +524,11 @@ mod tests {
     fn score_zero_inputs_gives_half() {
         let w = ScoreWeights::default();
         let b = compute_score(0.0, 0, 0.0, w);
-        assert!((b.score - 0.5).abs() < 1e-3, "sigmoid(0) ≈ 0.5, got {}", b.score);
+        assert!(
+            (b.score - 0.5).abs() < 1e-3,
+            "sigmoid(0) ≈ 0.5, got {}",
+            b.score
+        );
     }
 
     #[test]
@@ -542,7 +537,10 @@ mod tests {
         let low = compute_score(0.1, 0, 0.0, w).score;
         let mid = compute_score(1.0, 0, 0.0, w).score;
         let high = compute_score(5.0, 0, 0.0, w).score;
-        assert!(low < mid && mid < high, "expected monotonic: {low} {mid} {high}");
+        assert!(
+            low < mid && mid < high,
+            "expected monotonic: {low} {mid} {high}"
+        );
     }
 
     #[test]
@@ -557,12 +555,27 @@ mod tests {
         let g_only = compute_score(0.0, 3, 0.0, w).score;
         let baseline = compute_score(0.0, 0, 0.0, w).score;
         // Each active component lifts score above baseline.
-        assert!(s_only > baseline, "salience lifts score: {s_only} vs {baseline}");
-        assert!(d_only > baseline, "diversity lifts score: {d_only} vs {baseline}");
-        assert!(g_only > baseline, "degree lifts score: {g_only} vs {baseline}");
+        assert!(
+            s_only > baseline,
+            "salience lifts score: {s_only} vs {baseline}"
+        );
+        assert!(
+            d_only > baseline,
+            "diversity lifts score: {d_only} vs {baseline}"
+        );
+        assert!(
+            g_only > baseline,
+            "degree lifts score: {g_only} vs {baseline}"
+        );
         // Salience has the largest weight so it dominates.
-        assert!(s_only > d_only, "salience(1) > diversity(1): {s_only} vs {d_only}");
-        assert!(s_only > g_only, "salience(1) > degree(3): {s_only} vs {g_only}");
+        assert!(
+            s_only > d_only,
+            "salience(1) > diversity(1): {s_only} vs {d_only}"
+        );
+        assert!(
+            s_only > g_only,
+            "salience(1) > degree(3): {s_only} vs {g_only}"
+        );
     }
 
     #[test]
@@ -595,7 +608,13 @@ mod tests {
             conn.execute(
                 "INSERT INTO notes (id, title, content, created_at, updated_at)
                  VALUES (?1, ?2, ?3, ?4, ?5)",
-                params![id, "t", "c", Utc::now().to_rfc3339(), Utc::now().to_rfc3339()],
+                params![
+                    id,
+                    "t",
+                    "c",
+                    Utc::now().to_rfc3339(),
+                    Utc::now().to_rfc3339()
+                ],
             )?;
             Ok(())
         })
@@ -615,20 +634,17 @@ mod tests {
         .unwrap();
 
         db.execute(|conn| {
-            let count: i64 = conn
-                .query_row(
-                    "SELECT access_count FROM notes WHERE id = 'n1'",
-                    [],
-                    |r| r.get(0),
-                )?;
+            let count: i64 =
+                conn.query_row("SELECT access_count FROM notes WHERE id = 'n1'", [], |r| {
+                    r.get(0)
+                })?;
             assert_eq!(count, 2);
 
-            let logged: i64 = conn
-                .query_row(
-                    "SELECT COUNT(*) FROM note_access_log WHERE note_id = 'n1'",
-                    [],
-                    |r| r.get(0),
-                )?;
+            let logged: i64 = conn.query_row(
+                "SELECT COUNT(*) FROM note_access_log WHERE note_id = 'n1'",
+                [],
+                |r| r.get(0),
+            )?;
             assert_eq!(logged, 2);
             Ok(())
         })
@@ -655,15 +671,16 @@ mod tests {
         assert_eq!(report.scanned, 1);
 
         db.execute(|conn| {
-            let score: f64 = conn
-                .query_row(
-                    "SELECT consolidation_score FROM notes WHERE id = 'n1'",
-                    [],
-                    |r| r.get(0),
-                )?;
+            let score: f64 = conn.query_row(
+                "SELECT consolidation_score FROM notes WHERE id = 'n1'",
+                [],
+                |r| r.get(0),
+            )?;
             assert_eq!(score, 0.0, "dry_run must not persist score");
-            let events: i64 = conn
-                .query_row("SELECT COUNT(*) FROM consolidation_events", [], |r| r.get(0))?;
+            let events: i64 =
+                conn.query_row("SELECT COUNT(*) FROM consolidation_events", [], |r| {
+                    r.get(0)
+                })?;
             assert_eq!(events, 0, "dry_run must not write events");
             Ok(())
         })
@@ -698,13 +715,12 @@ mod tests {
         assert!(report.promoted.is_empty());
 
         db.execute(|conn| {
-            let events: i64 = conn
-                .query_row(
-                    "SELECT COUNT(*) FROM consolidation_events
+            let events: i64 = conn.query_row(
+                "SELECT COUNT(*) FROM consolidation_events
                      WHERE event_type = 'flagged_for_review'",
-                    [],
-                    |r| r.get(0),
-                )?;
+                [],
+                |r| r.get(0),
+            )?;
             assert_eq!(events, 1);
             Ok(())
         })
@@ -804,7 +820,11 @@ mod tests {
             })
             .unwrap();
 
-        assert_eq!(report.promoted.len(), 1, "eligible cluster should form one schema");
+        assert_eq!(
+            report.promoted.len(),
+            1,
+            "eligible cluster should form one schema"
+        );
         for id in &ids {
             let parent: Option<String> = db
                 .execute(|conn| {

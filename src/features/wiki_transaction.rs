@@ -330,10 +330,7 @@ impl Database {
     }
 
     /// List pending transactions (the "review inbox").
-    pub fn list_pending_transactions(
-        &self,
-        limit: usize,
-    ) -> AppResult<Vec<WikiTransaction>> {
+    pub fn list_pending_transactions(&self, limit: usize) -> AppResult<Vec<WikiTransaction>> {
         self.execute(|conn| {
             let mut stmt = conn.prepare(
                 "SELECT id, agent_id, status, operations, rationale, created_at, committed_at
@@ -353,11 +350,9 @@ impl Database {
                         operations,
                         rationale: row.get(4)?,
                         require_provenance: true,
-                        created_at: chrono::DateTime::parse_from_rfc3339(
-                            &row.get::<_, String>(5)?,
-                        )
-                        .unwrap_or_default()
-                        .with_timezone(&Utc),
+                        created_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(5)?)
+                            .unwrap_or_default()
+                            .with_timezone(&Utc),
                         committed_at: row
                             .get::<_, Option<String>>(6)?
                             .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
@@ -731,7 +726,9 @@ impl Database {
                     Ok(())
                 }
                 Err(e) => {
-                    conn.execute_batch("ROLLBACK TO SAVEPOINT wiki_tx; RELEASE SAVEPOINT wiki_tx;")?;
+                    conn.execute_batch(
+                        "ROLLBACK TO SAVEPOINT wiki_tx; RELEASE SAVEPOINT wiki_tx;",
+                    )?;
                     conn.execute(
                         "UPDATE wiki_transactions
                          SET status = 'failed', rejection_reason = ?1
@@ -786,10 +783,9 @@ fn resolve_source_inline(
         .source_uri
         .as_ref()
         .ok_or_else(|| AppError::BadRequest("Claim missing source_id or source_uri".into()))?;
-    let content = claim
-        .source_content
-        .as_ref()
-        .ok_or_else(|| AppError::BadRequest("Claim with source_uri requires source_content".into()))?;
+    let content = claim.source_content.as_ref().ok_or_else(|| {
+        AppError::BadRequest("Claim with source_uri requires source_content".into())
+    })?;
     let hash = crate::features::provenance::hash_content(content);
     let existing: Option<String> = conn
         .query_row(
@@ -991,7 +987,10 @@ mod tests {
             require_provenance: true,
         };
         let result = db.submit_wiki_transaction(req);
-        assert!(result.is_err(), "expected rollback on fabricated second claim");
+        assert!(
+            result.is_err(),
+            "expected rollback on fabricated second claim"
+        );
 
         // Verify the "Good" note was NOT persisted (full rollback)
         let notes = db
@@ -1172,6 +1171,10 @@ mod tests {
                 tag: Some("old".into()),
             })
             .unwrap();
-        assert_eq!(by_old.len(), 0, "old tags must be cleared by explicit replace");
+        assert_eq!(
+            by_old.len(),
+            0,
+            "old tags must be cleared by explicit replace"
+        );
     }
 }

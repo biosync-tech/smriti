@@ -3,8 +3,8 @@
 //! Upgrades the existing SmartLinker with embedding-based similarity,
 //! replacing keyword Jaccard with cosine distance.
 
-use std::sync::Arc;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::inference::{AuditedInference, InferenceError};
 use crate::models::*;
@@ -38,9 +38,10 @@ impl AiLinker {
         max_suggestions: usize,
         min_similarity: f64,
     ) -> Result<Vec<AiLinkSuggestion>, InferenceError> {
-        let note = self.db.get_note(note_id).map_err(|e| {
-            InferenceError::GenerationFailed(format!("Note not found: {}", e))
-        })?;
+        let note = self
+            .db
+            .get_note(note_id)
+            .map_err(|e| InferenceError::GenerationFailed(format!("Note not found: {}", e)))?;
 
         // Generate embedding for this note
         let text = format!("{}\n\n{}", note.title, note.content);
@@ -58,10 +59,8 @@ impl AiLinker {
 
         // Get existing links to filter them out
         let existing_links = self.db.get_forward_links(note_id).unwrap_or_default();
-        let existing_targets: std::collections::HashSet<String> = existing_links
-            .iter()
-            .map(|n| n.id.clone())
-            .collect();
+        let existing_targets: std::collections::HashSet<String> =
+            existing_links.iter().map(|n| n.id.clone()).collect();
 
         let mut suggestions: Vec<AiLinkSuggestion> = Vec::new();
 
@@ -123,7 +122,8 @@ impl AiLinker {
                     for s in &suggestions {
                         if s.similarity_score >= min_similarity {
                             if let Err(e) =
-                                self.db.create_link(&s.source_id, &s.target_id, LinkType::Semantic)
+                                self.db
+                                    .create_link(&s.source_id, &s.target_id, LinkType::Semantic)
                             {
                                 tracing::warn!("Failed to create link: {}", e);
                             } else {

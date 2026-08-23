@@ -9,8 +9,8 @@
 
 use async_trait::async_trait;
 
-use super::*;
 use super::config::InferenceConfig;
+use super::*;
 
 /// In-process GGUF backend. Model identity comes from config, not this type.
 pub struct LocalGgufBackend {
@@ -58,7 +58,10 @@ impl LocalGgufBackend {
 
 #[async_trait]
 impl InferenceBackend for LocalGgufBackend {
-    async fn generate(&self, _request: &GenerateRequest) -> Result<GenerateResponse, InferenceError> {
+    async fn generate(
+        &self,
+        _request: &GenerateRequest,
+    ) -> Result<GenerateResponse, InferenceError> {
         self.ensure_loaded().await?;
 
         Err(InferenceError::ModelNotLoaded(

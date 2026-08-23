@@ -33,7 +33,9 @@ pub async fn create_note(
     let wikilinks = parser::extract_wikilinks(&note.content);
     for wl in &wikilinks {
         if let Ok(Some(target)) = state.db.get_note_by_title(&wl.target) {
-            let _ = state.db.create_link(&note.id, &target.id, LinkType::WikiLink);
+            let _ = state
+                .db
+                .create_link(&note.id, &target.id, LinkType::WikiLink);
         }
     }
     state.graph_cache.write().await.invalidate();
@@ -41,10 +43,7 @@ pub async fn create_note(
 }
 
 /// GET /api/v1/notes/:id
-pub async fn get_note(
-    State(state): State<AppState>,
-    Path(id): Path<String>,
-) -> WebResult<Note> {
+pub async fn get_note(State(state): State<AppState>, Path(id): Path<String>) -> WebResult<Note> {
     let note = state.db.get_note(&id).map_err(WebError::from)?;
     Ok(ok(note))
 }

@@ -281,11 +281,7 @@ pub fn save(conn: &Connection, note_id: &str, state: &CascadeState) -> AppResult
             SET cascade_state = ?1,
                 cascade_updated_at = ?2
           WHERE id = ?3",
-        rusqlite::params![
-            state.to_json()?,
-            state.last_updated.to_rfc3339(),
-            note_id
-        ],
+        rusqlite::params![state.to_json()?, state.last_updated.to_rfc3339(), note_id],
     )?;
     Ok(())
 }
@@ -295,11 +291,7 @@ pub fn save(conn: &Connection, note_id: &str, state: &CascadeState) -> AppResult
 ///
 /// Best-effort: callers should not let cascade failures block access logging.
 /// The cascade state can be reconstructed from `note_access_log` if lost.
-pub fn record_access(
-    conn: &Connection,
-    note_id: &str,
-    config: &CascadeConfig,
-) -> AppResult<()> {
+pub fn record_access(conn: &Connection, note_id: &str, config: &CascadeConfig) -> AppResult<()> {
     let now = Utc::now();
     let mut state = load(conn, note_id)?.unwrap_or_else(|| CascadeState::new(config, now));
     state.record_access(config, now);
@@ -354,10 +346,7 @@ pub fn explain(
 ) -> AppResult<CascadeExplain> {
     let now = Utc::now();
     let stored = load(conn, note_id)?;
-    let last_updated = stored
-        .as_ref()
-        .map(|s| s.last_updated)
-        .unwrap_or(now);
+    let last_updated = stored.as_ref().map(|s| s.last_updated).unwrap_or(now);
     let state = stored.unwrap_or_else(|| CascadeState::new(config, now));
     let salience = state.salience_peek(config, now);
     let capacities = (0..config.levels).map(|k| config.capacity_at(k)).collect();
@@ -430,7 +419,11 @@ mod tests {
         // measurable mass, short enough that u_5 has not yet had time to
         // accumulate above floating-point noise.
         s.apply_dynamics(&c, c.timescale_at(1));
-        assert!(s.levels[1] > 1e-6, "u_1 should have received mass: {:?}", s.levels);
+        assert!(
+            s.levels[1] > 1e-6,
+            "u_1 should have received mass: {:?}",
+            s.levels
+        );
         assert!(
             s.levels[1] > s.levels[5],
             "mass should sit at faster levels at short t: u_1={}, u_5={}",
@@ -448,7 +441,11 @@ mod tests {
         s.inject(&c);
         s.apply_dynamics(&c, 100.0 * c.timescale_at(5));
         for u in &s.levels {
-            assert!(u.abs() < 1e-6, "leaky cascade should decay to ~0, got {:?}", s.levels);
+            assert!(
+                u.abs() < 1e-6,
+                "leaky cascade should decay to ~0, got {:?}",
+                s.levels
+            );
         }
     }
 
@@ -530,7 +527,11 @@ mod tests {
         s.inject(&c);
         s.apply_dynamics(&c, 365.0 * 86_400.0); // one year
         for u in &s.levels {
-            assert!(u.is_finite(), "got non-finite cascade value: {:?}", s.levels);
+            assert!(
+                u.is_finite(),
+                "got non-finite cascade value: {:?}",
+                s.levels
+            );
         }
     }
 
@@ -616,8 +617,16 @@ mod tests {
                 .query_map([], |row| row.get::<_, String>(1))?
                 .filter_map(Result::ok)
                 .collect();
-            assert!(cols.contains(&"cascade_state".to_string()), "got {:?}", cols);
-            assert!(cols.contains(&"cascade_updated_at".to_string()), "got {:?}", cols);
+            assert!(
+                cols.contains(&"cascade_state".to_string()),
+                "got {:?}",
+                cols
+            );
+            assert!(
+                cols.contains(&"cascade_updated_at".to_string()),
+                "got {:?}",
+                cols
+            );
             Ok(())
         })
         .unwrap();
@@ -669,10 +678,14 @@ mod tests {
         let db = fresh_db();
         insert_note(&db, "n_acc");
         let cfg = CascadeConfig::default();
-        db.execute(|conn| record_access(conn, "n_acc", &cfg)).unwrap();
+        db.execute(|conn| record_access(conn, "n_acc", &cfg))
+            .unwrap();
         let s = db
             .execute(|conn| salience_peek_for_note(conn, "n_acc", &cfg, Utc::now()))
             .unwrap();
-        assert!(s > 0.0, "after one access, salience should be positive: got {s}");
+        assert!(
+            s > 0.0,
+            "after one access, salience should be positive: got {s}"
+        );
     }
 }

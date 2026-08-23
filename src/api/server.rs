@@ -6,11 +6,11 @@ use tokio::sync::RwLock;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 
+use crate::ai::AutoEmbedder;
 use crate::graph::{GraphCache, SharedGraphCache};
 use crate::inference::{AuditedInference, InferenceBackend, InferenceConfig, SharedBackend};
 use crate::licensing::FeatureGate;
 use crate::storage::Database;
-use crate::ai::AutoEmbedder;
 
 use super::routes::{agent, ai as ai_routes, graph, notes, semantic};
 

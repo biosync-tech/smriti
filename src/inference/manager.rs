@@ -182,10 +182,7 @@ impl ModelManager {
         tracing::info!("Model SHA256: {}", hash);
 
         // If we have a known hash, verify it
-        let filename = path
-            .file_name()
-            .and_then(|f| f.to_str())
-            .unwrap_or("");
+        let filename = path.file_name().and_then(|f| f.to_str()).unwrap_or("");
 
         if let Some(entry) = KNOWN_MODELS.iter().find(|e| e.filename == filename) {
             if let Some(expected) = entry.sha256 {
@@ -202,7 +199,11 @@ impl ModelManager {
     }
 
     /// Delete a downloaded model
-    pub async fn delete_model(&self, model: &str, quantization: &str) -> Result<(), InferenceError> {
+    pub async fn delete_model(
+        &self,
+        model: &str,
+        quantization: &str,
+    ) -> Result<(), InferenceError> {
         let entry = KNOWN_MODELS
             .iter()
             .find(|e| e.model == model && e.quantization == quantization)

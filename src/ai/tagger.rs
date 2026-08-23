@@ -1,7 +1,7 @@
 //! Auto-Tagging — AI-suggested tags for notes
 
-use std::sync::Arc;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::inference::{AuditedInference, CallContext, GenerateRequest, InferenceError};
 use crate::storage::Database;
@@ -37,9 +37,10 @@ impl AutoTagger {
         note_id: &str,
         max_tags: usize,
     ) -> Result<AutoTagResponse, InferenceError> {
-        let note = self.db.get_note(note_id).map_err(|e| {
-            InferenceError::GenerationFailed(format!("Note not found: {}", e))
-        })?;
+        let note = self
+            .db
+            .get_note(note_id)
+            .map_err(|e| InferenceError::GenerationFailed(format!("Note not found: {}", e)))?;
 
         let system = format!(
             "You are Smriti AI. Suggest up to {} tags for the following note. \

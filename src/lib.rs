@@ -1,5 +1,5 @@
-pub mod api;
 pub mod ai;
+pub mod api;
 
 /// Truncate a string to at most `max_bytes` bytes without splitting a multibyte
 /// UTF-8 character. Always returns a valid `&str`.
@@ -86,7 +86,7 @@ mod tests {
         assert_eq!(safe_truncate(s, 8), "中中"); // 6 bytes
         assert_eq!(safe_truncate(s, 7), "中中");
         assert_eq!(safe_truncate(s, 6), "中中");
-        assert_eq!(safe_truncate(s, 5), "中");   // 3 bytes
+        assert_eq!(safe_truncate(s, 5), "中"); // 3 bytes
         assert_eq!(safe_truncate(s, 3), "中");
         assert_eq!(safe_truncate(s, 2), "");
         assert_eq!(safe_truncate(s, 1), "");

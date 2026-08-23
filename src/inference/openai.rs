@@ -7,8 +7,8 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::*;
 use super::config::InferenceConfig;
+use super::*;
 
 pub struct OpenAICompatibleBackend {
     client: reqwest::Client,
@@ -94,7 +94,10 @@ impl OpenAICompatibleBackend {
 
 #[async_trait]
 impl InferenceBackend for OpenAICompatibleBackend {
-    async fn generate(&self, request: &GenerateRequest) -> Result<GenerateResponse, InferenceError> {
+    async fn generate(
+        &self,
+        request: &GenerateRequest,
+    ) -> Result<GenerateResponse, InferenceError> {
         let mut messages = Vec::new();
 
         if let Some(system) = &request.system {
@@ -194,11 +197,7 @@ impl InferenceBackend for OpenAICompatibleBackend {
             .await
             .map_err(|e| InferenceError::Http(format!("JSON decode error: {}", e)))?;
 
-        Ok(embed_resp
-            .data
-            .into_iter()
-            .map(|d| d.embedding)
-            .collect())
+        Ok(embed_resp.data.into_iter().map(|d| d.embedding).collect())
     }
 
     async fn describe_image(

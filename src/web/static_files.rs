@@ -32,7 +32,9 @@ pub async fn serve_static(req: Request) -> Response {
             None => {
                 return Response::builder()
                     .status(StatusCode::NOT_FOUND)
-                    .body(Body::from("smriti-web/dist not found — run: cd smriti-web && npm run build"))
+                    .body(Body::from(
+                        "smriti-web/dist not found — run: cd smriti-web && npm run build",
+                    ))
                     .expect("valid response");
             }
         }
@@ -42,9 +44,8 @@ pub async fn serve_static(req: Request) -> Response {
         .status(StatusCode::OK)
         .header(
             header::CONTENT_TYPE,
-            HeaderValue::from_str(&mime).unwrap_or_else(|_| {
-                HeaderValue::from_static("application/octet-stream")
-            }),
+            HeaderValue::from_str(&mime)
+                .unwrap_or_else(|_| HeaderValue::from_static("application/octet-stream")),
         )
         .body(Body::from(body))
         .expect("valid response")

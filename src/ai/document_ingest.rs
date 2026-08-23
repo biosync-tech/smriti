@@ -15,9 +15,9 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
+use crate::errors::{AppError, AppResult};
 use crate::models::{CreateNoteRequest, LinkType};
 use crate::storage::Database;
-use crate::errors::{AppError, AppResult};
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -69,6 +69,7 @@ pub struct IngestDocumentResponse {
 ///  1. Split on double-newlines (paragraph boundaries) — keeps semantic units.
 ///  2. If a paragraph block exceeds `chunk_size`, hard-split at the nearest
 ///     whitespace boundary before the limit.
+///
 /// Adjacent chunks share `overlap` characters from the end of the previous chunk.
 pub fn chunk_text(text: &str, chunk_size: usize, overlap: usize) -> Vec<String> {
     if text.is_empty() {
@@ -91,7 +92,8 @@ pub fn chunk_text(text: &str, chunk_size: usize, overlap: usize) -> Vec<String> 
         if !current.is_empty() && current.len() + para.len() + 2 > chunk_size {
             chunks.push(current.trim().to_string());
             // Carry overlap from previous chunk
-            let overlap_start = floor_char_boundary(&current, current.len().saturating_sub(overlap));
+            let overlap_start =
+                floor_char_boundary(&current, current.len().saturating_sub(overlap));
             current = current[overlap_start..].to_string();
             current.push('\n');
         }
@@ -142,7 +144,10 @@ impl DocumentIngestor {
 
         // ── Validate ──────────────────────────────────────────────────────
         if !path.exists() {
-            return Err(AppError::BadRequest(format!("File not found: {}", req.path)));
+            return Err(AppError::BadRequest(format!(
+                "File not found: {}",
+                req.path
+            )));
         }
 
         let ext = path
@@ -200,9 +205,7 @@ impl DocumentIngestor {
 
         // One SQLite transaction: parent + chunks + ChunkOf links, or nothing.
         let (parent_id, chunk_note_ids) = db.execute(|conn| {
-            let tx = conn
-                .unchecked_transaction()
-                .map_err(AppError::Database)?;
+            let tx = conn.unchecked_transaction().map_err(AppError::Database)?;
 
             let parent_note = crate::storage::operations::insert_note_with_tags(
                 &tx,
@@ -307,7 +310,12 @@ mod tests {
     fn chunk_text_respects_size() {
         // Generate text that definitely exceeds one chunk
         let text = (0..100)
-            .map(|i| format!("Paragraph {}. Some content about aging and senescence here.", i))
+            .map(|i| {
+                format!(
+                    "Paragraph {}. Some content about aging and senescence here.",
+                    i
+                )
+            })
             .collect::<Vec<_>>()
             .join("\n\n");
         let chunks = chunk_text(&text, 500, 50);

@@ -4,8 +4,8 @@
 //! to build context, then uses the configured InferenceBackend for generation.
 //! Research ref: Graph-Based Memory Survey arXiv:2602.05665
 
-use std::sync::Arc;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::inference::{AuditedInference, CallContext, GenerateRequest, InferenceError};
 use crate::storage::Database;
@@ -109,7 +109,11 @@ pub struct RagEngine {
 
 impl RagEngine {
     pub fn new(db: Arc<Database>, backend: Arc<AuditedInference>, config: RagConfig) -> Self {
-        Self { db, backend, config }
+        Self {
+            db,
+            backend,
+            config,
+        }
     }
 
     /// Answer a question using RAG over the knowledge graph
@@ -128,18 +132,22 @@ impl RagEngine {
         // Step 2: Hybrid search
         let search_results = self
             .db
-            .hybrid_search(&query.question, &query_embedding, config.top_k, config.fts_weight)
-            .map_err(|e| {
-                InferenceError::GenerationFailed(format!("Search failed: {}", e))
-            })?;
+            .hybrid_search(
+                &query.question,
+                &query_embedding,
+                config.top_k,
+                config.fts_weight,
+            )
+            .map_err(|e| InferenceError::GenerationFailed(format!("Search failed: {}", e)))?;
 
         // Step 3: Build sources list and fetch full note content
         let mut sources: Vec<RagSource> = Vec::new();
         let mut context_notes: Vec<(String, String, String)> = Vec::new(); // (id, title, content)
         let hit_ids: Vec<String> = search_results.iter().map(|r| r.id.clone()).collect();
-        let fetched = self.db.get_notes_by_ids(&hit_ids).map_err(|e| {
-            InferenceError::GenerationFailed(format!("Fetch notes failed: {}", e))
-        })?;
+        let fetched = self
+            .db
+            .get_notes_by_ids(&hit_ids)
+            .map_err(|e| InferenceError::GenerationFailed(format!("Fetch notes failed: {}", e)))?;
         let notes_by_id: std::collections::HashMap<_, _> =
             fetched.into_iter().map(|n| (n.id.clone(), n)).collect();
 
@@ -165,10 +173,7 @@ impl RagEngine {
                 .graph_neighbors(&seed, config.graph_depth, neighbor_limit)
                 .unwrap_or_default();
 
-            let neighbor_notes = self
-                .db
-                .get_notes_by_ids(&neighbor_ids)
-                .unwrap_or_default();
+            let neighbor_notes = self.db.get_notes_by_ids(&neighbor_ids).unwrap_or_default();
             for note in neighbor_notes {
                 if context_notes.iter().any(|(id, _, _)| id == &note.id) {
                     continue;
@@ -249,5 +254,4 @@ impl RagEngine {
 
         context
     }
-
 }

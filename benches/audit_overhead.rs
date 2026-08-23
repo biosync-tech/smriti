@@ -15,8 +15,8 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use tokio::runtime::Runtime;
 
 use smriti::inference::{
-    AuditedInference, BackendCapabilities, BackendStatus, CallContext,
-    GenerateRequest, GenerateResponse, InferenceBackend, InferenceError, TokenUsage,
+    AuditedInference, BackendCapabilities, BackendStatus, CallContext, GenerateRequest,
+    GenerateResponse, InferenceBackend, InferenceError, TokenUsage,
 };
 use smriti::storage::Database;
 
@@ -99,10 +99,12 @@ fn audit_overhead(c: &mut Criterion) {
     c.bench_function("baseline_generate", |b| {
         let backend: Arc<dyn InferenceBackend> = Arc::new(BenchMock);
         let req = make_request();
-        b.iter(|| rt.block_on(async {
-            let res = backend.generate(&req).await.unwrap();
-            criterion::black_box(res)
-        }));
+        b.iter(|| {
+            rt.block_on(async {
+                let res = backend.generate(&req).await.unwrap();
+                criterion::black_box(res)
+            })
+        });
     });
 
     // Audited: AuditedInference around the same mock + a fresh in-memory DB.
@@ -116,10 +118,12 @@ fn audit_overhead(c: &mut Criterion) {
             .with_notes(vec!["n1".into(), "n2".into()])
             .with_template("summarize@v1");
         let req = make_request();
-        b.iter(|| rt.block_on(async {
-            let res = audited.generate_audited(&req, &ctx).await.unwrap();
-            criterion::black_box(res)
-        }));
+        b.iter(|| {
+            rt.block_on(async {
+                let res = audited.generate_audited(&req, &ctx).await.unwrap();
+                criterion::black_box(res)
+            })
+        });
     });
 
     // Audited but every iteration starts with a fresh DB. Isolates the
@@ -141,10 +145,12 @@ fn audit_overhead(c: &mut Criterion) {
             }
         });
 
-        b.iter(|| rt.block_on(async {
-            let res = audited.generate_audited(&req, &ctx).await.unwrap();
-            criterion::black_box(res)
-        }));
+        b.iter(|| {
+            rt.block_on(async {
+                let res = audited.generate_audited(&req, &ctx).await.unwrap();
+                criterion::black_box(res)
+            })
+        });
     });
 }
 

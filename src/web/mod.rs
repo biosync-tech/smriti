@@ -39,7 +39,11 @@ pub struct AppState {
 ///  - GET       /*               — embedded React SPA
 pub fn create_web_router(db: Arc<Database>, db_path: String) -> Router {
     let graph_cache: SharedGraphCache = Arc::new(RwLock::new(GraphCache::new()));
-    let state = AppState { db, graph_cache, db_path };
+    let state = AppState {
+        db,
+        graph_cache,
+        db_path,
+    };
 
     Router::new()
         // MCP JSON-RPC over HTTP (stdio transport is unchanged)
@@ -57,10 +61,7 @@ pub fn create_web_router(db: Arc<Database>, db_path: String) -> Router {
         // Unified search
         .route("/api/v1/search", get(handlers::search::search))
         // KV store
-        .route(
-            "/api/v1/kv",
-            get(handlers::kv::list_kv),
-        )
+        .route("/api/v1/kv", get(handlers::kv::list_kv))
         .route(
             "/api/v1/kv/{key}",
             get(handlers::kv::get_kv)

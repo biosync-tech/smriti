@@ -197,9 +197,7 @@ impl FeatureGate {
             CustomModels,
             PrioritySupport,
         ];
-        all.into_iter()
-            .filter(|f| self.is_available(*f))
-            .collect()
+        all.into_iter().filter(|f| self.is_available(*f)).collect()
     }
 }
 

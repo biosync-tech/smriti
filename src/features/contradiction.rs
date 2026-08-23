@@ -126,11 +126,7 @@ pub fn score(signals: PairSignals, cfg: ContradictionConfig) -> f64 {
 }
 
 /// Recency score based on the age gap between two notes.
-pub fn recency_score(
-    updated_a: DateTime<Utc>,
-    updated_b: DateTime<Utc>,
-    tau_days: f64,
-) -> f64 {
+pub fn recency_score(updated_a: DateTime<Utc>, updated_b: DateTime<Utc>, tau_days: f64) -> f64 {
     let delta = (updated_a - updated_b).num_seconds().abs() as f64;
     let delta_days = delta / 86_400.0;
     (-delta_days / tau_days.max(f64::MIN_POSITIVE)).exp()
@@ -162,7 +158,9 @@ pub fn token_similarity(a: &str, b: &str) -> f64 {
 /// opposing polarity markers. This is a deliberately conservative filter —
 /// we prefer to miss candidates than to spam the inbox with false positives.
 pub fn polarity_conflict(a: &str, b: &str) -> bool {
-    let negations = ["not ", "no ", "never ", "cannot ", "isn't ", "doesn't ", "won't "];
+    let negations = [
+        "not ", "no ", "never ", "cannot ", "isn't ", "doesn't ", "won't ",
+    ];
     let la = a.to_lowercase();
     let lb = b.to_lowercase();
     let a_neg = negations.iter().any(|n| la.contains(n));
@@ -191,8 +189,9 @@ impl Database {
         }
         let id = Uuid::new_v4().to_string();
         let now = Utc::now();
-        let conn = self.conn.lock()
-            .map_err(|e| crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e)))?;
+        let conn = self.conn.lock().map_err(|e| {
+            crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e))
+        })?;
         conn.execute(
             "INSERT OR IGNORE INTO contradiction_events
              (id, note_id_a, note_id_b, semantic_score, recency_score,
@@ -227,8 +226,9 @@ impl Database {
 
     /// List open contradictions, highest-confidence first.
     pub fn list_open_contradictions(&self, limit: i64) -> AppResult<Vec<ContradictionEvent>> {
-        let conn = self.conn.lock()
-            .map_err(|e| crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e)))?;
+        let conn = self.conn.lock().map_err(|e| {
+            crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e))
+        })?;
         let mut stmt = conn.prepare(
             "SELECT id, note_id_a, note_id_b, semantic_score, recency_score,
                     authority_score, combined_score, status, detected_at,
@@ -268,8 +268,9 @@ impl Database {
 
     /// Resolve a contradiction with a human-provided rationale.
     pub fn resolve_contradiction(&self, id: &str, resolution: &str) -> AppResult<()> {
-        let conn = self.conn.lock()
-            .map_err(|e| crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e)))?;
+        let conn = self.conn.lock().map_err(|e| {
+            crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e))
+        })?;
         let now = Utc::now().to_rfc3339();
         conn.execute(
             "UPDATE contradiction_events
@@ -291,8 +292,9 @@ impl Database {
         cfg: ContradictionConfig,
     ) -> AppResult<Vec<ContradictionEvent>> {
         let rows: Vec<(String, String, DateTime<Utc>)> = {
-            let conn = self.conn.lock()
-                .map_err(|e| crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e)))?;
+            let conn = self.conn.lock().map_err(|e| {
+                crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e))
+            })?;
             let mut stmt = conn.prepare(
                 "SELECT id, content, updated_at FROM notes
                  ORDER BY updated_at DESC LIMIT ?1",
@@ -337,9 +339,7 @@ impl Database {
                 // any NLP — it is a pure SQL set-difference over the
                 // claim_spans table.
                 let polarity = polarity_conflict(ca, cb);
-                let cite_disagreement = self
-                    .cite_disagreement(ida, idb)
-                    .unwrap_or(false);
+                let cite_disagreement = self.cite_disagreement(ida, idb).unwrap_or(false);
                 if !polarity && !cite_disagreement {
                     continue;
                 }
@@ -376,10 +376,7 @@ impl Database {
     /// dominate an ungrounded incumbent.
     fn pair_authority_score(&self, note_a: &str, note_b: &str) -> AppResult<f64> {
         let conn = self.conn.lock().map_err(|e| {
-            crate::errors::AppError::MutexPoisoned(format!(
-                "Failed to lock connection: {}",
-                e
-            ))
+            crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e))
         })?;
         let avg_a: Option<f64> = conn
             .query_row(
@@ -425,15 +422,11 @@ impl Database {
     fn cite_disagreement(&self, note_a: &str, note_b: &str) -> AppResult<bool> {
         use std::collections::HashSet;
         let conn = self.conn.lock().map_err(|e| {
-            crate::errors::AppError::MutexPoisoned(format!(
-                "Failed to lock connection: {}",
-                e
-            ))
+            crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e))
         })?;
         let collect = |note_id: &str| -> AppResult<HashSet<String>> {
-            let mut stmt = conn.prepare(
-                "SELECT DISTINCT source_id FROM claim_spans WHERE note_id = ?1",
-            )?;
+            let mut stmt =
+                conn.prepare("SELECT DISTINCT source_id FROM claim_spans WHERE note_id = ?1")?;
             let rows = stmt.query_map(params![note_id], |row| row.get::<_, String>(0))?;
             let mut set = HashSet::new();
             for row in rows {

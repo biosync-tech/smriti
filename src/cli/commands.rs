@@ -29,7 +29,6 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
     // ── CAPTURE ──────────────────────────────────────────
-
     /// Create a new note
     #[command(display_order = 1)]
     Create {
@@ -53,7 +52,8 @@ pub enum Commands {
     ///
     /// Link types: wikilink, semantic, causal, temporal,
     ///             treats, contraindicts, interacts, indicates, causes
-    #[command(display_order = 2,
+    #[command(
+        display_order = 2,
         after_help = "\x1b[1mExamples:\x1b[0m\n  \
             smriti link \"Lisinopril\" \"Hypertension\" --type treats\n  \
             smriti link \"Aspirin\" \"Warfarin\" --type interacts\n  \
@@ -78,7 +78,6 @@ pub enum Commands {
     New,
 
     // ── SEARCH ───────────────────────────────────────────
-
     /// Read a note by ID or title
     #[command(display_order = 10)]
     Read {
@@ -122,7 +121,6 @@ pub enum Commands {
     },
 
     // ── GRAPH ────────────────────────────────────────────
-
     /// Show the knowledge graph
     #[command(display_order = 20)]
     Graph {
@@ -144,7 +142,6 @@ pub enum Commands {
     Stats,
 
     // ── SERVER ───────────────────────────────────────────
-
     /// Start the REST API server
     #[command(display_order = 30)]
     Serve {
@@ -177,7 +174,6 @@ pub enum Commands {
     },
 
     // ── DATA ─────────────────────────────────────────────
-
     /// Sync notes with a remote server (Synology WebDAV or custom)
     #[command(display_order = 40)]
     Sync {
@@ -213,7 +209,6 @@ pub enum Commands {
     },
 
     // ── INTEGRITY ────────────────────────────────────────
-
     /// Verify database integrity (referential + provenance + event log)
     #[command(display_order = 50)]
     Verify {
@@ -275,7 +270,9 @@ pub enum Commands {
     /// (mass at deep levels) versus is just freshly accessed (mass at u_0).
     ///
     /// Research ref: Benna & Fusi 2016, Nature Neuroscience 19, 1697–1706.
-    #[command(display_order = 56, name = "cascade",
+    #[command(
+        display_order = 56,
+        name = "cascade",
         after_help = "\x1b[1mExamples:\x1b[0m\n  \
             smriti cascade \"Hypertension\"\n  \
             smriti cascade <note_id> --json"
@@ -307,14 +304,8 @@ fn styles() -> clap::builder::Styles {
                 .underline()
                 .fg_color(Some(Color::Ansi(AnsiColor::Yellow))),
         )
-        .literal(
-            Style::new()
-                .fg_color(Some(Color::Ansi(AnsiColor::Cyan))),
-        )
-        .placeholder(
-            Style::new()
-                .fg_color(Some(Color::Ansi(AnsiColor::Green))),
-        )
+        .literal(Style::new().fg_color(Some(Color::Ansi(AnsiColor::Cyan))))
+        .placeholder(Style::new().fg_color(Some(Color::Ansi(AnsiColor::Green))))
         .valid(
             Style::new()
                 .fg_color(Some(Color::Ansi(AnsiColor::Cyan)))

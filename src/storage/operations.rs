@@ -313,8 +313,7 @@ impl Database {
         }
         self.execute(|conn| {
             let mut frontier: Vec<String> = seed_ids.iter().map(|s| (*s).to_string()).collect();
-            let mut seen: std::collections::HashSet<String> =
-                frontier.iter().cloned().collect();
+            let mut seen: std::collections::HashSet<String> = frontier.iter().cloned().collect();
             let mut out: Vec<String> = Vec::new();
 
             for _ in 0..depth {
@@ -988,8 +987,7 @@ impl Database {
         // third RRF term / live cascade peek.
         if salience_weight > 0.0 && !scores.is_empty() {
             let ids: Vec<String> = scores.keys().cloned().collect();
-            let placeholders = std::iter::repeat("?")
-                .take(ids.len())
+            let placeholders = std::iter::repeat_n("?", ids.len())
                 .collect::<Vec<_>>()
                 .join(",");
             let sql = format!(
@@ -1079,10 +1077,7 @@ fn archive_old_memory(
     Ok(())
 }
 
-pub(crate) fn insert_note_with_tags(
-    conn: &Connection,
-    req: CreateNoteRequest,
-) -> AppResult<Note> {
+pub(crate) fn insert_note_with_tags(conn: &Connection, req: CreateNoteRequest) -> AppResult<Note> {
     let note = Note::new(req.title, req.content, req.tags.clone());
     conn.execute(
         "INSERT INTO notes (id, title, content, created_at, updated_at, node_type)
@@ -1395,7 +1390,9 @@ impl Database {
             // ── 5. Filter edges to only those within visible nodes ─────────
             let links: Vec<FullGraphEdge> = all_links
                 .iter()
-                .filter(|l| id_set.contains(l.source.as_str()) && id_set.contains(l.target.as_str()))
+                .filter(|l| {
+                    id_set.contains(l.source.as_str()) && id_set.contains(l.target.as_str())
+                })
                 .map(|l| FullGraphEdge {
                     source: l.source.clone(),
                     target: l.target.clone(),
@@ -1406,7 +1403,12 @@ impl Database {
                 .collect();
 
             let total_links = links.len();
-            Ok(FullGraphData { nodes, links, total_notes, total_links })
+            Ok(FullGraphData {
+                nodes,
+                links,
+                total_notes,
+                total_links,
+            })
         })
     }
 
@@ -1576,8 +1578,20 @@ mod tests {
     #[test]
     fn test_full_graph_returns_nodes_and_edges() {
         let db = test_db();
-        let a = db.create_note(CreateNoteRequest { title: "Alpha".into(), content: "".into(), tags: vec![] }).unwrap();
-        let b = db.create_note(CreateNoteRequest { title: "Beta".into(),  content: "".into(), tags: vec![] }).unwrap();
+        let a = db
+            .create_note(CreateNoteRequest {
+                title: "Alpha".into(),
+                content: "".into(),
+                tags: vec![],
+            })
+            .unwrap();
+        let b = db
+            .create_note(CreateNoteRequest {
+                title: "Beta".into(),
+                content: "".into(),
+                tags: vec![],
+            })
+            .unwrap();
         db.create_link(&a.id, &b.id, LinkType::Causal).unwrap();
 
         let result = db.get_full_graph(200, None).unwrap();
@@ -1589,8 +1603,18 @@ mod tests {
     #[test]
     fn test_full_graph_title_filter() {
         let db = test_db();
-        db.create_note(CreateNoteRequest { title: "Project Apollo".into(), content: "".into(), tags: vec![] }).unwrap();
-        db.create_note(CreateNoteRequest { title: "Meeting notes".into(),  content: "".into(), tags: vec![] }).unwrap();
+        db.create_note(CreateNoteRequest {
+            title: "Project Apollo".into(),
+            content: "".into(),
+            tags: vec![],
+        })
+        .unwrap();
+        db.create_note(CreateNoteRequest {
+            title: "Meeting notes".into(),
+            content: "".into(),
+            tags: vec![],
+        })
+        .unwrap();
 
         let result = db.get_full_graph(200, Some("Apollo")).unwrap();
         assert_eq!(result.nodes.len(), 1);
@@ -1605,7 +1629,8 @@ mod tests {
                 title: format!("Note {i}"),
                 content: "".into(),
                 tags: vec![],
-            }).unwrap();
+            })
+            .unwrap();
         }
         let result = db.get_full_graph(3, None).unwrap();
         assert_eq!(result.nodes.len(), 3);
@@ -1615,15 +1640,36 @@ mod tests {
     #[test]
     fn test_full_graph_edges_filtered_to_visible_nodes() {
         let db = test_db();
-        let a = db.create_note(CreateNoteRequest { title: "AAA".into(), content: "".into(), tags: vec![] }).unwrap();
-        let b = db.create_note(CreateNoteRequest { title: "BBB".into(), content: "".into(), tags: vec![] }).unwrap();
-        let c = db.create_note(CreateNoteRequest { title: "CCC".into(), content: "".into(), tags: vec![] }).unwrap();
+        let a = db
+            .create_note(CreateNoteRequest {
+                title: "AAA".into(),
+                content: "".into(),
+                tags: vec![],
+            })
+            .unwrap();
+        let b = db
+            .create_note(CreateNoteRequest {
+                title: "BBB".into(),
+                content: "".into(),
+                tags: vec![],
+            })
+            .unwrap();
+        let c = db
+            .create_note(CreateNoteRequest {
+                title: "CCC".into(),
+                content: "".into(),
+                tags: vec![],
+            })
+            .unwrap();
         db.create_link(&a.id, &b.id, LinkType::Semantic).unwrap();
         db.create_link(&b.id, &c.id, LinkType::Causal).unwrap();
 
         // Limit to 2 nodes — the edge between the excluded node should not appear
         let result = db.get_full_graph(2, None).unwrap();
-        assert!(result.links.len() <= 1, "edges must only connect visible nodes");
+        assert!(
+            result.links.len() <= 1,
+            "edges must only connect visible nodes"
+        );
     }
 
     // ─── Link tests ────────────────────────────────────────────────
@@ -2024,8 +2070,10 @@ mod tests {
                 tags: vec![],
             })
             .unwrap();
-        db.store_embedding(&n1.id, &dir384(0), Some("test")).unwrap();
-        db.store_embedding(&n2.id, &dir384(1), Some("test")).unwrap();
+        db.store_embedding(&n1.id, &dir384(0), Some("test"))
+            .unwrap();
+        db.store_embedding(&n2.id, &dir384(1), Some("test"))
+            .unwrap();
 
         let plain = db
             .hybrid_search("dosing protocol", &dir384(0), 10, 0.5)
@@ -2065,7 +2113,8 @@ mod tests {
                 tags: vec![],
             })
             .unwrap();
-        db.store_embedding(&fresh.id, &dir384(5), Some("test")).unwrap();
+        db.store_embedding(&fresh.id, &dir384(5), Some("test"))
+            .unwrap();
         db.store_embedding(&consolidated.id, &dir384(5), Some("test"))
             .unwrap();
 
@@ -2121,13 +2170,7 @@ mod tests {
         // Even with a weight 3x the recommended default, a bounded
         // multiplicative nudge must not invert a real relevance gap.
         let results = db
-            .hybrid_search_with_salience(
-                "aspirin washout amendment",
-                &dir384(10),
-                10,
-                0.5,
-                0.3,
-            )
+            .hybrid_search_with_salience("aspirin washout amendment", &dir384(10), 10, 0.5, 0.3)
             .unwrap();
 
         assert!(!results.is_empty());
@@ -2216,7 +2259,8 @@ mod llm_audit_op_tests {
                                  event_time, ingestion_time, event_hash)
              VALUES ('ev1', 'llm_call', 'llm', 'agent1', '{}', ?1, ?1, 'h1')",
             [Utc::now().to_rfc3339()],
-        ).unwrap();
+        )
+        .unwrap();
         drop(conn);
 
         let row = LlmAuditRow {

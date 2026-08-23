@@ -58,11 +58,20 @@ fn load_fixture() -> Corpus {
     let path: PathBuf = std::env::var("LONGMEMEVAL_FIXTURE")
         .ok()
         .map(PathBuf::from)
-        .unwrap_or_else(|| ["tests", "fixtures", "longmemeval_synthetic.json"].iter().collect());
+        .unwrap_or_else(|| {
+            ["tests", "fixtures", "longmemeval_synthetic.json"]
+                .iter()
+                .collect()
+        });
     let s = fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("fixture not readable at {}: {}", path.display(), e));
-    serde_json::from_str(&s)
-        .unwrap_or_else(|e| panic!("fixture at {} did not parse as Corpus: {}", path.display(), e))
+    serde_json::from_str(&s).unwrap_or_else(|e| {
+        panic!(
+            "fixture at {} did not parse as Corpus: {}",
+            path.display(),
+            e
+        )
+    })
 }
 
 /// Seed an in-memory Smriti DB from a corpus. Each note is inserted with the
@@ -90,8 +99,16 @@ fn seed(db: &Database, corpus: &Corpus) -> AppResult<()> {
 fn fixture_loads() {
     let c = load_fixture();
     assert_eq!(c.version, "0.3-synthetic");
-    assert!(c.sessions.len() >= 8, "expected ≥8 sessions, got {}", c.sessions.len());
-    assert_eq!(c.questions.len(), 50, "fixture must have exactly 50 questions");
+    assert!(
+        c.sessions.len() >= 8,
+        "expected ≥8 sessions, got {}",
+        c.sessions.len()
+    );
+    assert_eq!(
+        c.questions.len(),
+        50,
+        "fixture must have exactly 50 questions"
+    );
 
     // Every answer_note_ids reference must resolve to a real note.
     let note_ids: std::collections::HashSet<&String> = c
@@ -101,7 +118,12 @@ fn fixture_loads() {
         .collect();
     for q in &c.questions {
         for nid in &q.answer_note_ids {
-            assert!(note_ids.contains(nid), "question {} references unknown note {}", q.id, nid);
+            assert!(
+                note_ids.contains(nid),
+                "question {} references unknown note {}",
+                q.id,
+                nid
+            );
         }
     }
 }
@@ -117,7 +139,10 @@ fn seeding_populates_notes_and_cascade() {
     let count: i64 = db
         .execute(|conn| Ok(conn.query_row("SELECT COUNT(*) FROM notes", [], |r| r.get(0))?))
         .expect("notes count");
-    assert_eq!(count as usize, total_notes, "all corpus notes should be inserted");
+    assert_eq!(
+        count as usize, total_notes,
+        "all corpus notes should be inserted"
+    );
 
     let with_cascade: i64 = db
         .execute(|conn| {
@@ -141,7 +166,13 @@ fn seeding_populates_notes_and_cascade() {
 fn fts_topk(db: &Database, query: &str, k: usize) -> Vec<String> {
     let cleaned: String = query
         .chars()
-        .map(|c| if c.is_alphanumeric() || c.is_whitespace() { c } else { ' ' })
+        .map(|c| {
+            if c.is_alphanumeric() || c.is_whitespace() {
+                c
+            } else {
+                ' '
+            }
+        })
         .collect();
     let terms = cleaned
         .split_whitespace()
@@ -159,7 +190,9 @@ fn fts_topk(db: &Database, query: &str, k: usize) -> Vec<String> {
              ORDER BY f.rank LIMIT ?2",
         )?;
         let rows = stmt
-            .query_map(rusqlite::params![terms, k as i64], |r| r.get::<_, String>(0))?
+            .query_map(rusqlite::params![terms, k as i64], |r| {
+                r.get::<_, String>(0)
+            })?
             .filter_map(Result::ok)
             .collect::<Vec<_>>();
         Ok(rows)
@@ -253,15 +286,30 @@ fn cascade_rerank_matches_or_beats_fts_alone() {
     let (r10b, r10r) = (r10_baseline / n, r10_rerank / n);
     let (mb, mr) = (mrr_baseline / n, mrr_rerank / n);
 
-    eprintln!("Recall@5  baseline={r5b:.3}  rerank={r5r:.3}  Δ={:+.3}", r5r - r5b);
-    eprintln!("Recall@10 baseline={r10b:.3}  rerank={r10r:.3}  Δ={:+.3}", r10r - r10b);
-    eprintln!("MRR       baseline={mb:.3}  rerank={mr:.3}  Δ={:+.3}", mr - mb);
+    eprintln!(
+        "Recall@5  baseline={r5b:.3}  rerank={r5r:.3}  Δ={:+.3}",
+        r5r - r5b
+    );
+    eprintln!(
+        "Recall@10 baseline={r10b:.3}  rerank={r10r:.3}  Δ={:+.3}",
+        r10r - r10b
+    );
+    eprintln!(
+        "MRR       baseline={mb:.3}  rerank={mr:.3}  Δ={:+.3}",
+        mr - mb
+    );
 
     // Floor: rerank must not regress more than 2pp on either metric.
     // Strict ">" would flake on a synthetic corpus this small where every
     // note got one Read access at creation — the cascade signal degenerates
     // to a recency proxy and may penalise old-but-correct answers.
-    assert!(r5r >= r5b - 0.02, "rerank regressed Recall@5: {r5b} → {r5r}");
-    assert!(r10r >= r10b - 0.02, "rerank regressed Recall@10: {r10b} → {r10r}");
+    assert!(
+        r5r >= r5b - 0.02,
+        "rerank regressed Recall@5: {r5b} → {r5r}"
+    );
+    assert!(
+        r10r >= r10b - 0.02,
+        "rerank regressed Recall@10: {r10b} → {r10r}"
+    );
     assert!(mr >= mb - 0.02, "rerank regressed MRR: {mb} → {mr}");
 }

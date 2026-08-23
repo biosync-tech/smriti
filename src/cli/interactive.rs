@@ -100,7 +100,9 @@ pub fn interactive_new(db: &Database) -> AppResult<()> {
                 .with_prompt("Search notes")
                 .items(&titles)
                 .interact_opt()
-                .map_err(|e: dialoguer::Error| crate::errors::AppError::BadRequest(e.to_string()))?;
+                .map_err(|e: dialoguer::Error| {
+                    crate::errors::AppError::BadRequest(e.to_string())
+                })?;
 
             if let Some(idx) = selection {
                 link_target = Some((notes[idx].id.clone(), notes[idx].title.clone()));
@@ -111,7 +113,9 @@ pub fn interactive_new(db: &Database) -> AppResult<()> {
                     .items(RELATION_TYPES)
                     .default(0)
                     .interact()
-                    .map_err(|e: dialoguer::Error| crate::errors::AppError::BadRequest(e.to_string()))?;
+                    .map_err(|e: dialoguer::Error| {
+                        crate::errors::AppError::BadRequest(e.to_string())
+                    })?;
 
                 link_relation = Some(RELATION_TYPES[rel_idx].to_string());
             }

@@ -24,9 +24,7 @@ pub struct AiStatus {
 }
 
 /// GET /api/v1/ai/status — Check inference engine status
-pub async fn ai_status(
-    State(state): State<AiAppState>,
-) -> Result<impl IntoResponse, AppError> {
+pub async fn ai_status(State(state): State<AiAppState>) -> Result<impl IntoResponse, AppError> {
     let status = state
         .backend
         .health_check()
@@ -44,8 +42,7 @@ pub async fn ai_status(
 
     let response = AiStatus {
         status: format!("{:?}", status),
-        capabilities: serde_json::to_value(&capabilities)
-            .unwrap_or(serde_json::Value::Null),
+        capabilities: serde_json::to_value(&capabilities).unwrap_or(serde_json::Value::Null),
         tier: format!("{:?}", state.feature_gate.active_tier()),
         available_features,
     };
@@ -54,9 +51,7 @@ pub async fn ai_status(
 }
 
 /// GET /api/v1/ai/models — List available models
-pub async fn list_models(
-    State(state): State<AiAppState>,
-) -> Result<impl IntoResponse, AppError> {
+pub async fn list_models(State(state): State<AiAppState>) -> Result<impl IntoResponse, AppError> {
     let manager = inference::ModelManager::new(&state.inference_config)
         .map_err(|e| AppError::BadRequest(e.to_string()))?;
 
@@ -88,11 +83,7 @@ pub async fn ai_query(
         .require(SmritiFeature::RagQuery)
         .map_err(AppError::BadRequest)?;
 
-    let config = req
-        .query
-        .config
-        .clone()
-        .unwrap_or_default();
+    let config = req.query.config.clone().unwrap_or_default();
     let engine = ai::rag::RagEngine::new(state.db.clone(), state.backend.clone(), config);
 
     let response = engine
@@ -100,7 +91,9 @@ pub async fn ai_query(
         .await
         .map_err(|e| AppError::BadRequest(e.to_string()))?;
 
-    Ok(Json(serde_json::to_value(&response).unwrap_or(serde_json::Value::Null)))
+    Ok(Json(
+        serde_json::to_value(&response).unwrap_or(serde_json::Value::Null),
+    ))
 }
 
 /// POST /api/v1/ai/summarize — Summarize notes
@@ -120,7 +113,9 @@ pub async fn ai_summarize(
         .await
         .map_err(|e| AppError::BadRequest(e.to_string()))?;
 
-    Ok(Json(serde_json::to_value(&response).unwrap_or(serde_json::Value::Null)))
+    Ok(Json(
+        serde_json::to_value(&response).unwrap_or(serde_json::Value::Null),
+    ))
 }
 
 /// POST /api/v1/ai/tag/{note_id} — Auto-suggest tags for a note
@@ -140,7 +135,9 @@ pub async fn ai_tag(
         .await
         .map_err(|e| AppError::BadRequest(e.to_string()))?;
 
-    Ok(Json(serde_json::to_value(&response).unwrap_or(serde_json::Value::Null)))
+    Ok(Json(
+        serde_json::to_value(&response).unwrap_or(serde_json::Value::Null),
+    ))
 }
 
 /// POST /api/v1/ai/link/{note_id} — Find semantic connections
@@ -160,7 +157,9 @@ pub async fn ai_link(
         .await
         .map_err(|e| AppError::BadRequest(e.to_string()))?;
 
-    Ok(Json(serde_json::to_value(&suggestions).unwrap_or(serde_json::Value::Null)))
+    Ok(Json(
+        serde_json::to_value(&suggestions).unwrap_or(serde_json::Value::Null),
+    ))
 }
 
 /// Embedding storage response

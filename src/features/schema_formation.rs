@@ -110,9 +110,9 @@ pub fn cluster_embeddings(
 
     let mut groups: std::collections::BTreeMap<usize, Vec<String>> =
         std::collections::BTreeMap::new();
-    for i in 0..n {
+    for (i, item) in items.iter().enumerate() {
         let root = find(&mut parent, i);
-        groups.entry(root).or_default().push(items[i].0.clone());
+        groups.entry(root).or_default().push(item.0.clone());
     }
 
     groups
@@ -327,7 +327,9 @@ fn create_extractive_schema(
                 Uuid::new_v4().to_string(),
                 id,
                 mean_similarity as f64,
-                format!("subsumed by schema {schema_id} (extractive, mean cosine {mean_similarity:.3})"),
+                format!(
+                    "subsumed by schema {schema_id} (extractive, mean cosine {mean_similarity:.3})"
+                ),
                 now,
             ],
         )?;

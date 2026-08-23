@@ -104,9 +104,7 @@ pub fn handle_notes_search(db: &Database, args: &Value) -> Result<Value, String>
     let q = query.to_string();
     let _ = db.execute(move |conn| {
         for nid in &hit_ids {
-            let _ = consolidation::log_access(
-                conn, nid, AccessKind::SearchHit, Some(&q), None,
-            );
+            let _ = consolidation::log_access(conn, nid, AccessKind::SearchHit, Some(&q), None);
         }
         Ok(())
     });
@@ -141,9 +139,7 @@ pub fn handle_notes_graph(db: &Database, args: &Value) -> Result<Value, String> 
     if let Some(cid) = center_id {
         let cid_owned = cid.to_string();
         let _ = db.execute(move |conn| {
-            consolidation::log_access(
-                conn, &cid_owned, AccessKind::GraphTraverse, None, None,
-            )
+            consolidation::log_access(conn, &cid_owned, AccessKind::GraphTraverse, None, None)
         });
     }
 
@@ -350,9 +346,7 @@ pub fn handle_notes_search_semantic(db: &Database, args: &Value) -> Result<Value
 pub fn handle_wiki_transaction_submit(db: &Database, args: &Value) -> Result<Value, String> {
     let req: SubmitTransactionRequest =
         serde_json::from_value(args.clone()).map_err(|e| format!("Invalid request: {}", e))?;
-    let result = db
-        .submit_wiki_transaction(req)
-        .map_err(|e| e.to_string())?;
+    let result = db.submit_wiki_transaction(req).map_err(|e| e.to_string())?;
     Ok(serde_json::to_value(&result).unwrap_or_default())
 }
 
@@ -361,9 +355,7 @@ pub fn handle_wiki_transaction_commit(db: &Database, args: &Value) -> Result<Val
         .get("transaction_id")
         .and_then(|v| v.as_str())
         .ok_or("Missing 'transaction_id'")?;
-    let result = db
-        .commit_wiki_transaction(id)
-        .map_err(|e| e.to_string())?;
+    let result = db.commit_wiki_transaction(id).map_err(|e| e.to_string())?;
     Ok(serde_json::to_value(&result).unwrap_or_default())
 }
 
@@ -385,12 +377,11 @@ pub fn handle_wiki_transaction_reject(db: &Database, args: &Value) -> Result<Val
     Ok(serde_json::json!({ "ok": true, "transaction_id": id }))
 }
 
-pub fn handle_wiki_transaction_list_pending(
-    db: &Database,
-    args: &Value,
-) -> Result<Value, String> {
+pub fn handle_wiki_transaction_list_pending(db: &Database, args: &Value) -> Result<Value, String> {
     let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(50) as usize;
-    let txs = db.list_pending_transactions(limit).map_err(|e| e.to_string())?;
+    let txs = db
+        .list_pending_transactions(limit)
+        .map_err(|e| e.to_string())?;
     Ok(serde_json::to_value(&txs).unwrap_or_default())
 }
 
@@ -444,7 +435,10 @@ pub fn handle_notes_consolidate(db: &Database, args: &Value) -> Result<Value, St
 }
 
 pub fn handle_contradictions_detect(db: &Database, args: &Value) -> Result<Value, String> {
-    let scan_limit = args.get("scan_limit").and_then(|v| v.as_i64()).unwrap_or(50);
+    let scan_limit = args
+        .get("scan_limit")
+        .and_then(|v| v.as_i64())
+        .unwrap_or(50);
     let cfg = crate::features::contradiction::ContradictionConfig::default();
     let events = db
         .detect_contradictions(scan_limit, cfg)
@@ -485,9 +479,15 @@ pub fn handle_retrieve_context(db: &Database, args: &Value) -> Result<Value, Str
         .ok_or("Missing 'query'")?;
 
     let top_k = args.get("top_k").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
-    let graph_depth = args.get("graph_depth").and_then(|v| v.as_u64()).unwrap_or(1) as usize;
+    let graph_depth = args
+        .get("graph_depth")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(1) as usize;
     // max_tokens → approximate char budget (4 chars ≈ 1 token)
-    let max_tokens = args.get("max_tokens").and_then(|v| v.as_u64()).unwrap_or(4096) as usize;
+    let max_tokens = args
+        .get("max_tokens")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(4096) as usize;
     let max_chars = max_tokens * 4;
 
     // ── Step 1 / 2: Search ────────────────────────────────────────────────────
@@ -504,14 +504,11 @@ pub fn handle_retrieve_context(db: &Database, args: &Value) -> Result<Value, Str
     let mut seed_notes: Vec<ScoredNote> = Vec::new();
 
     // Try hybrid (embedding + FTS) if embedding provided
-    let embedding: Option<Vec<f32>> = args
-        .get("embedding")
-        .and_then(|v| v.as_array())
-        .map(|arr| {
-            arr.iter()
-                .map(|v| v.as_f64().unwrap_or(0.0) as f32)
-                .collect()
-        });
+    let embedding: Option<Vec<f32>> = args.get("embedding").and_then(|v| v.as_array()).map(|arr| {
+        arr.iter()
+            .map(|v| v.as_f64().unwrap_or(0.0) as f32)
+            .collect()
+    });
 
     let fts_weight = args
         .get("fts_weight")
@@ -577,7 +574,10 @@ pub fn handle_retrieve_context(db: &Database, args: &Value) -> Result<Value, Str
         let neighbor_ids = db
             .graph_neighbors(&seed_ids, graph_depth, neighbor_limit)
             .map_err(|e| e.to_string())?;
-        for note in db.get_notes_by_ids(&neighbor_ids).map_err(|e| e.to_string())? {
+        for note in db
+            .get_notes_by_ids(&neighbor_ids)
+            .map_err(|e| e.to_string())?
+        {
             seed_notes.push(ScoredNote {
                 id: note.id,
                 title: note.title,
@@ -624,11 +624,21 @@ pub fn handle_retrieve_context(db: &Database, args: &Value) -> Result<Value, Str
     // ── Step 5: Rank + dedup ──────────────────────────────────────────────────
     // composite_score = 0.5*search_score + 0.3*consolidation_score + 0.2*(1 if schema)
     seed_notes.sort_by(|a, b| {
-        let schema_bonus_a = if a.match_type == "schema" { 0.2_f64 } else { 0.0 };
-        let schema_bonus_b = if b.match_type == "schema" { 0.2_f64 } else { 0.0 };
+        let schema_bonus_a = if a.match_type == "schema" {
+            0.2_f64
+        } else {
+            0.0
+        };
+        let schema_bonus_b = if b.match_type == "schema" {
+            0.2_f64
+        } else {
+            0.0
+        };
         let score_a = 0.5 * a.score + 0.3 * a.consolidation_score as f64 + schema_bonus_a;
         let score_b = 0.5 * b.score + 0.3 * b.consolidation_score as f64 + schema_bonus_b;
-        score_b.partial_cmp(&score_a).unwrap_or(std::cmp::Ordering::Equal)
+        score_b
+            .partial_cmp(&score_a)
+            .unwrap_or(std::cmp::Ordering::Equal)
     });
 
     // Dedup by note ID (preserve order after sort)
@@ -685,4 +695,3 @@ pub fn handle_retrieve_context(db: &Database, args: &Value) -> Result<Value, Str
         "query": query,
     }))
 }
-

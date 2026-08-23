@@ -42,7 +42,9 @@ impl Database {
     }
 
     fn initialize_schema(&self) -> AppResult<()> {
-        let conn = self.conn.lock()
+        let conn = self
+            .conn
+            .lock()
             .map_err(|e| AppError::MutexPoisoned(format!("Failed to lock connection: {}", e)))?;
         conn.execute_batch(SCHEMA)?;
         Self::apply_migrations(&conn);
@@ -264,12 +266,9 @@ impl Database {
         let _ = conn.execute_batch(
             "ALTER TABLE notes ADD COLUMN consolidation_score REAL NOT NULL DEFAULT 0.0;",
         );
-        let _ = conn.execute_batch(
-            "ALTER TABLE notes ADD COLUMN access_count INTEGER NOT NULL DEFAULT 0;",
-        );
-        let _ = conn.execute_batch(
-            "ALTER TABLE notes ADD COLUMN last_accessed_at TEXT;",
-        );
+        let _ = conn
+            .execute_batch("ALTER TABLE notes ADD COLUMN access_count INTEGER NOT NULL DEFAULT 0;");
+        let _ = conn.execute_batch("ALTER TABLE notes ADD COLUMN last_accessed_at TEXT;");
         let _ = conn.execute_batch(
             "ALTER TABLE notes ADD COLUMN parent_schema_id TEXT REFERENCES notes(id) ON DELETE SET NULL;",
         );
@@ -386,19 +385,17 @@ impl Database {
         // (note_id, level, value) table is a candidate future migration if
         // we ever need cross-note level-K queries. Today every read is
         // per-note → JSON is cheaper.
-        let _ = conn.execute_batch(
-            "ALTER TABLE notes ADD COLUMN cascade_state TEXT;",
-        );
-        let _ = conn.execute_batch(
-            "ALTER TABLE notes ADD COLUMN cascade_updated_at TEXT;",
-        );
+        let _ = conn.execute_batch("ALTER TABLE notes ADD COLUMN cascade_state TEXT;");
+        let _ = conn.execute_batch("ALTER TABLE notes ADD COLUMN cascade_updated_at TEXT;");
     }
 
     pub fn execute<F, T>(&self, f: F) -> AppResult<T>
     where
         F: FnOnce(&Connection) -> AppResult<T>,
     {
-        let conn = self.conn.lock()
+        let conn = self
+            .conn
+            .lock()
             .map_err(|e| AppError::MutexPoisoned(format!("Failed to lock connection: {}", e)))?;
         f(&conn)
     }

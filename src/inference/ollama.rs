@@ -6,8 +6,8 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::*;
 use super::config::InferenceConfig;
+use super::*;
 
 pub struct OllamaBackend {
     client: reqwest::Client,
@@ -74,7 +74,10 @@ impl OllamaBackend {
 
 #[async_trait]
 impl InferenceBackend for OllamaBackend {
-    async fn generate(&self, request: &GenerateRequest) -> Result<GenerateResponse, InferenceError> {
+    async fn generate(
+        &self,
+        request: &GenerateRequest,
+    ) -> Result<GenerateResponse, InferenceError> {
         let body = OllamaGenerateRequest {
             model: self.model.clone(),
             prompt: request.prompt.clone(),

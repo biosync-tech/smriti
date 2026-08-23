@@ -47,7 +47,10 @@ impl InferenceBackend for MockBackend {
     }
 
     async fn embed(&self, texts: &[String]) -> Result<Vec<Vec<f32>>, InferenceError> {
-        Ok(texts.iter().map(|_| self.canned_embedding.clone()).collect())
+        Ok(texts
+            .iter()
+            .map(|_| self.canned_embedding.clone())
+            .collect())
     }
 
     async fn describe_image(&self, _bytes: &[u8], _prompt: &str) -> Result<String, InferenceError> {

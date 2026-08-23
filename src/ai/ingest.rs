@@ -3,8 +3,8 @@
 //! Uses the backend's vision capability (when implemented) to describe
 //! images and automatically create notes from them.
 
-use std::sync::Arc;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::inference::{InferenceError, SharedBackend};
 use crate::models::*;
@@ -58,10 +58,7 @@ impl MultimodalIngestor {
                 .into(),
         };
 
-        let description = self
-            .backend
-            .describe_image(image_bytes, &prompt)
-            .await?;
+        let description = self.backend.describe_image(image_bytes, &prompt).await?;
 
         // Extract title from description (first line) or use provided title
         let (title, content) = if let Some(ref t) = request.title {
@@ -84,7 +81,9 @@ impl MultimodalIngestor {
                 content: content.clone(),
                 tags: request.tags.clone(),
             })
-            .map_err(|e| InferenceError::GenerationFailed(format!("Failed to create note: {}", e)))?;
+            .map_err(|e| {
+                InferenceError::GenerationFailed(format!("Failed to create note: {}", e))
+            })?;
 
         Ok(IngestResponse {
             note_id: note.id,

@@ -26,17 +26,10 @@ impl BackendKind {
     pub fn parse(s: &str) -> Result<Self, String> {
         match s.trim().to_ascii_lowercase().as_str() {
             "ollama" => Ok(Self::Ollama),
-            "openai"
-            | "openai-compatible"
-            | "openai_compatible"
-            | "custom"
-            | "lmstudio"
-            | "vllm"
-            | "groq"
-            | "together"
-            | "openrouter"
-            | "llamacpp"
-            | "llama.cpp" => Ok(Self::OpenAiCompatible),
+            "openai" | "openai-compatible" | "openai_compatible" | "custom" | "lmstudio"
+            | "vllm" | "groq" | "together" | "openrouter" | "llamacpp" | "llama.cpp" => {
+                Ok(Self::OpenAiCompatible)
+            }
             "local" | "gguf" | "local-gguf" => Ok(Self::Local),
             other => Err(format!(
                 "Unknown backend '{other}'. Use ollama, openai \

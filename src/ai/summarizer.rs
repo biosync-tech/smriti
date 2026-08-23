@@ -1,7 +1,7 @@
 //! Note Summarization — AI-generated summaries of notes or note groups
 
-use std::sync::Arc;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::inference::{AuditedInference, CallContext, GenerateRequest, InferenceError};
 use crate::storage::Database;
@@ -43,7 +43,10 @@ impl Summarizer {
     }
 
     /// Summarize one or more notes
-    pub async fn summarize(&self, request: &SummarizeRequest) -> Result<SummarizeResponse, InferenceError> {
+    pub async fn summarize(
+        &self,
+        request: &SummarizeRequest,
+    ) -> Result<SummarizeResponse, InferenceError> {
         // Fetch all notes
         let mut notes_content = Vec::new();
         for id in &request.note_ids {
@@ -105,8 +108,8 @@ mod e2e_audit_tests {
     use super::*;
     use crate::inference::audited::AuditedInference;
     use crate::inference::mock::MockBackend;
-    use crate::storage::Database;
     use crate::models::note::CreateNoteRequest;
+    use crate::storage::Database;
     use std::sync::Arc;
 
     #[tokio::test]
@@ -137,7 +140,8 @@ mod e2e_audit_tests {
             &serde_json::json!({"title": "Test Note"}),
             None,
             None,
-        ).expect("seed prior event");
+        )
+        .expect("seed prior event");
 
         // Setup audited inference with mock backend
         let mock = Arc::new(MockBackend::new("This is a summary."));
@@ -156,18 +160,22 @@ mod e2e_audit_tests {
         {
             let conn = db.conn.lock().unwrap();
 
-            let event_count: i64 = conn.query_row(
-                "SELECT count(*) FROM events WHERE event_type='llm_call'",
-                [],
-                |r| r.get(0),
-            ).unwrap();
+            let event_count: i64 = conn
+                .query_row(
+                    "SELECT count(*) FROM events WHERE event_type='llm_call'",
+                    [],
+                    |r| r.get(0),
+                )
+                .unwrap();
             assert_eq!(event_count, 1, "expected one llm_call event");
 
-            let (audit_count, tool_name, outcome): (i64, String, String) = conn.query_row(
-                "SELECT count(*), max(tool_name), max(outcome) FROM llm_audit",
-                [],
-                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
-            ).unwrap();
+            let (audit_count, tool_name, outcome): (i64, String, String) = conn
+                .query_row(
+                    "SELECT count(*), max(tool_name), max(outcome) FROM llm_audit",
+                    [],
+                    |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+                )
+                .unwrap();
             assert_eq!(audit_count, 1, "expected one llm_audit row");
             assert_eq!(tool_name, "notes_summarize");
             assert_eq!(outcome, "success");

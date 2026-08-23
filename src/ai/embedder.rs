@@ -5,8 +5,8 @@
 
 use std::sync::Arc;
 
-use crate::inference::{InferenceError, SharedBackend};
 use crate::inference::queue::EmbeddingQueue;
+use crate::inference::{InferenceError, SharedBackend};
 use crate::storage::Database;
 
 /// The auto-embedder manages the embedding queue and provides
@@ -36,9 +36,10 @@ impl AutoEmbedder {
 
     /// Embed a single note immediately (blocking, bypasses queue)
     pub async fn embed_now(&self, note_id: &str) -> Result<Vec<f32>, InferenceError> {
-        let note = self.db.get_note(note_id).map_err(|e| {
-            InferenceError::GenerationFailed(format!("Note not found: {}", e))
-        })?;
+        let note = self
+            .db
+            .get_note(note_id)
+            .map_err(|e| InferenceError::GenerationFailed(format!("Note not found: {}", e)))?;
 
         let text = format!("{}\n\n{}", note.title, note.content);
         let embeddings = self.backend.embed(&[text]).await?;
@@ -51,9 +52,7 @@ impl AutoEmbedder {
         // Store in DB
         self.db
             .store_embedding(note_id, &embedding, Some(self.backend.name()))
-            .map_err(|e| {
-                InferenceError::GenerationFailed(format!("Failed to store: {}", e))
-            })?;
+            .map_err(|e| InferenceError::GenerationFailed(format!("Failed to store: {}", e)))?;
 
         Ok(embedding)
     }

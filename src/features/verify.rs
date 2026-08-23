@@ -80,8 +80,9 @@ impl Database {
     }
 
     fn collect_verify_stats(&self) -> AppResult<VerifyStats> {
-        let conn = self.conn.lock()
-            .map_err(|e| crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e)))?;
+        let conn = self.conn.lock().map_err(|e| {
+            crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e))
+        })?;
         let count = |sql: &str| -> AppResult<i64> {
             match conn.query_row(sql, [], |row| row.get::<_, i64>(0)) {
                 Ok(n) => Ok(n),
@@ -99,8 +100,9 @@ impl Database {
     }
 
     fn check_referential_integrity(&self) -> AppResult<Vec<String>> {
-        let conn = self.conn.lock()
-            .map_err(|e| crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e)))?;
+        let conn = self.conn.lock().map_err(|e| {
+            crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e))
+        })?;
         let mut errors = Vec::new();
 
         let mut stmt = conn.prepare(
@@ -135,12 +137,21 @@ impl Database {
         // Tuple shape: (claim_id, note_id, note_content, source_excerpt,
         // stored_verification_score, source_span_start, source_span_end).
         // Aliased for readability and to silence clippy::type_complexity.
-        type ClaimRow = (String, String, String, String, f64, Option<i64>, Option<i64>);
+        type ClaimRow = (
+            String,
+            String,
+            String,
+            String,
+            f64,
+            Option<i64>,
+            Option<i64>,
+        );
 
         let cfg = VerificationConfig::default();
         let rows: Vec<ClaimRow> = {
-            let conn = self.conn.lock()
-                .map_err(|e| crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e)))?;
+            let conn = self.conn.lock().map_err(|e| {
+                crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e))
+            })?;
             let mut stmt = conn.prepare(
                 "SELECT cs.id, cs.note_id, n.content, s.excerpt,
                         cs.verification_score, cs.source_span_start, cs.source_span_end
@@ -148,8 +159,8 @@ impl Database {
                  JOIN notes n    ON cs.note_id = n.id
                  JOIN sources s  ON cs.source_id = s.id",
             )?;
-            let collected: Vec<ClaimRow> =
-                stmt.query_map([], |row| {
+            let collected: Vec<ClaimRow> = stmt
+                .query_map([], |row| {
                     Ok((
                         row.get::<_, String>(0)?,
                         row.get::<_, String>(1)?,
@@ -186,11 +197,11 @@ impl Database {
     }
 
     fn check_event_chain(&self) -> AppResult<Vec<String>> {
-        let conn = self.conn.lock()
-            .map_err(|e| crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e)))?;
-        let mut stmt = conn.prepare(
-            "SELECT id, prev_hash, event_hash FROM events ORDER BY ingestion_time ASC",
-        )?;
+        let conn = self.conn.lock().map_err(|e| {
+            crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e))
+        })?;
+        let mut stmt = conn
+            .prepare("SELECT id, prev_hash, event_hash FROM events ORDER BY ingestion_time ASC")?;
         let rows: Vec<(String, Option<String>, String)> = stmt
             .query_map([], |row| {
                 Ok((
@@ -216,8 +227,9 @@ impl Database {
     }
 
     fn find_orphans(&self) -> AppResult<Vec<String>> {
-        let conn = self.conn.lock()
-            .map_err(|e| crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e)))?;
+        let conn = self.conn.lock().map_err(|e| {
+            crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e))
+        })?;
         let mut stmt = conn.prepare(
             "SELECT n.id FROM notes n
              WHERE NOT EXISTS (SELECT 1 FROM links WHERE source_note_id = n.id)
@@ -249,8 +261,9 @@ impl Database {
         let now = Utc::now().to_rfc3339();
         let payload_str = serde_json::to_string(payload)?;
 
-        let conn = self.conn.lock()
-            .map_err(|e| crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e)))?;
+        let conn = self.conn.lock().map_err(|e| {
+            crate::errors::AppError::MutexPoisoned(format!("Failed to lock connection: {}", e))
+        })?;
         let prev_hash: Option<String> = conn
             .query_row(
                 "SELECT event_hash FROM events ORDER BY ingestion_time DESC LIMIT 1",

@@ -23,13 +23,19 @@ pub struct ApiErrorBody {
 
 impl<T: Serialize> ApiResponse<T> {
     pub fn ok(data: T) -> Self {
-        Self { data: Some(data), error: None }
+        Self {
+            data: Some(data),
+            error: None,
+        }
     }
 
     pub fn err(code: impl Into<String>, message: impl Into<String>) -> ApiResponse<()> {
         ApiResponse {
             data: None,
-            error: Some(ApiErrorBody { code: code.into(), message: message.into() }),
+            error: Some(ApiErrorBody {
+                code: code.into(),
+                message: message.into(),
+            }),
         }
     }
 }

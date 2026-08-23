@@ -42,7 +42,11 @@ async fn main() -> anyhow::Result<()> {
             smriti::cli::interactive::interactive_new(&db)?;
         }
 
-        Commands::Link { source, target, r#type } => {
+        Commands::Link {
+            source,
+            target,
+            r#type,
+        } => {
             handlers::handle_link(&db, source, target, r#type)?;
         }
 
@@ -156,7 +160,11 @@ async fn main() -> anyhow::Result<()> {
             if json {
                 println!("{}", serde_json::to_string_pretty(&report)?);
             } else {
-                let status = if report.ok { "\x1b[32mOK\x1b[0m" } else { "\x1b[31mFAIL\x1b[0m" };
+                let status = if report.ok {
+                    "\x1b[32mOK\x1b[0m"
+                } else {
+                    "\x1b[31mFAIL\x1b[0m"
+                };
                 println!("smriti verify: {}", status);
                 println!(
                     "  notes={}  links={}  sources={}  claim_spans={}  events={}  grounded_notes={}",
@@ -168,13 +176,19 @@ async fn main() -> anyhow::Result<()> {
                     report.stats.grounded_notes
                 );
                 if !report.referential_errors.is_empty() {
-                    println!("\nReferential errors ({}):", report.referential_errors.len());
+                    println!(
+                        "\nReferential errors ({}):",
+                        report.referential_errors.len()
+                    );
                     for e in &report.referential_errors {
                         println!("  - {}", e);
                     }
                 }
                 if !report.provenance_failures.is_empty() {
-                    println!("\nProvenance failures ({}):", report.provenance_failures.len());
+                    println!(
+                        "\nProvenance failures ({}):",
+                        report.provenance_failures.len()
+                    );
                     for f in &report.provenance_failures {
                         println!(
                             "  - claim_span {} (note {}): stored={:.3} current={:.3} — {}",
@@ -183,13 +197,19 @@ async fn main() -> anyhow::Result<()> {
                     }
                 }
                 if !report.event_chain_errors.is_empty() {
-                    println!("\nEvent log chain errors ({}):", report.event_chain_errors.len());
+                    println!(
+                        "\nEvent log chain errors ({}):",
+                        report.event_chain_errors.len()
+                    );
                     for e in &report.event_chain_errors {
                         println!("  - {}", e);
                     }
                 }
                 if !report.orphan_notes.is_empty() {
-                    println!("\nOrphan notes (warning only): {}", report.orphan_notes.len());
+                    println!(
+                        "\nOrphan notes (warning only): {}",
+                        report.orphan_notes.len()
+                    );
                 }
             }
         }
@@ -227,7 +247,11 @@ async fn main() -> anyhow::Result<()> {
             );
         }
 
-        Commands::RejectTx { transaction_id, by, reason } => {
+        Commands::RejectTx {
+            transaction_id,
+            by,
+            reason,
+        } => {
             db.reject_wiki_transaction(&transaction_id, &by, &reason)?;
             println!("Rejected {}", transaction_id);
         }

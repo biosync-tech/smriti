@@ -172,7 +172,13 @@ pub fn verify_overlap(
 fn normalize(s: &str) -> String {
     s.to_lowercase()
         .chars()
-        .map(|c| if c.is_alphanumeric() || c.is_whitespace() { c } else { ' ' })
+        .map(|c| {
+            if c.is_alphanumeric() || c.is_whitespace() {
+                c
+            } else {
+                ' '
+            }
+        })
         .collect::<String>()
         .split_whitespace()
         .collect::<Vec<_>>()
@@ -195,10 +201,37 @@ fn stem_light(tok: &str) -> &str {
 fn is_stopword(tok: &str) -> bool {
     matches!(
         tok,
-        "the" | "a" | "an" | "is" | "are" | "was" | "were" | "be" | "been"
-            | "being" | "by" | "of" | "to" | "in" | "on" | "at" | "for"
-            | "and" | "or" | "but" | "if" | "then" | "than" | "as" | "with"
-            | "this" | "that" | "these" | "those" | "it" | "its"
+        "the"
+            | "a"
+            | "an"
+            | "is"
+            | "are"
+            | "was"
+            | "were"
+            | "be"
+            | "been"
+            | "being"
+            | "by"
+            | "of"
+            | "to"
+            | "in"
+            | "on"
+            | "at"
+            | "for"
+            | "and"
+            | "or"
+            | "but"
+            | "if"
+            | "then"
+            | "than"
+            | "as"
+            | "with"
+            | "this"
+            | "that"
+            | "these"
+            | "those"
+            | "it"
+            | "its"
     )
 }
 
@@ -283,14 +316,7 @@ impl Database {
             conn.execute(
                 "INSERT INTO sources (id, uri, content_hash, title, excerpt, ingested_at)
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                params![
-                    id,
-                    uri,
-                    hash,
-                    title,
-                    excerpt,
-                    now.to_rfc3339(),
-                ],
+                params![id, uri, hash, title, excerpt, now.to_rfc3339(),],
             )?;
 
             Ok(Source {
@@ -326,14 +352,18 @@ impl Database {
                     params![req.source_id],
                     |row| row.get(0),
                 )
-                .map_err(|_| AppError::BadRequest(format!("Source not found: {}", req.source_id)))?;
+                .map_err(|_| {
+                    AppError::BadRequest(format!("Source not found: {}", req.source_id))
+                })?;
             Ok((note_content, source_excerpt))
         })?;
 
         if req.claim_end > note_content.len() || req.claim_start >= req.claim_end {
             return Err(AppError::BadRequest(format!(
                 "Invalid claim span [{}, {}) for note of length {}",
-                req.claim_start, req.claim_end, note_content.len()
+                req.claim_start,
+                req.claim_end,
+                note_content.len()
             )));
         }
 
@@ -418,9 +448,11 @@ impl Database {
                         source_span_start: row.get::<_, Option<i64>>(5)?.map(|v| v as usize),
                         source_span_end: row.get::<_, Option<i64>>(6)?.map(|v| v as usize),
                         verification_score: row.get(7)?,
-                        verified_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(8)?)
-                            .unwrap_or_default()
-                            .with_timezone(&Utc),
+                        verified_at: chrono::DateTime::parse_from_rfc3339(
+                            &row.get::<_, String>(8)?,
+                        )
+                        .unwrap_or_default()
+                        .with_timezone(&Utc),
                         method: row.get(9)?,
                     };
                     let src = Source {
@@ -446,8 +478,7 @@ impl Database {
     /// Count notes that have at least one claim span. Used by `smriti verify`.
     pub fn count_grounded_notes(&self) -> AppResult<(usize, usize)> {
         self.execute(|conn| {
-            let total: i64 =
-                conn.query_row("SELECT COUNT(*) FROM notes", [], |row| row.get(0))?;
+            let total: i64 = conn.query_row("SELECT COUNT(*) FROM notes", [], |row| row.get(0))?;
             let grounded: i64 = conn.query_row(
                 "SELECT COUNT(DISTINCT note_id) FROM claim_spans",
                 [],
@@ -461,7 +492,9 @@ impl Database {
 /// Slice a string safely at byte boundaries (best-effort; callers have already
 /// validated bounds).
 fn slice_safe(s: &str, start: usize, end: usize) -> &str {
-    let start = (start..=s.len()).find(|i| s.is_char_boundary(*i)).unwrap_or(0);
+    let start = (start..=s.len())
+        .find(|i| s.is_char_boundary(*i))
+        .unwrap_or(0);
     let end = (0..=end.min(s.len()))
         .rev()
         .find(|i| s.is_char_boundary(*i))
@@ -520,10 +553,20 @@ mod tests {
     fn upsert_source_is_idempotent() {
         let db = Database::new(":memory:").unwrap();
         let s1 = db
-            .upsert_source("https://example.com/doc1", "some content", Some("Doc 1"), Some("some content"))
+            .upsert_source(
+                "https://example.com/doc1",
+                "some content",
+                Some("Doc 1"),
+                Some("some content"),
+            )
             .unwrap();
         let s2 = db
-            .upsert_source("https://example.com/doc1", "some content", Some("Doc 1"), Some("some content"))
+            .upsert_source(
+                "https://example.com/doc1",
+                "some content",
+                Some("Doc 1"),
+                Some("some content"),
+            )
             .unwrap();
         assert_eq!(s1.id, s2.id);
     }

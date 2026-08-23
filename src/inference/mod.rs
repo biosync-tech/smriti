@@ -27,22 +27,27 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 // Re-exports
+pub use audited::{AuditedInference, CallContext};
 pub use config::{BackendKind, InferenceConfig};
 pub use local::LocalGgufBackend;
 pub use manager::ModelManager;
-pub use audited::{AuditedInference, CallContext};
 
 /// Core inference backend trait — all providers implement this
 #[async_trait]
 pub trait InferenceBackend: Send + Sync {
     /// Generate text from a prompt (completion/chat)
-    async fn generate(&self, request: &GenerateRequest) -> Result<GenerateResponse, InferenceError>;
+    async fn generate(&self, request: &GenerateRequest)
+        -> Result<GenerateResponse, InferenceError>;
 
     /// Generate embeddings for one or more texts
     async fn embed(&self, texts: &[String]) -> Result<Vec<Vec<f32>>, InferenceError>;
 
     /// Describe an image (multimodal — only backends that implement vision)
-    async fn describe_image(&self, image_bytes: &[u8], prompt: &str) -> Result<String, InferenceError>;
+    async fn describe_image(
+        &self,
+        image_bytes: &[u8],
+        prompt: &str,
+    ) -> Result<String, InferenceError>;
 
     /// Check what this backend can do
     fn capabilities(&self) -> BackendCapabilities;
