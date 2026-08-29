@@ -4,17 +4,14 @@
 
 ### Current Implementation
 
-`create_llm_schema_sync` (in `src/features/schema_formation.rs`) uses:
+`BackendAbstractor` (in `src/features/schema_formation.rs`) wraps a `SharedBackend` so sync `db.execute` can call an async LLM **without starting a second Tokio runtime**:
 
 ```rust
-let task = handle.spawn(async move {
-    create_llm_abstraction(&episodes_clone, mean_similarity, backend_clone).await
-});
-
-handle.block_on(task)?
+std::thread::spawn(move || handle.block_on(llm_abstract(backend.as_ref(), &input)))
+    .join()
 ```
 
-This spawns the LLM call as a separate Tokio task but **still blocks the caller thread** waiting for the result via `block_on`. The LLM work happens in a task that can be interrupted or cancelled, but the calling thread (inside `db.execute` closure) remains blocked.
+`block_on` runs on the **worker thread**, not nested on the request runtime. The caller still waits for the join. There is still no second runtime.
 
 ### What This Achieves
 

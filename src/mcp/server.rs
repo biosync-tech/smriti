@@ -129,7 +129,8 @@ impl McpServer {
             "serverInfo": {
                 "name": "smriti",
                 "version": env!("CARGO_PKG_VERSION")
-            }
+            },
+            "instructions": "Smriti is a local note and memory store. Any model can use it. Daily: smriti_status, then notes_create to save, notes_search to find, retrieve_context to pack an answer, memory_store/memory_retrieve for scratch (agent_id defaults to \"default\"). Write [[wiki-links]] and #tags in note content. Do not call notes_search_semantic unless you already have an embedding vector. notes_consolidate never deletes; default dry_run=true only previews."
         }))
     }
 
@@ -137,21 +138,26 @@ impl McpServer {
         Ok(json!({
             "tools": [
                 {
+                    "name": "smriti_status",
+                    "description": "Check that Smriti is reachable. Returns note count and which tools to use for daily save/find/answer. Call this first.",
+                    "inputSchema": { "type": "object", "properties": {} }
+                },
+                {
                     "name": "notes_create",
-                    "description": "Create a new note with markdown content. Wiki-links [[like this]] and #tags are auto-detected.",
+                    "description": "Save a note. Use for daily capture. [[wiki-links]] and #tags in content become graph edges. content is optional.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
                             "title": { "type": "string", "description": "Note title" },
-                            "content": { "type": "string", "description": "Markdown content" },
+                            "content": { "type": "string", "description": "Markdown content (optional)" },
                             "tags": { "type": "array", "items": { "type": "string" }, "description": "Tags" }
                         },
-                        "required": ["title", "content"]
+                        "required": ["title"]
                     }
                 },
                 {
                     "name": "notes_read",
-                    "description": "Read a note by ID or title",
+                    "description": "Open one note by id or exact title.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -162,7 +168,7 @@ impl McpServer {
                 },
                 {
                     "name": "notes_search",
-                    "description": "Full-text search across all notes",
+                    "description": "Find notes by words. Use this to look things up. For a packed answer context, use retrieve_context instead.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -174,7 +180,7 @@ impl McpServer {
                 },
                 {
                     "name": "notes_list",
-                    "description": "List recent notes",
+                    "description": "List recent notes. Optional tag filter.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -185,7 +191,7 @@ impl McpServer {
                 },
                 {
                     "name": "notes_graph",
-                    "description": "Get the knowledge graph or a subgraph around a note. Optionally filter by link type (e.g. semantic, causal, temporal, wikilink).",
+                    "description": "Show links around a note (or the whole graph). Daily Q&A: prefer retrieve_context.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -198,11 +204,11 @@ impl McpServer {
                 },
                 {
                     "name": "memory_store",
-                    "description": "Store a key-value pair in agent memory with optional conflict resolution policy (arXiv:2603.17244 AGM belief revision).",
+                    "description": "Save a scratch key/value for this agent (current focus, session state). agent_id defaults to \"default\".",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
-                            "agent_id": { "type": "string", "description": "Agent identifier" },
+                            "agent_id": { "type": "string", "description": "Agent identifier (default: default)" },
                             "key": { "type": "string", "description": "Memory key" },
                             "value": { "description": "Value to store (any JSON)" },
                             "namespace": { "type": "string", "description": "Namespace (default: 'default')" },
@@ -213,37 +219,36 @@ impl McpServer {
                                 "description": "Conflict resolution: overwrite (default), reject (fail if exists), version_and_keep (archive old), invalidate (supersede old)"
                             }
                         },
-                        "required": ["agent_id", "key", "value"]
+                        "required": ["key", "value"]
                     }
                 },
                 {
                     "name": "memory_retrieve",
-                    "description": "Retrieve a value from agent memory",
+                    "description": "Read a scratch key for this agent. agent_id defaults to \"default\".",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
-                            "agent_id": { "type": "string", "description": "Agent identifier" },
+                            "agent_id": { "type": "string", "description": "Agent identifier (default: default)" },
                             "key": { "type": "string", "description": "Memory key" },
                             "namespace": { "type": "string", "description": "Namespace (default: 'default')" }
                         },
-                        "required": ["agent_id", "key"]
+                        "required": ["key"]
                     }
                 },
                 {
                     "name": "memory_list",
-                    "description": "List all memory entries for an agent",
+                    "description": "List scratch keys for this agent. agent_id defaults to \"default\".",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
-                            "agent_id": { "type": "string", "description": "Agent identifier" },
+                            "agent_id": { "type": "string", "description": "Agent identifier (default: default)" },
                             "namespace": { "type": "string", "description": "Filter by namespace" }
-                        },
-                        "required": ["agent_id"]
+                        }
                     }
                 },
                 {
                     "name": "memory_history",
-                    "description": "List past (superseded) values for a memory key. Only populated when memory_store is called with conflict_policy 'version_and_keep' or 'invalidate'.",
+                    "description": "Past values for a scratch key (only if you stored with version_and_keep or invalidate).",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -251,12 +256,12 @@ impl McpServer {
                             "key": { "type": "string", "description": "Memory key" },
                             "namespace": { "type": "string", "description": "Namespace (default: 'default')" }
                         },
-                        "required": ["agent_id", "key"]
+                        "required": ["key"]
                     }
                 },
                 {
                     "name": "notes_search_semantic",
-                    "description": "Semantic search using a pre-computed embedding vector. Optionally provide a text query for hybrid FTS5+semantic search with reciprocal rank fusion.",
+                    "description": "Search by embedding vector. Skip unless you already computed an embedding. Daily search: notes_search.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -280,7 +285,7 @@ impl McpServer {
                 },
                 {
                     "name": "wiki_transaction_submit",
-                    "description": "Atomically apply a batch of wiki operations (create/update notes, create links, upsert sources) inside a single SAVEPOINT. Every content write must carry claim spans — provenance is enforced by default (FACTUM arXiv:2601.05866, Citation-Grounded arXiv:2512.12117). Set pending=true to queue for human review instead of committing.",
+                    "description": "Advanced: batch write with provenance. Daily notes: use notes_create.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -334,7 +339,7 @@ impl McpServer {
                 },
                 {
                     "name": "contradictions_detect",
-                    "description": "Scan recent notes for candidate contradictions using semantic + recency + authority weighted scoring (MemoTime arXiv:2510.13614). Never auto-resolves — populates the review inbox.",
+                    "description": "Find possible contradictions. Never auto-resolves. Daily use: skip unless asked to audit.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -354,7 +359,7 @@ impl McpServer {
                 },
                 {
                     "name": "notes_consolidate",
-                    "description": "Run a CLS-inspired consolidation pass (McClelland 1995). Scores every episode note on replay frequency, structural centrality, context diversity, and recency. Flags low-score notes for review, surfaces promotion-eligible clusters. Use dry_run=true (default) to preview without persisting changes. Never deletes — archives via memory_history for ICH E6(R3) compliance.",
+                    "description": "Tidy memory scores. Never deletes. Default dry_run=true only previews. Default policy only flags ideas. Do not run unless asked.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -362,9 +367,13 @@ impl McpServer {
                             "policy": {
                                 "type": "string",
                                 "enum": ["conservative", "standard", "aggressive"],
-                                "description": "Consolidation policy. Conservative (default): flag only. Standard: promote on threshold. Aggressive: auto-archive past grace period."
+                                "description": "Conservative (default): flag only. Standard/Aggressive: retrieve-context proxy may auto-commit. Healthcare: keep Conservative."
                             },
-                            "agent_id": { "type": "string", "description": "Agent identifier for audit trail (optional)." }
+                            "agent_id": { "type": "string", "description": "Agent identifier for audit trail (optional)." },
+                            "accept_proposal_id": { "type": "string", "description": "Pending proposal id or source episode id to accept (human gate)." },
+                            "reject_proposal_id": { "type": "string", "description": "Pending proposal id or source episode id to reject." },
+                            "approved_by": { "type": "string", "description": "Operator id recorded on accept/reject." },
+                            "reject_reason": { "type": "string", "description": "Required-quality reason when rejecting." }
                         }
                     }
                 },
@@ -384,7 +393,7 @@ impl McpServer {
                 },
                 {
                     "name": "retrieve_context",
-                    "description": "Retrieve assembled context from the knowledge graph for a given query. Combines FTS5 keyword search (always) + optional semantic search (if embedding provided) + BFS graph expansion + schema-first ranking. Returns a ready-to-use context string that local LLMs can use directly for answer generation.",
+                    "description": "Pack notes into a context string for answering a question. Works with any model. Embedding is optional — text search is enough.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
@@ -415,6 +424,7 @@ impl McpServer {
         let arguments = params.get("arguments").cloned().unwrap_or(json!({}));
 
         let result = match tool_name {
+            "smriti_status" => handlers::handle_smriti_status(&self.db),
             "notes_create" => handlers::handle_notes_create(&self.db, &arguments),
             "notes_read" => handlers::handle_notes_read(&self.db, &arguments),
             "notes_search" => handlers::handle_notes_search(&self.db, &arguments),

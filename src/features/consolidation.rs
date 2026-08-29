@@ -274,8 +274,9 @@ pub fn explain_score(
 /// `schema_formation` module. Promotion-eligible notes are surfaced in
 /// the report's `reasons` map so the abstraction pipeline can consume them.
 ///
-/// `backend` is optional. If provided and policy is Standard/Aggressive,
-/// AbstractionMode::Llm is used. Falls back to Extractive if None.
+/// `backend` is optional. If provided, schema *abstracts* may use the LLM.
+/// Conservative still never auto-commits. Standard/Aggressive use the
+/// retrieve-context proxy (`AutoCommit::Proxy`), not an immediate write.
 pub fn run_consolidation_pass(
     conn: &Connection,
     policy: ConsolidationPolicy,
@@ -415,31 +416,43 @@ pub fn run_consolidation_pass(
         }
     }
 
-    // CLS Phase 3 — cluster eligible episodes into schemas. Conservative
-    // only flags. Standard/Aggressive write LLM schemas if backend available,
-    // otherwise extractive (never deletes source episodes).
+    // CLS Phase 3 / WikiSkill maintainer. Conservative: flag only.
+    // Standard/Aggressive: extractive or LLM abstract, then proxy-gate.
+    // Never writes a schema note until a gate accepts. Never deletes episodes.
+    let backend_abs =
+        backend.map(|b| crate::features::schema_formation::BackendAbstractor { backend: b });
     let schema_cfg = crate::features::schema_formation::SchemaFormationConfig {
-        mode: match policy {
-            ConsolidationPolicy::Conservative => {
-                crate::features::schema_formation::AbstractionMode::FlagOnly
-            }
-            ConsolidationPolicy::Standard | ConsolidationPolicy::Aggressive => {
-                // Use Llm if backend available, fallback to Extractive
-                if backend.is_some() {
-                    crate::features::schema_formation::AbstractionMode::Llm
-                } else {
+        mode: if backend_abs.is_some() {
+            crate::features::schema_formation::AbstractionMode::Llm
+        } else {
+            match policy {
+                ConsolidationPolicy::Conservative => {
+                    crate::features::schema_formation::AbstractionMode::FlagOnly
+                }
+                ConsolidationPolicy::Standard | ConsolidationPolicy::Aggressive => {
                     crate::features::schema_formation::AbstractionMode::Extractive
                 }
             }
         },
+        auto_commit: match policy {
+            ConsolidationPolicy::Conservative => {
+                crate::features::schema_formation::AutoCommit::Never
+            }
+            ConsolidationPolicy::Standard | ConsolidationPolicy::Aggressive => {
+                crate::features::schema_formation::AutoCommit::Proxy
+            }
+        },
         ..crate::features::schema_formation::SchemaFormationConfig::default()
     };
+    let abstractor = backend_abs
+        .as_ref()
+        .map(|b| b as &dyn crate::features::schema_formation::SchemaAbstractor);
     match crate::features::schema_formation::form_schemas(
         conn,
         &schema_cfg,
         dry_run,
         Some(&eligible_ids),
-        backend,
+        abstractor,
     ) {
         Ok(formed) => {
             for cluster in &formed.flagged {
@@ -450,7 +463,7 @@ pub fn run_consolidation_pass(
                         .cloned()
                         .unwrap_or_else(|| "cluster".into()),
                     format!(
-                        "schema cluster of {} episodes (mean cosine {:.3})",
+                        "schema cluster of {} episodes (mean cosine {:.3}) — pending review",
                         cluster.member_ids.len(),
                         cluster.mean_similarity
                     ),
@@ -461,9 +474,18 @@ pub fn run_consolidation_pass(
                 report.reasons.insert(
                     schema.schema_id,
                     format!(
-                        "extractive schema over {} episodes: {}",
+                        "schema over {} episodes: {} (proxy-signal-approved; not WikiSkill task-accuracy)",
                         schema.source_ids.len(),
                         schema.title
+                    ),
+                );
+            }
+            for proposal in &formed.pending {
+                report.reasons.insert(
+                    proposal.id.clone(),
+                    format!(
+                        "schema_proposal flagged abstractor={} rationale={}",
+                        proposal.abstractor, proposal.rationale
                     ),
                 );
             }
@@ -813,7 +835,7 @@ mod tests {
     }
 
     #[test]
-    fn standard_policy_schemas_only_episodes_above_promote_above() {
+    fn standard_policy_without_proxy_signal_flags_and_does_not_write_schema() {
         let db = fresh_db();
         let ids = three_similar_embedded_notes(&db);
         let thresholds = Thresholds {
@@ -829,15 +851,15 @@ mod tests {
                     false,
                     ScoreWeights::default(),
                     thresholds,
-                    None, // No backend for test
+                    None,
                 )
             })
             .unwrap();
 
-        assert_eq!(
-            report.promoted.len(),
-            1,
-            "eligible cluster should form one schema"
+        assert!(
+            report.promoted.is_empty(),
+            "no query_context ⇒ proxy unavailable ⇒ no auto-promote: {:?}",
+            report.promoted
         );
         for id in &ids {
             let parent: Option<String> = db
@@ -849,8 +871,21 @@ mod tests {
                     )?)
                 })
                 .unwrap();
-            assert_eq!(parent.as_deref(), Some(report.promoted[0].as_str()));
+            assert!(
+                parent.is_none(),
+                "episode {id} must stay unparented until a gate accepts"
+            );
         }
+        let schemas: i64 = db
+            .execute(|conn| {
+                Ok(conn.query_row(
+                    "SELECT COUNT(*) FROM notes WHERE node_type = 'schema'",
+                    [],
+                    |r| r.get(0),
+                )?)
+            })
+            .unwrap();
+        assert_eq!(schemas, 0);
     }
 
     #[test]
@@ -980,30 +1015,41 @@ mod tests {
             })
             .unwrap();
 
-        // Approve via CLI handler (simulated)
-        // In real usage: smriti approve <note_id>
-        // Here we test the schema formation path directly
-        let report = db
+        // Human approve: flag (never auto-write) then commit_proposal.
+        let schema_id = db
             .execute(|conn| {
-                crate::features::schema_formation::form_schemas(
+                let report = crate::features::schema_formation::form_schemas(
                     conn,
                     &crate::features::schema_formation::SchemaFormationConfig {
                         min_cluster_size: 3,
                         min_similarity: 0.9,
                         mode: crate::features::schema_formation::AbstractionMode::Extractive,
+                        auto_commit: crate::features::schema_formation::AutoCommit::Never,
+                        ..crate::features::schema_formation::SchemaFormationConfig::default()
                     },
                     false,
                     Some(&ids),
                     None,
-                )
+                )?;
+                assert!(
+                    report.created.is_empty(),
+                    "must not leak a schema before approve"
+                );
+                let pending = crate::features::schema_formation::list_pending_proposals(conn)?;
+                assert_eq!(pending.len(), 1);
+                let formed = crate::features::schema_formation::commit_proposal(
+                    conn,
+                    &pending[0],
+                    &crate::features::schema_formation::GatingSignal::HumanApproved {
+                        by: "tester".into(),
+                    },
+                )?;
+                Ok(formed.schema_id)
             })
             .unwrap();
 
-        assert_eq!(report.created.len(), 1, "approve should create schema");
-        let schema_id = &report.created[0].schema_id;
-
         // Verify schema note exists
-        let schema_note = db.get_note(schema_id).unwrap();
+        let schema_note = db.get_note(&schema_id).unwrap();
         assert_eq!(schema_note.node_type, NodeType::Schema);
 
         // Verify episodes remain
@@ -1024,19 +1070,21 @@ mod tests {
             .unwrap();
         assert_eq!(sources_count, 3);
 
-        // Verify event reason contains "human-approved" or "promoted_to_schema"
-        let event_count: i64 = db
+        let reason: String = db
             .execute(|conn| {
-                conn.query_row(
-                    "SELECT COUNT(*) FROM consolidation_events 
+                Ok(conn.query_row(
+                    "SELECT reason FROM consolidation_events
                      WHERE event_type = 'promoted_to_schema'
-                     AND reason LIKE '%schema%'",
+                       AND note_id IN (SELECT id FROM notes WHERE node_type = 'schema')
+                     LIMIT 1",
                     [],
                     |r| r.get(0),
-                )
-                .map_err(|e| e.into())
+                )?)
             })
             .unwrap();
-        assert!(event_count >= 3, "episodes should have promotion events");
+        assert!(
+            reason.contains("gating=human_approved"),
+            "audit must state the human signal: {reason}"
+        );
     }
 }

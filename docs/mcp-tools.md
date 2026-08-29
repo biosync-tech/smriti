@@ -402,7 +402,9 @@ Run a memory consolidation pass. Scores episode notes based on cascade salience 
 }
 ```
 
-**CLI alternative:** `smriti consolidate --policy standard --dry-run=false`
+**CLI alternative:** `smriti consolidate --policy conservative --apply`
+
+Conservative never writes schema notes. Standard/Aggressive may auto-commit only if the retrieve-context proxy improves held-out `query_context` samples. That proxy is **not** WikiSkill task-accuracy. Optional MCP fields: `accept_proposal_id`, `reject_proposal_id`.
 
 ---
 

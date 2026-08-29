@@ -2,6 +2,7 @@ use clap::Parser;
 use std::sync::Arc;
 
 use smriti::cli::commands::{Cli, Commands};
+use smriti::cli::paths::resolve_db_path;
 use smriti::cli::{completions, handlers};
 use smriti::features::smart_links::SmartLinker;
 use smriti::mcp::server::McpServer;
@@ -26,13 +27,15 @@ async fn main() -> anyhow::Result<()> {
             return Ok(());
         }
         Commands::Init => {
-            handlers::handle_init(&cli.db)?;
+            let db_path = resolve_db_path(cli.db.as_deref());
+            handlers::handle_init(&db_path)?;
             return Ok(());
         }
         _ => {}
     }
 
-    let db = Arc::new(Database::new(&cli.db)?);
+    let db_path = resolve_db_path(cli.db.as_deref());
+    let db = Arc::new(Database::new(&db_path)?);
 
     match cli.command {
         Commands::Create {
@@ -106,7 +109,7 @@ async fn main() -> anyhow::Result<()> {
             println!("  MCP:     http://{}:{}/mcp  (HTTP JSON-RPC)", host, port);
             println!();
 
-            smriti::api::server::start_server(db, &host, port, cli.db.clone()).await?;
+            smriti::api::server::start_server(db, &host, port, db_path.clone()).await?;
         }
 
         Commands::Mcp => {
@@ -306,10 +309,13 @@ async fn main() -> anyhow::Result<()> {
         Commands::Consolidate {
             policy,
             dry_run,
+            apply,
             explain,
+            llm,
             json,
         } => {
-            handlers::handle_consolidate(&db, &policy, dry_run, explain, json)?;
+            let dry = !apply && dry_run;
+            handlers::handle_consolidate(&db, &policy, dry, explain, llm, json).await?;
         }
 
         Commands::Proposals { json } => {
