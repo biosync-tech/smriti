@@ -12,9 +12,33 @@
 
 `2.5µs` KV retrieval · `235ns` graph traversal · `0` cloud dependencies
 
+## Quick start (< 5 minutes)
+
 ```bash
+# 1. Install
 cargo install smriti
+
+# 2. Initialize a new database
+smriti init
+
+# 3. Create your first note (wiki-links and tags auto-extracted)
+smriti create "Protocol Amendment Log" -c "Amendment 03 submitted for [[Inclusion Criterion Change]]." -t protocol
+
+# 4. Search
+smriti search "roadmap"
+
+# 5. Connect to Claude Desktop — add this to claude_desktop_config.json:
+# {
+#   "mcpServers": {
+#     "smriti": {
+#       "command": "smriti",
+#       "args": ["mcp", "--db", "/absolute/path/to/notes.db"]
+#     }
+#   }
+# }
 ```
+
+Your notes live in `notes.db` (current directory). Back up with `cp`. No server, no cloud.
 
 ## Why Smriti (vs. Obsidian / Zep / Mem0 / Letta / Neo4j)
 
@@ -75,28 +99,6 @@ Notes connect to each other through typed wiki-links — write `[[rel:causal|Dec
 
 ---
 
-## Quick start
-
-```bash
-# Install
-cargo install smriti
-
-# Create your first notes — links and tags are extracted automatically
-smriti new                    # interactive guided prompt
-smriti create "Acme Corp" --content "Key client. Met via [[Sarah Chen]]." --tags client
-
-# Search
-smriti search "Acme"
-
-# Open the web dashboard
-smriti serve
-# → http://localhost:3000
-```
-
-Your notes, graph, and search index live in `~/.local/share/smriti/smriti.db`. Back up with `cp`.
-
----
-
 ## Use cases
 
 ### Client knowledge graph
@@ -139,20 +141,7 @@ smriti import ./playbooks --recursive
 
 ## MCP integration
 
-Smriti runs as an MCP server over stdio. Add it to Claude Desktop in `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "smriti": {
-      "command": "smriti",
-      "args": ["mcp", "--db", "/path/to/smriti.db"]
-    }
-  }
-}
-```
-
-For claude.ai remote MCP, start `smriti serve` and point the MCP client at `http://localhost:3000/mcp`.
+Smriti ships as an MCP server (JSON-RPC 2.0 over stdio). Claude Desktop configuration is printed by `smriti init`. For remote MCP (claude.ai), start `smriti serve` and point the MCP client at `http://localhost:3000/mcp`.
 
 ### MCP tools
 

@@ -19,10 +19,17 @@ async fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
 
-    // Shell completions don't need a database
-    if let Commands::Completions { shell } = cli.command {
-        completions::generate_completions(shell);
-        return Ok(());
+    // Commands that don't need a database
+    match &cli.command {
+        Commands::Completions { shell } => {
+            completions::generate_completions(*shell);
+            return Ok(());
+        }
+        Commands::Init => {
+            handlers::handle_init(&cli.db)?;
+            return Ok(());
+        }
+        _ => {}
     }
 
     let db = Arc::new(Database::new(&cli.db)?);
@@ -108,6 +115,7 @@ async fn main() -> anyhow::Result<()> {
         }
 
         Commands::Completions { .. } => unreachable!(),
+        Commands::Init => unreachable!(),
 
         Commands::Sync { remote, direction } => {
             let device_id = hostname::get()
@@ -293,6 +301,27 @@ async fn main() -> anyhow::Result<()> {
 
         Commands::Cascade { id, json } => {
             handlers::handle_cascade(&db, id, json)?;
+        }
+
+        Commands::Consolidate {
+            policy,
+            dry_run,
+            explain,
+            json,
+        } => {
+            handlers::handle_consolidate(&db, &policy, dry_run, explain, json)?;
+        }
+
+        Commands::Proposals { json } => {
+            handlers::handle_proposals(&db, json)?;
+        }
+
+        Commands::ApproveProposal { cluster_id } => {
+            handlers::handle_approve_proposal(&db, &cluster_id)?;
+        }
+
+        Commands::RejectProposal { cluster_id, reason } => {
+            handlers::handle_reject_proposal(&db, &cluster_id, &reason)?;
         }
     }
 

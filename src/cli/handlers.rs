@@ -524,3 +524,550 @@ fn sanitize_filename(name: &str) -> String {
         })
         .collect()
 }
+
+/// Handle `smriti init` — scaffold a fresh database and print MCP config.
+pub fn handle_init(db_path: &str) -> AppResult<()> {
+    use std::path::Path;
+
+    let path = Path::new(db_path);
+    let abs_path = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        std::env::current_dir()?.join(path)
+    };
+
+    // Check if DB already exists
+    if abs_path.exists() {
+        return Err(crate::errors::AppError::BadRequest(format!(
+            "Database already exists at {}. Delete it or use a different path.",
+            abs_path.display()
+        )));
+    }
+
+    // Create parent directory if needed
+    if let Some(parent) = abs_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    // Initialize the database
+    let _db = Database::new(db_path)?;
+
+    println!(
+        "\n✓ Initialized Smriti database at: {}\n",
+        abs_path.display()
+    );
+
+    // Print MCP configuration block
+    println!("Add this to your Claude Desktop config (claude_desktop_config.json):\n");
+    println!("{{");
+    println!("  \"mcpServers\": {{");
+    println!("    \"smriti\": {{");
+    println!("      \"command\": \"smriti\",");
+    println!(
+        "      \"args\": [\"mcp\", \"--db\", \"{}\"]",
+        abs_path.display()
+    );
+    println!("    }}");
+    println!("  }}");
+    println!("}}\n");
+
+    println!("Quick start:");
+    println!("  smriti create \"My First Note\" -c \"Content here\" -t example");
+    println!("  smriti search \"first\"");
+    println!("  smriti serve\n");
+
+    Ok(())
+}
+
+/// Explain WikiSkill provenance for a schema note.
+fn explain_schema_provenance(db: &Database, schema_id: &str, json: bool) -> AppResult<()> {
+    #[derive(serde::Serialize)]
+    struct SchemaProvenance {
+        schema_id: String,
+        schema_title: String,
+        source_episodes: Vec<SourceEpisode>,
+        formation_rationale: Option<String>,
+    }
+
+    #[derive(serde::Serialize)]
+    struct SourceEpisode {
+        episode_id: String,
+        episode_title: String,
+        similarity_score: f32,
+    }
+
+    // Fetch schema title
+    let schema_title: String = db.execute(|conn| {
+        conn.query_row(
+            "SELECT title FROM notes WHERE id = ?1",
+            rusqlite::params![schema_id],
+            |r| r.get(0),
+        )
+        .map_err(|e| e.into())
+    })?;
+
+    // Fetch source episodes from schema_sources
+    let sources: Vec<SourceEpisode> = db.execute(|conn| {
+        let mut stmt = conn.prepare(
+            "SELECT ss.source_note_id, n.title, ss.similarity_score
+             FROM schema_sources ss
+             JOIN notes n ON n.id = ss.source_note_id
+             WHERE ss.schema_id = ?1
+             ORDER BY ss.similarity_score DESC",
+        )?;
+        let rows = stmt
+            .query_map(rusqlite::params![schema_id], |r| {
+                Ok(SourceEpisode {
+                    episode_id: r.get(0)?,
+                    episode_title: r.get(1)?,
+                    similarity_score: r.get(2)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(rows)
+    })?;
+
+    // Fetch formation rationale from consolidation_events
+    let rationale: Option<String> = db.execute(|conn| {
+        use rusqlite::OptionalExtension;
+        conn.query_row(
+            "SELECT reason FROM consolidation_events
+             WHERE note_id IN (SELECT source_note_id FROM schema_sources WHERE schema_id = ?1)
+             AND event_type = 'promoted_to_schema'
+             ORDER BY created_at DESC
+             LIMIT 1",
+            rusqlite::params![schema_id],
+            |r| r.get(0),
+        )
+        .optional()
+        .map_err(|e| e.into())
+    })?;
+
+    let provenance = SchemaProvenance {
+        schema_id: schema_id.to_string(),
+        schema_title,
+        source_episodes: sources,
+        formation_rationale: rationale,
+    };
+
+    if json {
+        println!("{}", serde_json::to_string_pretty(&provenance)?);
+    } else {
+        println!(
+            "WikiSkill Provenance for Schema: {}",
+            provenance.schema_title
+        );
+        println!("  Schema ID: {}", provenance.schema_id);
+        println!("  Source Episodes ({}):", provenance.source_episodes.len());
+        for ep in &provenance.source_episodes {
+            println!(
+                "    - {} (similarity: {:.3}): {}",
+                ep.episode_id, ep.similarity_score, ep.episode_title
+            );
+        }
+        if let Some(reason) = &provenance.formation_rationale {
+            println!("  Formation Rationale: {}", reason);
+        }
+    }
+
+    Ok(())
+}
+
+
+/// Handle `smriti consolidate` — run CLS-inspired consolidation pass.
+pub fn handle_consolidate(
+    db: &Database,
+    policy_str: &str,
+    dry_run: bool,
+    explain: Option<String>,
+    json: bool,
+) -> AppResult<()> {
+    use crate::features::consolidation::{
+        explain_score, run_consolidation_pass, ConsolidationPolicy, ScoreWeights, Thresholds,
+    };
+
+    let policy = match policy_str {
+        "conservative" => ConsolidationPolicy::Conservative,
+        "standard" => ConsolidationPolicy::Standard,
+        "aggressive" => ConsolidationPolicy::Aggressive,
+        _ => {
+            return Err(crate::errors::AppError::BadRequest(format!(
+                "Unknown policy: {}. Use conservative, standard, or aggressive.",
+                policy_str
+            )))
+        }
+    };
+
+    // If --explain is given, show score breakdown for episodes or provenance for schemas
+    if let Some(note_id) = explain {
+        // Check note type
+        let node_type: String = db.execute(|conn| {
+            conn.query_row(
+                "SELECT node_type FROM notes WHERE id = ?1",
+                rusqlite::params![&note_id],
+                |r| r.get(0),
+            )
+            .map_err(|e| e.into())
+        })?;
+
+        if node_type == "schema" {
+            // Show WikiSkill provenance for schema notes
+            explain_schema_provenance(db, &note_id, json)?;
+        } else {
+            // Show consolidation score breakdown for episode notes
+            let breakdown =
+                db.execute(|conn| explain_score(conn, &note_id, ScoreWeights::default()))?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&breakdown)?);
+            } else {
+                println!(
+                    "Consolidation score breakdown for note {}:",
+                    breakdown.note_id
+                );
+                println!("  Cascade salience:    {:.6}", breakdown.cascade_salience);
+                println!("  Degree (link count): {}", breakdown.degree);
+                println!("  Context diversity:   {:.3}", breakdown.context_diversity);
+                println!();
+                println!(
+                    "  Salience component:  {:.4}  (weight × salience)",
+                    breakdown.salience_component
+                );
+                println!(
+                    "  Degree component:    {:.4}  (weight × ln(1+degree))",
+                    breakdown.degree_component
+                );
+                println!(
+                    "  Diversity component: {:.4}  (weight × diversity)",
+                    breakdown.diversity_component
+                );
+                println!();
+                println!("  Raw sum:             {:.4}", breakdown.raw_sum);
+                println!(
+                    "  Final score:         {:.4}  (sigmoid(raw_sum))",
+                    breakdown.score
+                );
+            }
+        }
+        return Ok(());
+    }
+
+    // CLI context: no tokio runtime for LLM backend
+    // MCP server has its own runtime and can use Llm mode
+    let backend = None;
+
+    // Run full consolidation pass
+    let report = db.execute(|conn| {
+        run_consolidation_pass(
+            conn,
+            policy,
+            dry_run,
+            ScoreWeights::default(),
+            Thresholds::default(),
+            backend,
+        )
+    })?;
+
+    if json {
+        println!("{}", serde_json::to_string_pretty(&report)?);
+    } else {
+        let mode = if dry_run { "(dry run)" } else { "" };
+        println!(
+            "Consolidation pass complete {} — policy: {:?}",
+            mode, report.policy
+        );
+        println!("  Scanned:  {} episode notes", report.scanned);
+        println!("  Promoted: {} schema(s)", report.promoted.len());
+        println!("  Flagged:  {} for review", report.flagged.len());
+        println!("  Archived: {} past grace", report.archived.len());
+
+        if !report.promoted.is_empty() {
+            println!("\nPromoted to schema:");
+            for id in &report.promoted {
+                if let Some(reason) = report.reasons.get(id) {
+                    println!("  {} — {}", &id[..8], reason);
+                }
+            }
+        }
+
+        if !report.flagged.is_empty() && report.flagged.len() <= 10 {
+            println!("\nFlagged for review:");
+            for id in &report.flagged {
+                if let Some(reason) = report.reasons.get(id) {
+                    println!("  {} — {}", &id[..8], reason);
+                }
+            }
+        } else if report.flagged.len() > 10 {
+            println!(
+                "\n{} notes flagged (showing first 10):",
+                report.flagged.len()
+            );
+            for id in report.flagged.iter().take(10) {
+                if let Some(reason) = report.reasons.get(id) {
+                    println!("  {} — {}", &id[..8], reason);
+                }
+            }
+        }
+
+        if !report.archived.is_empty() {
+            println!("\nArchived (past grace period):");
+            for id in &report.archived {
+                if let Some(reason) = report.reasons.get(id) {
+                    println!("  {} — {}", &id[..8], reason);
+                }
+            }
+        }
+
+        if dry_run {
+            println!("\nNo changes persisted (dry run). Use --dry-run=false to commit.");
+        }
+    }
+
+    Ok(())
+}
+
+/// List schema proposals flagged for review (Conservative policy).
+pub fn handle_proposals(db: &Database, json: bool) -> AppResult<()> {
+    #[derive(serde::Serialize)]
+    struct Proposal {
+        note_id: String,
+        title: String,
+        flagged_at: String,
+        consolidation_score: f32,
+    }
+
+    let proposals: Vec<Proposal> = db.execute(|conn| {
+        let mut stmt = conn.prepare(
+            "SELECT DISTINCT n.id, n.title, ce.created_at, n.consolidation_score
+             FROM consolidation_events ce
+             JOIN notes n ON n.id = ce.note_id
+             WHERE ce.event_type = 'flagged_for_review'
+             AND n.node_type = 'episode'
+             AND n.parent_schema_id IS NULL
+             ORDER BY ce.created_at DESC
+             LIMIT 50",
+        )?;
+        let rows = stmt
+            .query_map([], |r| {
+                Ok(Proposal {
+                    note_id: r.get(0)?,
+                    title: r.get(1)?,
+                    flagged_at: r.get(2)?,
+                    consolidation_score: r.get(3)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(rows)
+    })?;
+
+    if json {
+        println!("{}", serde_json::to_string_pretty(&proposals)?);
+    } else {
+        if proposals.is_empty() {
+            println!("No schema proposals pending review.");
+        } else {
+            println!("Schema proposals pending review ({}):", proposals.len());
+            for p in &proposals {
+                println!(
+                    "  {} (score: {:.3}, flagged: {}): {}",
+                    p.note_id, p.consolidation_score, p.flagged_at, p.title
+                );
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Approve a flagged schema proposal (Conservative policy).
+/// Actually forms the schema by clustering similar notes and calling form_schemas.
+pub fn handle_approve_proposal(db: &Database, cluster_id: &str) -> AppResult<()> {
+    use crate::features::schema_formation::{form_schemas, AbstractionMode, SchemaFormationConfig};
+
+    // Check that the note is flagged
+    let is_flagged: bool = db.execute(|conn| {
+        conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM consolidation_events 
+             WHERE note_id = ?1 AND event_type = 'flagged_for_review')",
+            rusqlite::params![cluster_id],
+            |r| r.get(0),
+        )
+        .map_err(|e| e.into())
+    })?;
+
+    if !is_flagged {
+        return Err(crate::errors::AppError::BadRequest(format!(
+            "Note {} is not flagged for review",
+            cluster_id
+        )));
+    }
+
+    // Get the note's embedding to find its cluster (from notes_vec, not note_embeddings_meta)
+    let has_embedding: bool = db.execute(|conn| {
+        conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM notes_vec WHERE note_id = ?1)",
+            rusqlite::params![cluster_id],
+            |r| r.get(0),
+        )
+        .map_err(|e| e.into())
+    })?;
+
+    if !has_embedding {
+        return Err(crate::errors::AppError::BadRequest(format!(
+            "Note {} has no embedding; cannot cluster for schema formation",
+            cluster_id
+        )));
+    }
+
+    // Find cluster: all notes within min_similarity of this note
+    let cluster: Vec<String> = db.execute(|conn| {
+        // Get target embedding from notes_vec (same as form_schemas)
+        let target_emb: Vec<f32> = conn.query_row(
+            "SELECT embedding FROM notes_vec WHERE note_id = ?1",
+            rusqlite::params![cluster_id],
+            |r| {
+                let blob: Vec<u8> = r.get(0)?;
+                Ok(blob
+                    .chunks(4)
+                    .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+                    .collect())
+            },
+        )?;
+
+        // Find similar notes (cosine > 0.85) from notes_vec
+        let mut similar = vec![cluster_id.to_string()];
+        let mut stmt = conn.prepare(
+            "SELECT v.note_id, v.embedding 
+             FROM notes_vec v
+             JOIN notes n ON n.id = v.note_id
+             WHERE v.note_id != ?1
+             AND n.node_type = 'episode'
+             AND n.parent_schema_id IS NULL",
+        )?;
+        let rows = stmt.query_map(rusqlite::params![cluster_id], |r| {
+            let nid: String = r.get(0)?;
+            let blob: Vec<u8> = r.get(1)?;
+            let emb: Vec<f32> = blob
+                .chunks(4)
+                .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+                .collect();
+            Ok((nid, emb))
+        })?;
+
+        for row in rows {
+            let (nid, emb) = row?;
+            let sim = crate::features::schema_formation::cosine(&target_emb, &emb);
+            if sim > 0.85 {
+                similar.push(nid);
+            }
+        }
+
+        Ok(similar)
+    })?;
+
+    // Enforce min_cluster_size (default 3)
+    if cluster.len() < 3 {
+        return Err(crate::errors::AppError::BadRequest(format!(
+            "Cluster too small ({} notes); need at least 3 for schema formation",
+            cluster.len()
+        )));
+    }
+
+    // CLI context: no tokio runtime for backend creation
+    // Backend only available via MCP server (which has its own runtime)
+    let backend = None;
+    let mode = if backend.is_some() {
+        AbstractionMode::Llm
+    } else {
+        AbstractionMode::Extractive
+    };
+
+    // Form schema on this cluster
+    let report = db.execute(|conn| {
+        form_schemas(
+            conn,
+            &SchemaFormationConfig {
+                min_cluster_size: 3,
+                min_similarity: 0.85,
+                mode,
+            },
+            false, // NOT dry run
+            Some(&cluster),
+            backend,
+        )
+    })?;
+
+    if report.created.is_empty() {
+        return Err(crate::errors::AppError::BadRequest(
+            "Schema formation failed; no schema created".into(),
+        ));
+    }
+
+    let schema_id = &report.created[0].schema_id;
+
+    // Log human approval
+    db.execute(|conn| {
+        use chrono::Utc;
+        use uuid::Uuid;
+        Ok(conn.execute(
+            "INSERT INTO consolidation_events
+             (id, note_id, event_type, score_before, score_after, reason, created_at)
+             VALUES (?1, ?2, 'proposal_approved', NULL, NULL, ?3, ?4)",
+            rusqlite::params![
+                Uuid::new_v4().to_string(),
+                cluster_id,
+                format!("human-approved: formed schema {}", schema_id),
+                Utc::now().to_rfc3339(),
+            ],
+        )?)
+    })?;
+
+    println!("✓ Approved and formed schema {}", schema_id);
+    println!("  Source episodes: {}", cluster.len());
+    println!("  Mode: {:?}", mode);
+
+    Ok(())
+}
+
+/// Reject a flagged schema proposal (Conservative policy).
+pub fn handle_reject_proposal(db: &Database, cluster_id: &str, reason: &str) -> AppResult<()> {
+    // Check that the note is flagged
+    let is_flagged: bool = db.execute(|conn| {
+        conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM consolidation_events 
+             WHERE note_id = ?1 AND event_type = 'flagged_for_review')",
+            rusqlite::params![cluster_id],
+            |r| r.get(0),
+        )
+        .map_err(|e| e.into())
+    })?;
+
+    if !is_flagged {
+        return Err(crate::errors::AppError::BadRequest(format!(
+            "Note {} is not flagged for review",
+            cluster_id
+        )));
+    }
+
+    // Log rejection (rollback without affecting already-committed schemas)
+    db.execute(|conn| {
+        use chrono::Utc;
+        use uuid::Uuid;
+        conn.execute(
+            "INSERT INTO consolidation_events
+             (id, note_id, event_type, score_before, score_after, reason, created_at)
+             VALUES (?1, ?2, 'proposal_rejected', NULL, NULL, ?3, ?4)",
+            rusqlite::params![
+                Uuid::new_v4().to_string(),
+                cluster_id,
+                format!("rejected by human: {}", reason),
+                Utc::now().to_rfc3339(),
+            ],
+        )?;
+        Ok(())
+    })?;
+
+    println!("✓ Rejected proposal for note {}", cluster_id);
+    println!("  Reason: {}", reason);
+
+    Ok(())
+}

@@ -193,6 +193,7 @@ fn bench_memory_kv(c: &mut Criterion) {
                             key: format!("key-{i}"),
                             value: serde_json::json!({"data": i}),
                             ttl_seconds: None,
+                            conflict_policy: Default::default(),
                         },
                     )
                     .expect("store");
@@ -212,6 +213,7 @@ fn bench_memory_kv(c: &mut Criterion) {
                 key: format!("key-{i}"),
                 value: serde_json::json!({"data": i}),
                 ttl_seconds: None,
+                conflict_policy: Default::default(),
             },
         )
         .expect("seed memory");

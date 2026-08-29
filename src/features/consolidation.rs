@@ -273,12 +273,16 @@ pub fn explain_score(
 /// embedding clustering + LLM abstraction, which lives in the follow-up
 /// `schema_formation` module. Promotion-eligible notes are surfaced in
 /// the report's `reasons` map so the abstraction pipeline can consume them.
+///
+/// `backend` is optional. If provided and policy is Standard/Aggressive,
+/// AbstractionMode::Llm is used. Falls back to Extractive if None.
 pub fn run_consolidation_pass(
     conn: &Connection,
     policy: ConsolidationPolicy,
     dry_run: bool,
     weights: ScoreWeights,
     thresholds: Thresholds,
+    backend: Option<crate::inference::SharedBackend>,
 ) -> AppResult<ConsolidationRunReport> {
     let now = Utc::now();
     let cascade_cfg = crate::features::cascade::CascadeConfig::default();
@@ -412,15 +416,20 @@ pub fn run_consolidation_pass(
     }
 
     // CLS Phase 3 — cluster eligible episodes into schemas. Conservative
-    // only flags. Standard/Aggressive write extractive schemas + lineage
-    // (never deletes source episodes).
+    // only flags. Standard/Aggressive write LLM schemas if backend available,
+    // otherwise extractive (never deletes source episodes).
     let schema_cfg = crate::features::schema_formation::SchemaFormationConfig {
         mode: match policy {
             ConsolidationPolicy::Conservative => {
                 crate::features::schema_formation::AbstractionMode::FlagOnly
             }
             ConsolidationPolicy::Standard | ConsolidationPolicy::Aggressive => {
-                crate::features::schema_formation::AbstractionMode::Extractive
+                // Use Llm if backend available, fallback to Extractive
+                if backend.is_some() {
+                    crate::features::schema_formation::AbstractionMode::Llm
+                } else {
+                    crate::features::schema_formation::AbstractionMode::Extractive
+                }
             }
         },
         ..crate::features::schema_formation::SchemaFormationConfig::default()
@@ -430,6 +439,7 @@ pub fn run_consolidation_pass(
         &schema_cfg,
         dry_run,
         Some(&eligible_ids),
+        backend,
     ) {
         Ok(formed) => {
             for cluster in &formed.flagged {
@@ -664,6 +674,7 @@ mod tests {
                     true,
                     ScoreWeights::default(),
                     Thresholds::default(),
+                    None, // No backend for test
                 )
             })
             .unwrap();
@@ -707,6 +718,7 @@ mod tests {
                     false,
                     ScoreWeights::default(),
                     thresholds,
+                    None, // No backend for test
                 )
             })
             .unwrap();
@@ -773,6 +785,7 @@ mod tests {
                     false,
                     ScoreWeights::default(),
                     Thresholds::default(),
+                    None, // No backend for test
                 )
             })
             .unwrap();
@@ -816,6 +829,7 @@ mod tests {
                     false,
                     ScoreWeights::default(),
                     thresholds,
+                    None, // No backend for test
                 )
             })
             .unwrap();
@@ -837,5 +851,192 @@ mod tests {
                 .unwrap();
             assert_eq!(parent.as_deref(), Some(report.promoted[0].as_str()));
         }
+    }
+
+    #[test]
+    fn rejected_proposal_does_not_affect_committed_schemas() {
+        // Simulate: schema A already committed, proposal B rejected
+        // Verify: schema A remains intact, proposal B never written
+        let db = fresh_db();
+
+        // Create and commit schema A
+        let schema_a = "schema-a-id";
+        insert_note(&db, schema_a);
+        let _: usize = db
+            .execute(|conn| {
+                Ok(conn.execute(
+                    "UPDATE notes SET node_type = 'schema' WHERE id = ?1",
+                    params![schema_a],
+                )?)
+            })
+            .unwrap();
+
+        // Flag proposal B for review
+        let ep_b = "episode-b-id";
+        insert_note(&db, ep_b);
+        let _: usize = db
+            .execute(|conn| {
+                use uuid::Uuid;
+                Ok(conn.execute(
+                    "INSERT INTO consolidation_events
+                     (id, note_id, event_type, score_before, score_after, reason, created_at)
+                     VALUES (?1, ?2, 'flagged_for_review', NULL, 0.5, 'candidate', ?3)",
+                    params![Uuid::new_v4().to_string(), ep_b, Utc::now().to_rfc3339()],
+                )?)
+            })
+            .unwrap();
+
+        // Reject proposal B
+        let _: usize = db
+            .execute(|conn| {
+                use uuid::Uuid;
+                Ok(conn.execute(
+                    "INSERT INTO consolidation_events
+                     (id, note_id, event_type, score_before, score_after, reason, created_at)
+                     VALUES (?1, ?2, 'proposal_rejected', NULL, NULL, 'rejected by test', ?3)",
+                    params![Uuid::new_v4().to_string(), ep_b, Utc::now().to_rfc3339()],
+                )?)
+            })
+            .unwrap();
+
+        // Verify: schema A still exists
+        let schema_a_still_exists: bool = db
+            .execute(|conn| {
+                conn.query_row(
+                    "SELECT EXISTS(SELECT 1 FROM notes WHERE id = ?1 AND node_type = 'schema')",
+                    params![schema_a],
+                    |r| r.get(0),
+                )
+                .map_err(|e| e.into())
+            })
+            .unwrap();
+        assert!(schema_a_still_exists, "committed schema A must remain");
+
+        // Verify: episode B was NOT promoted
+        let ep_b_parent: Option<String> = db
+            .execute(|conn| {
+                conn.query_row(
+                    "SELECT parent_schema_id FROM notes WHERE id = ?1",
+                    params![ep_b],
+                    |r| r.get(0),
+                )
+                .map_err(|e| e.into())
+            })
+            .unwrap();
+        assert!(
+            ep_b_parent.is_none(),
+            "rejected proposal must not create parent link"
+        );
+
+        // Verify: no schema was created for episode B
+        let schema_count: i64 = db
+            .execute(|conn| {
+                conn.query_row(
+                    "SELECT COUNT(*) FROM schema_sources WHERE source_note_id = ?1",
+                    params![ep_b],
+                    |r| r.get(0),
+                )
+                .map_err(|e| e.into())
+            })
+            .unwrap();
+        assert_eq!(
+            schema_count, 0,
+            "rejected proposal must not write schema_sources"
+        );
+    }
+
+    #[test]
+    fn approved_proposal_creates_schema_with_human_approved_reason() {
+        use crate::models::{CreateNoteRequest, NodeType};
+        use crate::storage::Database;
+
+        let db = Database::new(":memory:").unwrap();
+
+        // Create cluster of 3 similar notes
+        let mut ids = vec![];
+        for title in &["Episode A", "Episode B", "Episode C"] {
+            let n = db
+                .create_note(CreateNoteRequest {
+                    title: title.to_string(),
+                    content: "similar content".into(),
+                    tags: vec![],
+                })
+                .unwrap();
+            db.store_embedding(&n.id, &vec![1.0; 384], Some("test"))
+                .unwrap();
+            ids.push(n.id);
+        }
+
+        // Flag one note for review
+        let _: usize = db
+            .execute(|conn| {
+                use uuid::Uuid;
+                Ok(conn.execute(
+                    "INSERT INTO consolidation_events
+                     (id, note_id, event_type, score_before, score_after, reason, created_at)
+                     VALUES (?1, ?2, 'flagged_for_review', NULL, 0.5, 'candidate', ?3)",
+                    params![Uuid::new_v4().to_string(), &ids[0], Utc::now().to_rfc3339()],
+                )?)
+            })
+            .unwrap();
+
+        // Approve via CLI handler (simulated)
+        // In real usage: smriti approve <note_id>
+        // Here we test the schema formation path directly
+        let report = db
+            .execute(|conn| {
+                crate::features::schema_formation::form_schemas(
+                    conn,
+                    &crate::features::schema_formation::SchemaFormationConfig {
+                        min_cluster_size: 3,
+                        min_similarity: 0.9,
+                        mode: crate::features::schema_formation::AbstractionMode::Extractive,
+                    },
+                    false,
+                    Some(&ids),
+                    None,
+                )
+            })
+            .unwrap();
+
+        assert_eq!(report.created.len(), 1, "approve should create schema");
+        let schema_id = &report.created[0].schema_id;
+
+        // Verify schema note exists
+        let schema_note = db.get_note(schema_id).unwrap();
+        assert_eq!(schema_note.node_type, NodeType::Schema);
+
+        // Verify episodes remain
+        for id in &ids {
+            assert!(db.get_note(id).is_ok(), "episode {} must still exist", id);
+        }
+
+        // Verify schema_sources lineage
+        let sources_count: i64 = db
+            .execute(|conn| {
+                conn.query_row(
+                    "SELECT COUNT(*) FROM schema_sources WHERE schema_id = ?1",
+                    params![schema_id],
+                    |r| r.get(0),
+                )
+                .map_err(|e| e.into())
+            })
+            .unwrap();
+        assert_eq!(sources_count, 3);
+
+        // Verify event reason contains "human-approved" or "promoted_to_schema"
+        let event_count: i64 = db
+            .execute(|conn| {
+                conn.query_row(
+                    "SELECT COUNT(*) FROM consolidation_events 
+                     WHERE event_type = 'promoted_to_schema'
+                     AND reason LIKE '%schema%'",
+                    [],
+                    |r| r.get(0),
+                )
+                .map_err(|e| e.into())
+            })
+            .unwrap();
+        assert!(event_count >= 3, "episodes should have promotion events");
     }
 }

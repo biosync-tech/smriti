@@ -9,6 +9,19 @@ use crate::models::*;
 use crate::parser;
 use crate::storage::Database;
 
+/// Try to create an inference backend for MCP schema formation.
+/// Returns None if config missing or backend unavailable (non-fatal).
+fn try_create_backend_for_mcp() -> Option<crate::inference::SharedBackend> {
+    use crate::inference::{create_backend, InferenceConfig};
+
+    let config = InferenceConfig::default();
+
+    match tokio::runtime::Handle::try_current() {
+        Ok(handle) => handle.block_on(create_backend(&config)).ok(),
+        Err(_) => None,
+    }
+}
+
 pub fn handle_notes_create(db: &Database, args: &Value) -> Result<Value, String> {
     let title = args
         .get("title")
@@ -414,6 +427,10 @@ pub fn handle_notes_consolidate(db: &Database, args: &Value) -> Result<Value, St
         })
         .unwrap_or_default();
 
+    // Try to create an inference backend for Llm mode (optional)
+    // MCP server doesn't have direct access to config, so this may fail
+    let backend = try_create_backend_for_mcp();
+
     // BREAKING MCP CONTRACT (introduced v0.3, May 2026): ScoreBreakdown shape changed
     // (cascade_salience replaces access_count + days_since_access as the temporal
     // signal). Consumers that parsed the old access_component / recency_component
@@ -427,6 +444,7 @@ pub fn handle_notes_consolidate(db: &Database, args: &Value) -> Result<Value, St
                 dry_run,
                 crate::features::consolidation::ScoreWeights::default(),
                 crate::features::consolidation::Thresholds::default(),
+                backend,
             )
         })
         .map_err(|e| e.to_string())?;

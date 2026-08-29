@@ -53,3 +53,20 @@ jobs:
         with:
           name: smriti-linux-x86_64
           path: target/release/smriti
+
+  install-smoke:
+    name: Cargo Install Smoke Test
+    needs: [fmt, clippy, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Install from source
+        run: cargo install --path .
+      - name: Initialize database
+        run: smriti init --db /tmp/smoke.db
+      - name: Create note
+        run: smriti create "Test Note" --content "Protocol v1.0" --tags test --db /tmp/smoke.db
+      - name: Search
+        run: smriti search "protocol" --db /tmp/smoke.db --limit 5
