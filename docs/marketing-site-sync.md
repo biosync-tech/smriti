@@ -136,6 +136,28 @@
 
 ## Updated Copy Blocks for Marketing Site
 
+### Footer Social Links (add to all pages)
+
+```html
+<footer role="contentinfo">
+  <p>
+    Biosync — 
+    <a href="mailto:hello@bio-sync.tech">hello@bio-sync.tech</a> — 
+    <a href="https://x.com/Biosync_ai" target="_blank" rel="noopener noreferrer" aria-label="Biosync on X (Twitter)">X</a> — 
+    <a href="https://www.linkedin.com/in/biosyncai" target="_blank" rel="noopener noreferrer" aria-label="Biosync on LinkedIn">LinkedIn</a>
+  </p>
+</footer>
+```
+
+### JSON-LD Organization Schema (update sameAs field)
+
+```json
+"sameAs": [
+  "https://www.linkedin.com/in/biosyncai",
+  "https://x.com/Biosync_ai"
+],
+```
+
 ### Homepage Services List (no change — already accurate)
 
 ```
