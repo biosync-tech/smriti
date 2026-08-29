@@ -899,10 +899,10 @@ pub fn handle_approve_proposal(db: &Database, cluster_id: &str) -> AppResult<()>
         )));
     }
 
-    // Get the note's embedding to find its cluster
+    // Get the note's embedding to find its cluster (from notes_vec, not note_embeddings_meta)
     let has_embedding: bool = db.execute(|conn| {
         conn.query_row(
-            "SELECT EXISTS(SELECT 1 FROM note_embeddings_meta WHERE note_id = ?1)",
+            "SELECT EXISTS(SELECT 1 FROM notes_vec WHERE note_id = ?1)",
             rusqlite::params![cluster_id],
             |r| r.get(0),
         )
@@ -917,9 +917,9 @@ pub fn handle_approve_proposal(db: &Database, cluster_id: &str) -> AppResult<()>
 
     // Find cluster: all notes within min_similarity of this note
     let cluster: Vec<String> = db.execute(|conn| {
-        // Get target embedding
+        // Get target embedding from notes_vec (same as form_schemas)
         let target_emb: Vec<f32> = conn.query_row(
-            "SELECT embedding FROM note_embeddings_meta WHERE note_id = ?1",
+            "SELECT embedding FROM notes_vec WHERE note_id = ?1",
             rusqlite::params![cluster_id],
             |r| {
                 let blob: Vec<u8> = r.get(0)?;
@@ -929,10 +929,15 @@ pub fn handle_approve_proposal(db: &Database, cluster_id: &str) -> AppResult<()>
             },
         )?;
 
-        // Find similar notes (cosine > 0.85)
+        // Find similar notes (cosine > 0.85) from notes_vec
         let mut similar = vec![cluster_id.to_string()];
         let mut stmt = conn.prepare(
-            "SELECT note_id, embedding FROM note_embeddings_meta WHERE note_id != ?1"
+            "SELECT v.note_id, v.embedding 
+             FROM notes_vec v
+             JOIN notes n ON n.id = v.note_id
+             WHERE v.note_id != ?1
+             AND n.node_type = 'episode'
+             AND n.parent_schema_id IS NULL"
         )?;
         let rows = stmt.query_map(rusqlite::params![cluster_id], |r| {
             let nid: String = r.get(0)?;
