@@ -101,40 +101,86 @@ Notes connect to each other through typed wiki-links — write `[[rel:causal|Dec
 
 ## Use cases
 
-### Client knowledge graph
+### Grounded research memory
 
-Track every client, contact, and engagement as linked notes. When you brief Claude before a call, it reads the full context — history, decisions, open items — without you re-explaining anything.
+Every claim in your draft cites a source. When your advisor asks "where did you get this?" at 11pm, the answer is one command away.
 
 ```bash
-smriti create "Acme Corp Q2 Review" \
-  --content "Next steps: [[rel:temporal|Budget approval]] by June. Owner: [[Sarah Chen]]." \
-  --tags client decision
+# Ingest sources
+smriti ingest ~/papers/foster-wilson-2006.pdf --uri "doi:10.1038/nature04587"
+
+# Write a grounded note (via MCP or CLI)
+smriti wiki-tx submit --require-provenance \
+  --op create_note \
+  --title "Hippocampal replay mechanisms" \
+  --content "Replay events are biased toward rewarded trajectories." \
+  --claim "biased toward rewarded trajectories" \
+    --source doi:10.1038/nature04587 \
+    --span "...replay events were biased toward trajectories...associated with reward..."
+
+# If the claim doesn't overlap the source, the transaction rolls back.
+# Verify your entire vault any time:
+smriti verify   # → notes=412  sources=89  claim_spans=1,204  events=3,712  OK
 ```
 
-### Decision log
+### Clinical trial amendment ledger
 
-Record decisions with context and consequences. The `rel:causal` link type lets agents trace why something was decided.
+Which protocol version was active when Subject 14 was screened? Bi-temporal edges answer in milliseconds.
 
 ```bash
-smriti create "Switched to Rust" \
-  --content "Replaced Python service. Reason: [[rel:causal|Memory leak in prod]]." \
-  --tags decision
+# Link protocol versions with valid-from dates
+smriti link add \
+  --from "Trial-A-Protocol-v2.1" \
+  --to "Trial-A-Protocol-v2.3" \
+  --type amended_by \
+  --valid-from 2026-03-14
+
+# Query the active version on any date
+smriti graph --as-of 2026-03-10 trial-A
+# → Returns v2.1, not v2.3 (which took effect 4 days later)
+
+# Before every monitor visit:
+smriti verify --trial Trial-A --since 2026-03-01
+# → 47 claims rechecked, 1 FAIL flagged before the monitor sits down
 ```
 
-### Daily AI context
+### Senescence biomarker consolidation
 
-Store your current focus in the KV store. Claude reads it at the start of every session through MCP.
+Three IPF cohorts cite overlapping markers. Which are replicated science vs. spurious? Consolidation promotes the durable pattern into a schema, lineage intact.
 
 ```bash
-smriti serve   # then ask Claude: "what's my current focus?" — Smriti answers via MCP
+# Score notes by replay frequency + structural centrality + context diversity
+smriti consolidate --dry-run --policy conservative
+# → 3 episodes cluster (p16INK4a, MMP-7 replicated; IL-6 disputed)
+
+# Review flagged clusters
+smriti proposals
+# → schema_candidate_001: 3 episodes, similarity 0.86, IL-6 flagged
+
+# Human approves → schema formed with full lineage
+smriti approve schema_candidate_001
+# → Created schema_ipf_panel_v1
+#    Source episodes preserved (not deleted)
+#    Audit event written: promoted_to_schema
 ```
 
-### SOPs and playbooks
+### IND dose synthesis (CB-209)
 
-Document repeatable processes as linked notes. Import existing markdown files in one command.
+100 mg is safe but sub-efficacious. 300 mg triggers DLT. The recommendation must reconstruct in front of an FDA reviewer.
 
 ```bash
-smriti import ./playbooks --recursive
+# Multi-hop traversal returns the evidence chain
+smriti graph traverse CB-209 --depth 2
+# → [compound] CB-209
+#     ├─ [dosage 100mg] safe; 18% CRP < 30% endpoint
+#     └─ [dosage 300mg] efficacious; 29% Tn-T > 0.10 (DLT)
+
+# Replay the model call that recommended 200 mg MTD
+smriti audit replay call_7d3a
+# → Output: 200 mg once daily (MTD for Phase III)
+#    Verified spans: 2 of 2 → trial protocol + Troponin-T ref
+#    Stored hash: 2e8b…7c4b
+#    Re-run hash:  2e8b…7c4b  ✓ bit-identical
 ```
 
 ---

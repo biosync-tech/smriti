@@ -318,6 +318,37 @@
     <div class="ct">Every schema your agent forms should point back to the exact evidence — and never silently erase a dissenting result. <strong>Smriti makes that the default.</strong></div>
     <a class="cta-btn" href="mailto:hello@bio-sync.tech?subject=Smriti%20discovery%20call%20%E2%80%94%20consolidation">Book a 20-min call →</a>
   </div>
+
+  <div class="panel" style="margin-top: 28px; background: var(--surface2);">
+    <div class="panel-label">The human-approval path (shipped in v0.2)</div>
+    <pre style="font-family: var(--mono); font-size: 12px; color: var(--text2); overflow-x: auto; line-height: 1.6;">
+<span style="color: var(--text3);"># Step 1: Score episodes by replay frequency + centrality + context diversity</span>
+<span style="color: var(--cyan);">$ smriti consolidate --dry-run --policy conservative</span>
+─── replay signal, senescence panel ─────────
+episode  n_ipf_cohortA  access=14  contexts=3  score=0.71
+episode  n_ipf_cohortB  access=9   contexts=2  score=0.64
+episode  n_ipf_cohortC  access=11  contexts=3  score=0.68  <span style="color: var(--amber);">⚠ IL-6 disputed</span>
+
+<span style="color: var(--text3);"># Step 2: Review flagged schema candidates</span>
+<span style="color: var(--cyan);">$ smriti proposals</span>
+─── pending schema candidates ───────────────
+<span style="color: var(--green);">schema_candidate_001</span>
+  source_episodes    n_ipf_cohortA, n_ipf_cohortB, n_ipf_cohortC
+  similarity         0.86 across 3 episodes
+  replicated         p16INK4a (0.71), MMP-7 (0.64)
+  <span style="color: var(--cyan);">flagged</span>            IL-6 — confounded by infection (Cohort C)
+
+<span style="color: var(--text3);"># Step 3: Human approves → schema formed with full lineage</span>
+<span style="color: var(--cyan);">$ smriti approve schema_candidate_001</span>
+<span style="color: var(--green);">✓</span> Created schema_ipf_panel_v1
+  source episodes preserved (not deleted)
+  audit event written: promoted_to_schema
+  lineage: schema_sources table populated
+
+<span style="color: var(--text3);"># Conservative policy = flag only, human review required</span>
+<span style="color: var(--text3);"># Standard/Aggressive policies auto-promote on threshold (enterprise only)</span>
+    </pre>
+  </div>
 </main>
 
 <footer>smriti — audit-ready knowledge for AI-driven clinical &amp; biomedical work</footer>
