@@ -524,3 +524,161 @@ fn sanitize_filename(name: &str) -> String {
         })
         .collect()
 }
+
+/// Handle `smriti init` — scaffold a fresh database and print MCP config.
+pub fn handle_init(db_path: &str) -> AppResult<()> {
+    use std::path::Path;
+
+    let path = Path::new(db_path);
+    let abs_path = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        std::env::current_dir()?.join(path)
+    };
+
+    // Check if DB already exists
+    if abs_path.exists() {
+        return Err(crate::errors::AppError::BadRequest(format!(
+            "Database already exists at {}. Delete it or use a different path.",
+            abs_path.display()
+        )));
+    }
+
+    // Create parent directory if needed
+    if let Some(parent) = abs_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    // Initialize the database
+    let _db = Database::new(db_path)?;
+
+    println!("\n✓ Initialized Smriti database at: {}\n", abs_path.display());
+
+    // Print MCP configuration block
+    println!("Add this to your Claude Desktop config (claude_desktop_config.json):\n");
+    println!("{{");
+    println!("  \"mcpServers\": {{");
+    println!("    \"smriti\": {{");
+    println!("      \"command\": \"smriti\",");
+    println!("      \"args\": [\"mcp\", \"--db\", \"{}\"]", abs_path.display());
+    println!("    }}");
+    println!("  }}");
+    println!("}}\n");
+
+    println!("Quick start:");
+    println!("  smriti create \"My First Note\" -c \"Content here\" -t example");
+    println!("  smriti search \"first\"");
+    println!("  smriti serve\n");
+
+    Ok(())
+}
+
+/// Handle `smriti consolidate` — run CLS-inspired consolidation pass.
+pub fn handle_consolidate(
+    db: &Database,
+    policy_str: &str,
+    dry_run: bool,
+    explain: Option<String>,
+    json: bool,
+) -> AppResult<()> {
+    use crate::features::consolidation::{
+        run_consolidation_pass, explain_score, ConsolidationPolicy, ScoreWeights, Thresholds,
+    };
+
+    let policy = match policy_str {
+        "conservative" => ConsolidationPolicy::Conservative,
+        "standard" => ConsolidationPolicy::Standard,
+        "aggressive" => ConsolidationPolicy::Aggressive,
+        _ => {
+            return Err(crate::errors::AppError::BadRequest(format!(
+                "Unknown policy: {}. Use conservative, standard, or aggressive.",
+                policy_str
+            )))
+        }
+    };
+
+    // If --explain is given, show the score breakdown for that note only
+    if let Some(note_id) = explain {
+        let breakdown = db.execute(|conn| {
+            explain_score(conn, &note_id, ScoreWeights::default())
+        })?;
+        if json {
+            println!("{}", serde_json::to_string_pretty(&breakdown)?);
+        } else {
+            println!("Consolidation score breakdown for note {}:", breakdown.note_id);
+            println!("  Cascade salience:    {:.6}", breakdown.cascade_salience);
+            println!("  Degree (link count): {}", breakdown.degree);
+            println!("  Context diversity:   {:.3}", breakdown.context_diversity);
+            println!();
+            println!("  Salience component:  {:.4}  (weight × salience)", breakdown.salience_component);
+            println!("  Degree component:    {:.4}  (weight × ln(1+degree))", breakdown.degree_component);
+            println!("  Diversity component: {:.4}  (weight × diversity)", breakdown.diversity_component);
+            println!();
+            println!("  Raw sum:             {:.4}", breakdown.raw_sum);
+            println!("  Final score:         {:.4}  (sigmoid(raw_sum))", breakdown.score);
+        }
+        return Ok(());
+    }
+
+    // Run full consolidation pass
+    let report = db.execute(|conn| {
+        run_consolidation_pass(
+            conn,
+            policy,
+            dry_run,
+            ScoreWeights::default(),
+            Thresholds::default(),
+        )
+    })?;
+
+    if json {
+        println!("{}", serde_json::to_string_pretty(&report)?);
+    } else {
+        let mode = if dry_run { "(dry run)" } else { "" };
+        println!("Consolidation pass complete {} — policy: {:?}", mode, report.policy);
+        println!("  Scanned:  {} episode notes", report.scanned);
+        println!("  Promoted: {} schema(s)", report.promoted.len());
+        println!("  Flagged:  {} for review", report.flagged.len());
+        println!("  Archived: {} past grace", report.archived.len());
+
+        if !report.promoted.is_empty() {
+            println!("\nPromoted to schema:");
+            for id in &report.promoted {
+                if let Some(reason) = report.reasons.get(id) {
+                    println!("  {} — {}", &id[..8], reason);
+                }
+            }
+        }
+
+        if !report.flagged.is_empty() && report.flagged.len() <= 10 {
+            println!("\nFlagged for review:");
+            for id in &report.flagged {
+                if let Some(reason) = report.reasons.get(id) {
+                    println!("  {} — {}", &id[..8], reason);
+                }
+            }
+        } else if report.flagged.len() > 10 {
+            println!("\n{} notes flagged (showing first 10):", report.flagged.len());
+            for id in report.flagged.iter().take(10) {
+                if let Some(reason) = report.reasons.get(id) {
+                    println!("  {} — {}", &id[..8], reason);
+                }
+            }
+        }
+
+        if !report.archived.is_empty() {
+            println!("\nArchived (past grace period):");
+            for id in &report.archived {
+                if let Some(reason) = report.reasons.get(id) {
+                    println!("  {} — {}", &id[..8], reason);
+                }
+            }
+        }
+
+        if dry_run {
+            println!("\nNo changes persisted (dry run). Use --dry-run=false to commit.");
+        }
+    }
+
+    Ok(())
+}

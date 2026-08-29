@@ -158,9 +158,20 @@ pub enum Commands {
     #[command(display_order = 31)]
     Mcp,
 
-    /// Generate shell completion scripts
+    /// Initialize a new Smriti database
+    ///
+    /// Creates a fresh database and prints the MCP configuration for Claude Desktop.
     #[command(
         display_order = 32,
+        after_help = "\x1b[1mExample:\x1b[0m\n  \
+            smriti init\n  \
+            smriti init --db /path/to/custom.db"
+    )]
+    Init,
+
+    /// Generate shell completion scripts
+    #[command(
+        display_order = 33,
         after_help = "Install completions:\n  \
             bash:       smriti completions bash > ~/.bash_completion.d/smriti\n  \
             zsh:        smriti completions zsh  > ~/.zsh/completions/_smriti\n  \
@@ -280,6 +291,45 @@ pub enum Commands {
     Cascade {
         /// Note ID or exact title
         id: String,
+
+        /// Output as JSON
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Run memory consolidation pass (CLS-inspired schema formation)
+    ///
+    /// Scores all episode notes based on cascade salience + degree + context
+    /// diversity, then flags or promotes them based on policy and thresholds.
+    ///
+    /// Conservative (default for healthcare): flag only, never auto-promote.
+    /// Standard: promote eligible clusters to extractive schemas.
+    /// Aggressive: promote + auto-archive flagged notes past grace period.
+    ///
+    /// Research refs:
+    ///   CLS — McClelland, McNaughton, O'Reilly 1995 Psych Review
+    ///   Benna & Fusi 2016 — cascade multi-timescale synapses
+    ///   WikiSkill — arXiv:2608.27454 (architecture reference)
+    #[command(
+        display_order = 57,
+        name = "consolidate",
+        after_help = "\x1b[1mExamples:\x1b[0m\n  \
+            smriti consolidate --dry-run\n  \
+            smriti consolidate --policy standard\n  \
+            smriti consolidate --explain <note_id>"
+    )]
+    Consolidate {
+        /// Consolidation policy: conservative (default), standard, or aggressive
+        #[arg(long, default_value = "conservative")]
+        policy: String,
+
+        /// Dry run: compute scores and report, but do not persist changes
+        #[arg(long, default_value = "true")]
+        dry_run: bool,
+
+        /// Explain the consolidation score for a specific note
+        #[arg(long)]
+        explain: Option<String>,
 
         /// Output as JSON
         #[arg(long)]
