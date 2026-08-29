@@ -104,40 +104,77 @@ Notes connect to each other through typed wiki-links — write `[[rel:causal|Dec
 
 ## Use cases
 
-### Client knowledge graph
+### Grounded research memory
 
-Track every client, contact, and engagement as linked notes. When you brief Claude before a call, it reads the full context — history, decisions, open items — without you re-explaining anything.
+Every claim in your draft cites a source. When your advisor asks "where did you get this?" at 11pm, the answer is one MCP call away.
 
 ```bash
-smriti create "Acme Corp Q2 Review" \
-  --content "Next steps: [[rel:temporal|Budget approval]] by June. Owner: [[Sarah Chen]]." \
-  --tags client decision
+# Create notes with wiki-links and tags auto-extracted
+smriti create "Hippocampal replay mechanisms" \
+  --content "Foster & Wilson 2006 showed [[reverse replay]] during rest. #neuroscience" \
+  --tags memory
+
+# Link notes with typed edges
+smriti link "Foster & Wilson 2006" "reverse replay" --type cites
+
+# For provenance enforcement, use the MCP tool (via Claude Desktop or API):
+# MCP: wiki_transaction_submit with require_provenance=true
+# → Agent writes grounded drafts; ungrounded claims are rejected at write time
+
+# Verify integrity any time
+smriti verify
+# → Checks referential integrity + provenance spans + event-log hash chain
 ```
 
-### Decision log
+### Clinical trial amendment ledger
 
-Record decisions with context and consequences. The `rel:causal` link type lets agents trace why something was decided.
+Which protocol version was active when Subject 14 was screened? The graph + MCP time-aware retrieval answer in milliseconds.
 
 ```bash
-smriti create "Switched to Rust" \
-  --content "Replaced Python service. Reason: [[rel:causal|Memory leak in prod]]." \
-  --tags decision
+# Link protocol versions (bi-temporal edges via MCP)
+smriti link "Trial-A-Protocol-v2.1" "Trial-A-Protocol-v2.3" --type amended_by
+
+# MCP: notes_graph tool with as_of="2026-03-10"
+# → Returns v2.1, not v2.3 (which took effect 2026-03-14)
+
+# Before every monitor visit, verify integrity
+smriti verify
+# → 47 claims rechecked, referential + provenance + chain intact
 ```
 
-### Daily AI context
+### Senescence biomarker consolidation
 
-Store your current focus in the KV store. Claude reads it at the start of every session through MCP.
+Three IPF cohorts cite overlapping markers. Which are replicated science vs. spurious? Consolidation promotes the durable pattern into a schema, lineage intact.
 
 ```bash
-smriti serve   # then ask Claude: "what's my current focus?" — Smriti answers via MCP
+# Score notes by cascade salience + structural centrality + context diversity
+smriti consolidate --dry-run --policy conservative
+# → 3 episodes cluster (p16INK4a, MMP-7 replicated; IL-6 disputed)
+
+# Review flagged clusters
+smriti proposals
+# → schema_candidate_001: 3 episodes, similarity 0.86, IL-6 flagged
+
+# Human approves → schema formed with full lineage
+smriti approve schema_candidate_001
+# → Created schema_ipf_panel_v1
+#    Source episodes preserved (not deleted)
+#    Audit event written: promoted_to_schema
 ```
 
-### SOPs and playbooks
+### IND dose synthesis (CB-209)
 
-Document repeatable processes as linked notes. Import existing markdown files in one command.
+100 mg is safe but sub-efficacious. 300 mg triggers DLT. The recommendation must reconstruct in front of an FDA reviewer.
 
 ```bash
-smriti import ./playbooks --recursive
+# Multi-hop graph traversal via MCP
+# MCP: notes_graph with note_id="CB-209", depth=2
+# → Returns compound → dosage arms → biomarker chain
+
+# Provenance verification shows every claim traces to stored sources
+smriti verify
+# → All claim spans have overlap scores ≥ 0.55 with source excerpts
+#    Event log intact, no tampering detected
 ```
 
 ---

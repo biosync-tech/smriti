@@ -1,9 +1,9 @@
 # Smriti for Clinical Trial Operations
 ## The Investigator's Grounded Notebook
 
-**Status:** Vertical spec, downstream of the research memory wedge
-**Audience:** Site coordinators, CRC/CRAs, academic coordinating centers, eventually sponsors and CROs
-**Date:** April 2026
+**Status:** Shipped (bi-temporal edges, hash-chained event log, contradiction inbox in v0.2)  
+**Audience:** Site coordinators, CRC/CRAs, academic coordinating centers  
+**Date:** August 2026
 
 ---
 
@@ -24,24 +24,9 @@ Smriti fits this gap because it is:
 
 ---
 
-## Primary persona: the site coordinator (CRC)
+## What Smriti does for site coordinators
 
-Maria runs 8 concurrent oncology trials at an academic medical center. Monday morning she has:
-
-- A monitor visit Thursday on Trial A, which had a protocol amendment (v2.1 → v2.3) three weeks ago
-- A SAE report due in 24 hours on Trial B that references a concomitant medication the patient has been on for 6 months
-- A query from the sponsor on Trial C asking why the inclusion criteria assessment on Patient 14 cited a lab value from a draft protocol version
-- Two new subjects to screen for Trial D
-
-She keeps her working notes in OneNote. Her EDC has the final values. Her regulatory binder has the protocols. Nothing links them. When the monitor asks "show me the source document that justified enrolling Patient 14 under inclusion criterion 3.2," she has 15 minutes to reconstruct a chain of reasoning that happened six weeks ago across three systems.
-
-This is the activation moment. Not a sponsor demo. Not a CRO RFP. A CRC at 4:47pm on a Wednesday.
-
----
-
-## What Smriti does for Maria
-
-### 1. Bi-temporal protocol amendments map to reality
+### 1. Bi-temporal protocol amendments (shipped)
 
 ```bash
 smriti note create --title "Trial-A-Protocol-v2.1" --file protocol_v2.1.md
