@@ -573,6 +573,126 @@ pub fn handle_init(db_path: &str) -> AppResult<()> {
     Ok(())
 }
 
+/// Explain WikiSkill provenance for a schema note.
+fn explain_schema_provenance(db: &Database, schema_id: &str, json: bool) -> AppResult<()> {
+    #[derive(serde::Serialize)]
+    struct SchemaProvenance {
+        schema_id: String,
+        schema_title: String,
+        source_episodes: Vec<SourceEpisode>,
+        formation_rationale: Option<String>,
+    }
+
+    #[derive(serde::Serialize)]
+    struct SourceEpisode {
+        episode_id: String,
+        episode_title: String,
+        similarity_score: f32,
+    }
+
+    // Fetch schema title
+    let schema_title: String = db.execute(|conn| {
+        conn.query_row(
+            "SELECT title FROM notes WHERE id = ?1",
+            rusqlite::params![schema_id],
+            |r| r.get(0),
+        )
+        .map_err(|e| e.into())
+    })?;
+
+    // Fetch source episodes from schema_sources
+    let sources: Vec<SourceEpisode> = db.execute(|conn| {
+        let mut stmt = conn.prepare(
+            "SELECT ss.source_note_id, n.title, ss.similarity_score
+             FROM schema_sources ss
+             JOIN notes n ON n.id = ss.source_note_id
+             WHERE ss.schema_id = ?1
+             ORDER BY ss.similarity_score DESC"
+        )?;
+        let rows = stmt
+            .query_map(rusqlite::params![schema_id], |r| {
+                Ok(SourceEpisode {
+                    episode_id: r.get(0)?,
+                    episode_title: r.get(1)?,
+                    similarity_score: r.get(2)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(rows)
+    })?;
+
+    // Fetch formation rationale from consolidation_events
+    let rationale: Option<String> = db.execute(|conn| {
+        use rusqlite::OptionalExtension;
+        conn.query_row(
+            "SELECT reason FROM consolidation_events
+             WHERE note_id IN (SELECT source_note_id FROM schema_sources WHERE schema_id = ?1)
+             AND event_type = 'promoted_to_schema'
+             ORDER BY created_at DESC
+             LIMIT 1",
+            rusqlite::params![schema_id],
+            |r| r.get(0),
+        )
+        .optional()
+        .map_err(|e| e.into())
+    })?;
+
+    let provenance = SchemaProvenance {
+        schema_id: schema_id.to_string(),
+        schema_title,
+        source_episodes: sources,
+        formation_rationale: rationale,
+    };
+
+    if json {
+        println!("{}", serde_json::to_string_pretty(&provenance)?);
+    } else {
+        println!("WikiSkill Provenance for Schema: {}", provenance.schema_title);
+        println!("  Schema ID: {}", provenance.schema_id);
+        println!("  Source Episodes ({}):", provenance.source_episodes.len());
+        for ep in &provenance.source_episodes {
+            println!(
+                "    - {} (similarity: {:.3}): {}",
+                ep.episode_id, ep.similarity_score, ep.episode_title
+            );
+        }
+        if let Some(reason) = &provenance.formation_rationale {
+            println!("  Formation Rationale: {}", reason);
+        }
+    }
+
+    Ok(())
+}
+
+/// Try to create an inference backend for schema formation.
+/// Returns None if config missing or backend unavailable (non-fatal).
+fn try_create_backend_for_consolidation() -> Option<crate::inference::SharedBackend> {
+    use crate::inference::{create_backend, InferenceConfig};
+    
+    // Try to load config from env or default locations
+    let config = InferenceConfig::default();
+    
+    // Attempt backend creation (may fail if Ollama not running, etc.)
+    match tokio::runtime::Handle::try_current() {
+        Ok(handle) => {
+            match handle.block_on(create_backend(&config)) {
+                Ok(backend) => {
+                    tracing::info!("Inference backend available for schema formation: {}", backend.name());
+                    Some(backend)
+                }
+                Err(e) => {
+                    tracing::debug!("Inference backend unavailable (will fall back to Extractive): {}", e);
+                    None
+                }
+            }
+        }
+        Err(_) => {
+            tracing::debug!("No tokio runtime for inference backend");
+            None
+        }
+    }
+}
+
 /// Handle `smriti consolidate` — run CLS-inspired consolidation pass.
 pub fn handle_consolidate(
     db: &Database,
@@ -597,28 +717,48 @@ pub fn handle_consolidate(
         }
     };
 
-    // If --explain is given, show the score breakdown for that note only
+    // If --explain is given, show score breakdown for episodes or provenance for schemas
     if let Some(note_id) = explain {
-        let breakdown = db.execute(|conn| {
-            explain_score(conn, &note_id, ScoreWeights::default())
+        // Check note type
+        let node_type: String = db.execute(|conn| {
+            conn.query_row(
+                "SELECT node_type FROM notes WHERE id = ?1",
+                rusqlite::params![&note_id],
+                |r| r.get(0),
+            )
+            .map_err(|e| e.into())
         })?;
-        if json {
-            println!("{}", serde_json::to_string_pretty(&breakdown)?);
+
+        if node_type == "schema" {
+            // Show WikiSkill provenance for schema notes
+            explain_schema_provenance(db, &note_id, json)?;
         } else {
-            println!("Consolidation score breakdown for note {}:", breakdown.note_id);
-            println!("  Cascade salience:    {:.6}", breakdown.cascade_salience);
-            println!("  Degree (link count): {}", breakdown.degree);
-            println!("  Context diversity:   {:.3}", breakdown.context_diversity);
-            println!();
-            println!("  Salience component:  {:.4}  (weight × salience)", breakdown.salience_component);
-            println!("  Degree component:    {:.4}  (weight × ln(1+degree))", breakdown.degree_component);
-            println!("  Diversity component: {:.4}  (weight × diversity)", breakdown.diversity_component);
-            println!();
-            println!("  Raw sum:             {:.4}", breakdown.raw_sum);
-            println!("  Final score:         {:.4}  (sigmoid(raw_sum))", breakdown.score);
+            // Show consolidation score breakdown for episode notes
+            let breakdown = db.execute(|conn| {
+                explain_score(conn, &note_id, ScoreWeights::default())
+            })?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&breakdown)?);
+            } else {
+                println!("Consolidation score breakdown for note {}:", breakdown.note_id);
+                println!("  Cascade salience:    {:.6}", breakdown.cascade_salience);
+                println!("  Degree (link count): {}", breakdown.degree);
+                println!("  Context diversity:   {:.3}", breakdown.context_diversity);
+                println!();
+                println!("  Salience component:  {:.4}  (weight × salience)", breakdown.salience_component);
+                println!("  Degree component:    {:.4}  (weight × ln(1+degree))", breakdown.degree_component);
+                println!("  Diversity component: {:.4}  (weight × diversity)", breakdown.diversity_component);
+                println!();
+                println!("  Raw sum:             {:.4}", breakdown.raw_sum);
+                println!("  Final score:         {:.4}  (sigmoid(raw_sum))", breakdown.score);
+            }
         }
         return Ok(());
     }
+
+    // Try to create an inference backend for Llm mode (optional)
+    // Falls back to Extractive if backend unavailable or not configured
+    let backend = try_create_backend_for_consolidation();
 
     // Run full consolidation pass
     let report = db.execute(|conn| {
@@ -628,6 +768,7 @@ pub fn handle_consolidate(
             dry_run,
             ScoreWeights::default(),
             Thresholds::default(),
+            backend,
         )
     })?;
 

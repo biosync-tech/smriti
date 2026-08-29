@@ -273,12 +273,16 @@ pub fn explain_score(
 /// embedding clustering + LLM abstraction, which lives in the follow-up
 /// `schema_formation` module. Promotion-eligible notes are surfaced in
 /// the report's `reasons` map so the abstraction pipeline can consume them.
+///
+/// `backend` is optional. If provided and policy is Standard/Aggressive,
+/// AbstractionMode::Llm is used. Falls back to Extractive if None.
 pub fn run_consolidation_pass(
     conn: &Connection,
     policy: ConsolidationPolicy,
     dry_run: bool,
     weights: ScoreWeights,
     thresholds: Thresholds,
+    backend: Option<crate::inference::SharedBackend>,
 ) -> AppResult<ConsolidationRunReport> {
     let now = Utc::now();
     let cascade_cfg = crate::features::cascade::CascadeConfig::default();
@@ -412,15 +416,20 @@ pub fn run_consolidation_pass(
     }
 
     // CLS Phase 3 — cluster eligible episodes into schemas. Conservative
-    // only flags. Standard/Aggressive write extractive schemas + lineage
-    // (never deletes source episodes).
+    // only flags. Standard/Aggressive write LLM schemas if backend available,
+    // otherwise extractive (never deletes source episodes).
     let schema_cfg = crate::features::schema_formation::SchemaFormationConfig {
         mode: match policy {
             ConsolidationPolicy::Conservative => {
                 crate::features::schema_formation::AbstractionMode::FlagOnly
             }
             ConsolidationPolicy::Standard | ConsolidationPolicy::Aggressive => {
-                crate::features::schema_formation::AbstractionMode::Extractive
+                // Use Llm if backend available, fallback to Extractive
+                if backend.is_some() {
+                    crate::features::schema_formation::AbstractionMode::Llm
+                } else {
+                    crate::features::schema_formation::AbstractionMode::Extractive
+                }
             }
         },
         ..crate::features::schema_formation::SchemaFormationConfig::default()
@@ -430,7 +439,7 @@ pub fn run_consolidation_pass(
         &schema_cfg,
         dry_run,
         Some(&eligible_ids),
-        None,  // TODO: pass configured backend for Llm mode
+        backend,
     ) {
         Ok(formed) => {
             for cluster in &formed.flagged {
@@ -665,6 +674,7 @@ mod tests {
                     true,
                     ScoreWeights::default(),
                     Thresholds::default(),
+                    None,  // No backend for test
                 )
             })
             .unwrap();
@@ -708,6 +718,7 @@ mod tests {
                     false,
                     ScoreWeights::default(),
                     thresholds,
+                    None,  // No backend for test
                 )
             })
             .unwrap();
@@ -774,6 +785,7 @@ mod tests {
                     false,
                     ScoreWeights::default(),
                     Thresholds::default(),
+                    None,  // No backend for test
                 )
             })
             .unwrap();
@@ -817,6 +829,7 @@ mod tests {
                     false,
                     ScoreWeights::default(),
                     thresholds,
+                    None,  // No backend for test
                 )
             })
             .unwrap();

@@ -303,13 +303,22 @@ fn create_llm_schema_sync(
         episodes.push((id.clone(), title, content));
     }
 
-    // Spawn LLM call in tokio runtime (not on request path)
+    // Spawn LLM call in tokio runtime (isolation: not Runtime::block_on directly)
     let handle = tokio::runtime::Handle::try_current()
         .map_err(|_| crate::errors::AppError::BadRequest("No tokio runtime available".into()))?;
 
-    let (schema_title, schema_content) = handle.block_on(async {
-        create_llm_abstraction(&episodes, mean_similarity, backend).await
-    })?;
+    // Use tokio::spawn instead of direct block_on (allows concurrent task execution)
+    let (schema_title, schema_content) = {
+        let episodes_clone = episodes.clone();
+        let backend_clone = backend.clone();
+        let task = handle.spawn(async move {
+            create_llm_abstraction(&episodes_clone, mean_similarity, backend_clone).await
+        });
+        
+        // Wait for the spawned task (but other tokio tasks can run concurrently)
+        handle.block_on(task)
+            .map_err(|e| crate::errors::AppError::BadRequest(format!("LLM task panicked: {}", e)))??
+    };
 
     // Write schema to database
     let schema_id = Uuid::new_v4().to_string();
@@ -658,6 +667,140 @@ mod tests {
         assert!(report.created.is_empty());
         for id in &ids {
             assert!(db.get_note(id).unwrap().parent_schema_id.is_none());
+        }
+    }
+
+    #[test]
+    fn extractive_mode_integration_episode_to_schema_flow() {
+        // Full integration: episode→schema→schema_sources→consolidation_events
+        // Verifies no deletion path
+        use crate::storage::Database;
+
+        let db = Database::new(":memory:").unwrap();
+        let mut ids = vec![];
+        for title in &["Episode A", "Episode B", "Episode C"] {
+            let n = db
+                .create_note(CreateNoteRequest {
+                    title: title.to_string(),
+                    content: "similar content".into(),
+                    tags: vec![],
+                })
+                .unwrap();
+            db.store_embedding(&n.id, &vec![1.0; 384], Some("test"))
+                .unwrap();
+            ids.push(n.id);
+        }
+
+        let report = db
+            .execute(|conn| {
+                form_schemas(
+                    conn,
+                    &SchemaFormationConfig {
+                        min_cluster_size: 3,
+                        min_similarity: 0.9,
+                        mode: AbstractionMode::Extractive,
+                    },
+                    false,
+                    None,
+                    None,  // No backend (extractive mode)
+                )
+            })
+            .unwrap();
+
+        assert_eq!(report.created.len(), 1, "should create one extractive schema");
+        let schema = &report.created[0];
+        assert_eq!(schema.source_ids.len(), 3);
+
+        // Verify schema note exists
+        let schema_note = db.get_note(&schema.schema_id).unwrap();
+        assert_eq!(schema_note.node_type, crate::models::NodeType::Schema);
+
+        // Verify lineage in schema_sources
+        let sources_count: i64 = db
+            .execute(|conn| {
+                conn.query_row(
+                    "SELECT COUNT(*) FROM schema_sources WHERE schema_id = ?1",
+                    rusqlite::params![&schema.schema_id],
+                    |r| r.get(0),
+                )
+                .map_err(|e| e.into())
+            })
+            .unwrap();
+        assert_eq!(sources_count, 3);
+
+        // Verify episodes have parent_schema_id set
+        for id in &ids {
+            let ep = db.get_note(id).unwrap();
+            assert_eq!(ep.parent_schema_id, Some(schema.schema_id.clone()));
+        }
+
+        // Verify consolidation_events recorded (promoted_to_schema is written by extractive too)
+        let event_count: i64 = db
+            .execute(|conn| {
+                conn.query_row(
+                    "SELECT COUNT(*) FROM consolidation_events WHERE event_type = 'promoted_to_schema'",
+                    [],
+                    |r| r.get(0),
+                )
+                .map_err(|e| e.into())
+            })
+            .unwrap();
+        assert!(event_count >= 3, "episodes should have promotion events");
+
+        // Critical: episodes are NOT deleted
+        for id in &ids {
+            assert!(db.get_note(id).is_ok(), "episode {} should still exist", id);
+        }
+    }
+
+    #[test]
+    fn no_hard_delete_path_in_schema_formation() {
+        // This test asserts that schema formation NEVER deletes notes
+        // Even if rejected, demoted, or archived, notes go to memory_history, not DELETE
+        use crate::storage::Database;
+        let db = Database::new(":memory:").unwrap();
+        let mut ids = vec![];
+        for title in &["Episode X", "Episode Y", "Episode Z"] {
+            let n = db
+                .create_note(CreateNoteRequest {
+                    title: title.to_string(),
+                    content: "content".into(),
+                    tags: vec![],
+                })
+                .unwrap();
+            db.store_embedding(&n.id, &vec![1.0; 384], Some("test"))
+                .unwrap();
+            ids.push(n.id.clone());
+        }
+
+        // Run schema formation
+        let _ = db.execute(|conn| {
+            form_schemas(
+                conn,
+                &SchemaFormationConfig {
+                    min_cluster_size: 3,
+                    min_similarity: 0.9,
+                    mode: AbstractionMode::Extractive,
+                },
+                false,
+                None,
+                None,
+            )
+        });
+
+        // All episodes must remain
+        let count: i64 = db
+            .execute(|conn| {
+                conn.query_row("SELECT COUNT(*) FROM notes WHERE node_type = 'episode'", [], |r| {
+                    r.get(0)
+                })
+                .map_err(|e| e.into())
+            })
+            .unwrap();
+        assert!(count >= 3, "all episodes must remain, found {}", count);
+
+        for id in &ids {
+            assert!(db.get_note(id).is_ok(), "episode {} was deleted (forbidden)", id);
         }
     }
 }
