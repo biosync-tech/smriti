@@ -43,7 +43,7 @@
 | **KG & AI lane** (heterogeneous GNN, agentic orchestration, literature RAG, biomedical KG) | Matches Representative Work section | ✅ **Accurate** |
 | **Smriti** as separate product | Product section clearly delineated; discovery-call path separate from consulting | ✅ **Accurate** |
 | BAA-ready, HIPAA-aligned, NDA-gated | Matches Standards section; does not overclaim HIPAA certification | ✅ **Accurate** |
-| Senior scientist accountability | "1 owner" messaging consistent across page; CV after NDA | ✅ **Accurate** |
+| Senior scientist accountability | "1 owner" messaging consistent across page; specialists named under NDA | ✅ **Accurate** |
 
 **Verdict:** Homepage is defensible. No invented services. Smriti is positioned as a parallel product conversation, not a service deliverable.
 
