@@ -285,6 +285,47 @@ marketing-pages-repo/
 
 ---
 
+## Representative Work Section — Reduce to Featured 4 Only
+
+### Current State (Too Crowded)
+- 11 total cards with filter tabs (All 11 / Featured 4 / Omics 6 / Healthcare 3 / AI for biology 1 / Biomedical KG 1)
+- Filter UI adds complexity without clarity
+- 11 cards undermines "not a logo wall" claim
+- Cognitive overload — most visitors won't expand more than 2-3
+
+### Recommended: Show Featured 4 Only
+
+**Keep these 4 cards:**
+1. **Featured · Translational** — Bulk RNA-seq: Uncovering drug MoA in tumor models
+2. **Featured · Immuno-oncology** — Single-cell RNA-seq: Building tumor immune microenvironment atlas
+3. **Featured · Digital health** — Healthcare analytics (MIMIC-III): Early sepsis prediction in ICU
+4. **Featured · Drug discovery** — Biomedical KG: Drug-repurposing hypothesis generation
+
+**Remove from public page (archive to NDA'd portfolio):**
+- AI for biology: Antibody-antigen binding prediction
+- ChIP-seq: TF binding across cancer cohort
+- ATAC-seq: Chromatin accessibility differentiation
+- Spatial transcriptomics: Tumor-immune interfaces
+- Multi-omic integration: Fusing transcriptomics/methylation/proteomics
+- NEISS: Consumer-product injury surveillance
+- SEER: Survival disparities
+
+**Add closing line after Featured 4:**
+```
+Need deep technical work on ChIP-seq, ATAC-seq, spatial transcriptomics, multi-omic 
+integration, injury surveillance, or survival modeling? Those sit behind NDA along with 
+client names and full methods. Request NDA (hello@bio-sync.tech?subject=NDA%20request).
+```
+
+**Why this is better:**
+- **Cognitive load reduced** — 4 cards is scannable; 11 is overwhelming
+- **"Not a logo wall" is defensible** — 4 examples with depth > 11 examples with breadth
+- **NDA credibility strengthened** — showing restraint ("more behind NDA") is more credible than showing everything
+- **Positioning clarity** — 4 Featured span all three lanes (Omics, Healthcare, KG/AI) without redundancy
+- **No filter tabs needed** — simpler UI
+
+---
+
 ## Notes for External Marketing Update
 
 - **Marketing Pages site is Cloudflare Pages, NOT this repo.** This file (`docs/marketing-site-sync.md`) is a handoff doc.
