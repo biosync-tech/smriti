@@ -29,6 +29,9 @@ pub enum AbstractionMode {
     FlagOnly,
     /// Create a schema from titles + excerpts. Works fully offline.
     Extractive,
+    /// Create a schema via LLM abstraction (user-configured Ollama/external backend).
+    /// Falls back to Extractive if backend unavailable.
+    Llm,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -165,11 +168,15 @@ pub fn context_diversity(conn: &Connection, note_id: &str) -> AppResult<f32> {
 ///
 /// Consolidation must pass the notes that cleared `promote_above`. Filtering
 /// only on persisted `consolidation_score` would miss dry-run scores.
+///
+/// `backend` is optional: required for Llm mode, unused for Extractive/FlagOnly.
+/// Llm mode runs async; this function blocks on tokio::spawn for isolation.
 pub fn form_schemas(
     conn: &Connection,
     cfg: &SchemaFormationConfig,
     dry_run: bool,
     eligible_ids: Option<&[String]>,
+    backend: Option<crate::inference::SharedBackend>,
 ) -> AppResult<SchemaFormationReport> {
     let mut items = load_episode_embeddings(conn)?;
     if let Some(allow) = eligible_ids {
@@ -203,6 +210,21 @@ pub fn form_schemas(
                     continue;
                 }
                 let formed = create_extractive_schema(conn, &member_ids, mean)?;
+                report.created.push(formed);
+            }
+            AbstractionMode::Llm => {
+                if dry_run {
+                    report.flagged.push(cluster);
+                    continue;
+                }
+                // Fallback to extractive if no backend configured
+                let formed = if let Some(backend_arc) = &backend {
+                    // Create LLM schema via tokio Runtime (isolation: not on request path)
+                    create_llm_schema_sync(conn, &member_ids, mean, backend_arc.clone())?
+                } else {
+                    tracing::warn!("Llm mode requested but no backend available; falling back to extractive");
+                    create_extractive_schema(conn, &member_ids, mean)?
+                };
                 report.created.push(formed);
             }
         }
@@ -261,6 +283,142 @@ fn mean_pairwise_similarity(items: &[(String, Vec<f32>)], member_ids: &[String])
     } else {
         sum / n as f32
     }
+}
+
+/// Sync wrapper that blocks on LLM schema creation (tokio::spawn for isolation).
+fn create_llm_schema_sync(
+    conn: &Connection,
+    member_ids: &[String],
+    mean_similarity: f32,
+    backend: crate::inference::SharedBackend,
+) -> AppResult<FormedSchema> {
+    // Gather episode data synchronously
+    let mut episodes = Vec::new();
+    for id in member_ids {
+        let (title, content): (String, String) = conn.query_row(
+            "SELECT title, content FROM notes WHERE id = ?1",
+            params![id],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )?;
+        episodes.push((id.clone(), title, content));
+    }
+
+    // Spawn LLM call in tokio runtime (not on request path)
+    let handle = tokio::runtime::Handle::try_current()
+        .map_err(|_| crate::errors::AppError::BadRequest("No tokio runtime available".into()))?;
+
+    let (schema_title, schema_content) = handle.block_on(async {
+        create_llm_abstraction(&episodes, mean_similarity, backend).await
+    })?;
+
+    // Write schema to database
+    let schema_id = Uuid::new_v4().to_string();
+    let now = Utc::now().to_rfc3339();
+    conn.execute(
+        "INSERT INTO notes (id, title, content, created_at, updated_at, node_type, consolidation_score)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        params![
+            schema_id,
+            schema_title,
+            schema_content,
+            now,
+            now,
+            NodeType::Schema.as_str(),
+            mean_similarity as f64,
+        ],
+    )?;
+
+    // Link episodes to schema
+    for (id, _, _) in &episodes {
+        conn.execute(
+            "INSERT OR IGNORE INTO schema_sources (schema_id, source_note_id, similarity_score, consolidated_at)
+             VALUES (?1, ?2, ?3, ?4)",
+            params![schema_id, id, mean_similarity as f64, now],
+        )?;
+        conn.execute(
+            "UPDATE notes SET parent_schema_id = ?1 WHERE id = ?2",
+            params![schema_id, id],
+        )?;
+        conn.execute(
+            "INSERT INTO consolidation_events
+               (id, note_id, event_type, score_before, score_after, reason, created_at)
+             VALUES (?1, ?2, 'promoted_to_schema', NULL, ?3, ?4, ?5)",
+            params![
+                Uuid::new_v4().to_string(),
+                id,
+                mean_similarity as f64,
+                format!(
+                    "subsumed by LLM-generated schema {schema_id} (mean cosine {mean_similarity:.3})"
+                ),
+                now,
+            ],
+        )?;
+    }
+
+    Ok(FormedSchema {
+        schema_id,
+        title: schema_title,
+        source_ids: member_ids.to_vec(),
+    })
+}
+
+/// Async LLM abstraction generation (pure, no DB I/O).
+async fn create_llm_abstraction(
+    episodes: &[(String, String, String)],  // (id, title, content)
+    _mean_similarity: f32,
+    backend: crate::inference::SharedBackend,
+) -> AppResult<(String, String)> {
+    use crate::inference::{GenerateRequest, InferenceError};
+
+    // Build the abstraction prompt
+    let mut prompt = String::from("You are synthesizing a schema from episode notes. Extract the core concept.\n\nEpisodes:\n\n");
+    for (i, (_id, title, content)) in episodes.iter().enumerate() {
+        let excerpt = crate::safe_truncate(content, 400);
+        prompt.push_str(&format!("{}. {}\n{}\n\n", i + 1, title, excerpt));
+    }
+    prompt.push_str("Generate a schema note (title + abstract) that captures the shared concept. Format:\nTitle: <title>\nAbstract: <abstract>");
+
+    // Call LLM
+    let req = GenerateRequest {
+        prompt,
+        system: Some("You are a knowledge graph curator. Create concise, structured abstractions.".into()),
+        max_tokens: Some(512),
+        temperature: Some(0.3),
+        ..Default::default()
+    };
+
+    let resp = backend
+        .generate(&req)
+        .await
+        .map_err(|e: InferenceError| crate::errors::AppError::BadRequest(format!("LLM generation failed: {}", e)))?;
+
+    // Parse the LLM response
+    parse_llm_schema_response(&resp.text, episodes)
+}
+
+/// Parse LLM response into (title, abstract). Fallback if parsing fails.
+fn parse_llm_schema_response(
+    response: &str,
+    episodes: &[(String, String, String)],  // (id, title, content)
+) -> AppResult<(String, String)> {
+    // Try to extract "Title:" and "Abstract:" from the response
+    let title = if let Some(title_start) = response.find("Title:") {
+        let title_line = &response[title_start + 6..];
+        let title_end = title_line.find('\n').unwrap_or(title_line.len());
+        title_line[..title_end].trim().to_string()
+    } else {
+        // Fallback: use first episode title as basis
+        format!("Schema: {}", episodes.first().map(|(_id, t, _c)| t.as_str()).unwrap_or("Concept"))
+    };
+
+    let abstract_text = if let Some(abstract_start) = response.find("Abstract:") {
+        response[abstract_start + 9..].trim().to_string()
+    } else {
+        // Fallback: use the full LLM response
+        response.trim().to_string()
+    };
+
+    Ok((title, abstract_text))
 }
 
 fn create_extractive_schema(
@@ -448,6 +606,7 @@ mod tests {
                     },
                     false,
                     None,
+                    None,  // No backend for extractive mode
                 )
             })
             .unwrap();
@@ -492,6 +651,7 @@ mod tests {
                     },
                     false,
                     Some(&[]),
+                    None,  // No backend
                 )
             })
             .unwrap();

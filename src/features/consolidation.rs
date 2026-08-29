@@ -430,6 +430,7 @@ pub fn run_consolidation_pass(
         &schema_cfg,
         dry_run,
         Some(&eligible_ids),
+        None,  // TODO: pass configured backend for Llm mode
     ) {
         Ok(formed) => {
             for cluster in &formed.flagged {
