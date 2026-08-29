@@ -22,7 +22,7 @@ cargo install smriti
 smriti init
 
 # 3. Create your first note (wiki-links and tags auto-extracted)
-smriti create "Meeting Notes" -c "Discussed Q2 roadmap with [[Sarah Chen]]." -t client
+smriti create "Protocol Amendment Log" -c "Amendment 03 submitted for [[Inclusion Criterion Change]]." -t protocol
 
 # 4. Search
 smriti search "roadmap"
