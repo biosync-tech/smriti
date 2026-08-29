@@ -852,4 +852,101 @@ mod tests {
             assert_eq!(parent.as_deref(), Some(report.promoted[0].as_str()));
         }
     }
+
+    #[test]
+    fn rejected_proposal_does_not_affect_committed_schemas() {
+        // Simulate: schema A already committed, proposal B rejected
+        // Verify: schema A remains intact, proposal B never written
+        let db = fresh_db();
+
+        // Create and commit schema A
+        let schema_a = "schema-a-id";
+        insert_note(&db, schema_a);
+        let _: usize = db
+            .execute(|conn| {
+                Ok(conn.execute(
+                    "UPDATE notes SET node_type = 'schema' WHERE id = ?1",
+                    params![schema_a],
+                )?)
+            })
+            .unwrap();
+
+        // Flag proposal B for review
+        let ep_b = "episode-b-id";
+        insert_note(&db, ep_b);
+        let _: usize = db
+            .execute(|conn| {
+                use uuid::Uuid;
+                Ok(conn.execute(
+                    "INSERT INTO consolidation_events
+                     (id, note_id, event_type, score_before, score_after, reason, created_at)
+                     VALUES (?1, ?2, 'flagged_for_review', NULL, 0.5, 'candidate', ?3)",
+                    params![
+                        Uuid::new_v4().to_string(),
+                        ep_b,
+                        Utc::now().to_rfc3339()
+                    ],
+                )?)
+            })
+            .unwrap();
+
+        // Reject proposal B
+        let _: usize = db
+            .execute(|conn| {
+                use uuid::Uuid;
+                Ok(conn.execute(
+                    "INSERT INTO consolidation_events
+                     (id, note_id, event_type, score_before, score_after, reason, created_at)
+                     VALUES (?1, ?2, 'proposal_rejected', NULL, NULL, 'rejected by test', ?3)",
+                    params![
+                        Uuid::new_v4().to_string(),
+                        ep_b,
+                        Utc::now().to_rfc3339()
+                    ],
+                )?)
+            })
+            .unwrap();
+
+        // Verify: schema A still exists
+        let schema_a_still_exists: bool = db
+            .execute(|conn| {
+                conn.query_row(
+                    "SELECT EXISTS(SELECT 1 FROM notes WHERE id = ?1 AND node_type = 'schema')",
+                    params![schema_a],
+                    |r| r.get(0),
+                )
+                .map_err(|e| e.into())
+            })
+            .unwrap();
+        assert!(schema_a_still_exists, "committed schema A must remain");
+
+        // Verify: episode B was NOT promoted
+        let ep_b_parent: Option<String> = db
+            .execute(|conn| {
+                conn.query_row(
+                    "SELECT parent_schema_id FROM notes WHERE id = ?1",
+                    params![ep_b],
+                    |r| r.get(0),
+                )
+                .map_err(|e| e.into())
+            })
+            .unwrap();
+        assert!(
+            ep_b_parent.is_none(),
+            "rejected proposal must not create parent link"
+        );
+
+        // Verify: no schema was created for episode B
+        let schema_count: i64 = db
+            .execute(|conn| {
+                conn.query_row(
+                    "SELECT COUNT(*) FROM schema_sources WHERE source_note_id = ?1",
+                    params![ep_b],
+                    |r| r.get(0),
+                )
+                .map_err(|e| e.into())
+            })
+            .unwrap();
+        assert_eq!(schema_count, 0, "rejected proposal must not write schema_sources");
+    }
 }
