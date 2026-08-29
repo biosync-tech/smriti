@@ -18,9 +18,9 @@ use clap_complete::Shell;
     styles = styles(),
 )]
 pub struct Cli {
-    /// Path to the database file
-    #[arg(long, default_value = "notes.db", global = true)]
-    pub db: String,
+    /// Path to the database file. If omitted: `SMRITI_DB`, else `~/.smriti/smriti.db`.
+    #[arg(long, global = true)]
+    pub db: Option<String>,
 
     #[command(subcommand)]
     pub command: Commands,
@@ -327,9 +327,18 @@ pub enum Commands {
         #[arg(long, default_value = "true")]
         dry_run: bool,
 
-        /// Explain the consolidation score for a specific note
+        /// Persist scores, flags, and any gated schema commits
+        #[arg(long)]
+        apply: bool,
+
+        /// Explain the consolidation score + WikiSkill lineage for a note
         #[arg(long)]
         explain: Option<String>,
+
+        /// Use a configured local LLM (Ollama) for abstraction. If unreachable,
+        /// clusters are flagged — never silently promoted as if an LLM wrote them.
+        #[arg(long)]
+        llm: bool,
 
         /// Output as JSON
         #[arg(long)]

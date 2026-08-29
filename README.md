@@ -27,18 +27,20 @@ smriti create "Protocol Amendment Log" -c "Amendment 03 submitted for [[Inclusio
 # 4. Search
 smriti search "roadmap"
 
-# 5. Connect to Claude Desktop — add this to claude_desktop_config.json:
+# 5. Point any MCP client at Smriti (same file as the CLI):
 # {
 #   "mcpServers": {
 #     "smriti": {
 #       "command": "smriti",
-#       "args": ["mcp", "--db", "/absolute/path/to/notes.db"]
+#       "args": ["mcp"]
 #     }
 #   }
 # }
 ```
 
-Your notes live in `notes.db` (current directory). Back up with `cp`. No server, no cloud.
+Notes live in `~/.smriti/smriti.db` (or `SMRITI_DB` / `--db`). Back up with `cp`. No server, no cloud. Agents: call `smriti_status`, then `notes_create` / `notes_search` / `retrieve_context`.
+
+![CLI quickstart](docs/cli-quickstart.png)
 
 ## Why Smriti (vs. Obsidian / Zep / Mem0 / Letta / Neo4j)
 
@@ -68,6 +70,7 @@ Every integrity feature cites an arXiv paper so you can trace the design back to
 - **Typed graph layers (semantic/temporal/causal)** — MAGMA, arXiv:2601.03236
 - **Zettelkasten-style agent memory** — A-MEM, arXiv:2502.12110 (NeurIPS 2025)
 - **Hallucination grounding requirements** — arXiv:2510.24476
+- **Schema formation (wiki between traces and procedures)** — WikiSkill, arXiv:2608.27454 (architecture reference; proposals stay off the live graph until accepted)
 
 ## Integrity layer (v0.2)
 

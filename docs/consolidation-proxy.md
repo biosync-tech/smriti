@@ -1,88 +1,67 @@
 # Consolidation Proxy Gating
 
-**Status: NOT IMPLEMENTED** (v0.2.0)
+**Status: implemented** (retrieve-context proxy). Conservative policy remains the healthcare default.
 
-Conservative policy (human-in-loop) is production-ready. Standard and Aggressive policies fall back to Conservative when proxy is unavailable.
+This is a **retrieval QA proxy**, not WikiSkill task-accuracy gating. Audit rows always say which signal was used.
 
-## Overview (Design Only)
+## What it does
 
-Smriti's **optional proxy gating** (not yet wired) would evaluate schema proposals for Standard and Aggressive consolidation policies using held-out queries from the access log. This mechanism would help ensure that promoting a cluster of episodes into a schema actually improves retrieval relevance or groundedness.
+When Standard or Aggressive would auto-commit a schema proposal:
 
-## What Would Proxy Gating Do?
+1. **Held-out queries** — sample distinct `note_access_log.query_context` values that previously hit one or more source episodes.
+2. **Without vs with** — run a small FTS retrieve for each query, then score groundedness/coverage against the cluster. The candidate schema text is scored as an extra document; it is **not** inserted into `notes` for the test.
+3. **Accept or flag** — accept only if mean groundedness lift ≥ `proxy.min_delta` (default 0.05). Otherwise persist the proposal as `flagged_for_review` (events only — live retrieval cannot see it).
+4. **Unavailable** — no `query_context` samples ⇒ flag for human review. Never invent a pass.
 
-When a schema candidate is flagged for promotion:
-
-1. **Held-out queries**: Smriti samples `note_access_log.query_context` entries that previously led to one or more of the candidate episodes.
-2. **Retrieval test**: For each held-out query, Smriti runs `retrieve_context` **with** and **without** the proposed schema in the graph.
-3. **Accept or reject**: If inclusion of the schema improves relevance/groundedness metrics, the proposal is accepted. Otherwise, it's rejected.
-4. **Event logging**: The outcome (human-approved vs proxy-signal-approved) is logged in `consolidation_events.reason`.
-
-## Conservative Policy (Default)
-
-Conservative policy **never** uses proxy gating. Every schema proposal is flagged for human review:
+Conservative policy **never** calls the proxy.
 
 ```bash
-smriti consolidate --policy conservative
+smriti consolidate --policy conservative --apply
 smriti proposals
-smriti approve <note_id>
-smriti reject <note_id> --reason "Not a meaningful pattern"
+smriti approve <proposal_id|episode_id>
+smriti reject <proposal_id|episode_id> -r "Not a meaningful pattern"
 ```
 
-## Standard and Aggressive Policies (Current Behavior)
+## Isolation
 
-Standard and Aggressive policies currently **fall back to Conservative** (flag for human review) when LLM backend is unavailable. Proxy gating is not implemented.
+Pending proposals live in `consolidation_events.reason` as `SCHEMA_PROPOSAL ` + JSON. They are not `notes` rows. `retrieve_context` and `notes_search_semantic` cannot leak a half-formed wiki (WikiSkill ablation: 63.7% → 60.9% when inference sees the wiki during training).
 
-Future implementation would require:
-- `note_access_log` contains sufficient query diversity
-- `retrieve_context` callable with/without candidate schema
-- Relevance/groundedness metric comparison
-- Event logging differentiating human-approved vs proxy-signal-approved
+## Honest disclaimer
 
-## Important Disclaimer
+**This is not WikiSkill `R(Tval,k) > Rbest`.**
 
-**This is NOT WikiSkill task-accuracy gating.**
+WikiSkill (arXiv:2608.27454) gates abstractions on held-out **task trajectories**. Smriti has no labelled `y_i` set. The proxy tests whether a candidate abstract would improve **local retrieval coverage** for logged queries.
 
-WikiSkill (arXiv:2608.27454) gates skill abstractions by testing them on held-out **task trajectories** (e.g., Minecraft build success). Smriti's proxy tests **retrieval relevance** for a local knowledge graph, not downstream task accuracy.
-
-Key differences:
-
-| WikiSkill | Smriti Proxy |
+| WikiSkill | Smriti proxy |
 |-----------|--------------|
-| Task-level accuracy (e.g., "Did the agent build the house?") | Retrieval-level relevance (e.g., "Does the schema surface the right episodes?") |
+| Task-level accuracy (e.g. Minecraft build success) | Retrieval groundedness / coverage |
 | Multi-turn agent traces | Single-query context assembly |
-| Gating = accept/reject skill abstraction | Gating = accept/reject schema promotion |
+| `gating=task_accuracy` | `gating=human_approved` or `gating=proxy_retrieve_accepted` |
 
-Smriti's proxy is a **retrieval QA proxy**, not a task-level skill gating mechanism.
+`consolidation_events.reason` always includes the gating tag and, for proxy accepts, `not WikiSkill task-accuracy`.
 
-## Current Limitations
-
-**Proxy gating is not implemented in v0.2.0.**
-
-- Conservative policy works as designed (human approval required)
-- Standard/Aggressive policies currently form schemas without proxy checks
-- To use Standard/Aggressive safely: review schemas manually after formation
-- For healthcare/compliance: use Conservative (default) which never auto-promotes
-
-## Event Logging
-
-Every promotion decision logs its signal source in `consolidation_events`:
+## Event logging
 
 ```sql
 SELECT note_id, event_type, reason, created_at
 FROM consolidation_events
-WHERE event_type IN ('proposal_approved', 'promoted_to_schema')
+WHERE event_type IN ('flagged_for_review', 'promoted_to_schema', 'schema_proposal_rejected')
 ORDER BY created_at DESC;
 ```
 
-Reasons will indicate:
-- `"approved by human operator"` — Conservative policy, manual approval
-- `"proxy-signal-approved: relevance score +0.12"` — Standard/Aggressive, passed proxy test
-- `"rejected by human: <reason>"` — Manual rejection
+Typical reasons:
 
-## Research Context
+- `gating=human_approved by=…`
+- `gating=proxy_retrieve_accepted n_queries=… mean_delta=… (retrieve-context proxy, not WikiSkill task-accuracy)`
+- `gating=proxy_retrieve_rejected …`
+- `llm_unavailable` / `llm_failed` — cluster flagged; extractive text is never labeled as LLM output
 
-This mechanism is inspired by:
-- **WikiSkill** (arXiv:2608.27454) — gating abstraction via held-out traces
-- **Graph-Based Memory Survey** (arXiv:2602.05665) — hybrid retrieval evaluation
+## Healthcare / compliance
 
-Smriti adapts the gating concept to a local-first, retrieval-focused context.
+Use Conservative (default). Zero auto-promote. Reject and accept are append-only; episodes are never deleted.
+
+## Research
+
+- WikiSkill, arXiv:2608.27454 — architecture reference (not a library)
+- Graph-Based Memory Survey, arXiv:2602.05665 — hybrid retrieval
+- CLS, McClelland 1995 — episodes → schemas via replay

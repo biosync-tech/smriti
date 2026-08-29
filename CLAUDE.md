@@ -314,6 +314,9 @@ GET    /api/v1/agent/:id/tool-logs  ?limit=50
 # Task 9 — Consolidation
 POST   /api/v1/consolidation/run          # trigger a consolidation pass (dry_run=true by default)
 GET    /api/v1/consolidation/events       # audit log of promotions/archives/flags
+GET    /api/v1/consolidation/proposals
+POST   /api/v1/consolidation/proposals/:id/accept
+POST   /api/v1/consolidation/proposals/:id/reject
 GET    /api/v1/notes/:id/lineage          # for schemas: list source episodes + similarity
 POST   /api/v1/notes/:id/access           # instrument an external access hit (feeds replay signal)
 ```
@@ -329,6 +332,7 @@ POST   /api/v1/notes/:id/access           # instrument an external access hit (f
 | Graph-Native Belief Revision   | 2603.17244  | AGM conflict resolution → ConflictPolicy on memory_store |
 | Graph-Based Memory Survey      | 2602.05665  | Graph+BM25 hybrid beats pure vector for multi-hop tasks  |
 | Complementary Learning Systems | McClelland 1995 / Kumaran 2016 TiCS | Hippocampal episodes → neocortical schemas via replay; basis for consolidation + forgetting curve (Task 9). NOTE: not arXiv. |
+| WikiSkill                      | 2608.27454  | Persistent wiki between traces and procedures; isolate proposals from inference until accepted. Architecture reference — not Trace2Skill/EvoSkill/SkillOpt. |
 
 ---
 
@@ -354,12 +358,15 @@ POST   /api/v1/notes/:id/access           # instrument an external access hit (f
 | 16| unwrap() cleanup               | MutexPoisoned variant + 13 lock().unwrap() → map_err across db.rs, verify.rs, contradiction.rs |
 | 17| Note struct consolidation fields | NodeType enum, consolidation_score, access_count, last_accessed_at, parent_schema_id |
 | 18| **Path A: Local KG for local LLMs** | `ChunkOf` LinkType + `src/ai/document_ingest.rs` + `ingest_document` MCP tool + `retrieve_context` MCP tool + REST `POST /api/v1/ingest/document` + `POST /api/v1/retrieve` |
+| 19| WikiSkill schema formation (Task 9 Phase 3) | `src/features/schema_formation.rs` — proposals are events until accept; Conservative never auto-commits |
+| 20| Retrieve-context proxy gate | Standard/Aggressive may auto-commit only on held-out `query_context` lift; audit says `not WikiSkill task-accuracy` |
+| 21| Human review CLI + REST + MCP | `smriti proposals/approve/reject`, `/api/v1/consolidation/proposals`, `accept_proposal_id` / `reject_proposal_id` |
 
 ## Known Gaps (prioritised — work top-to-bottom)
 
 | # | Gap                            | Severity | Fix Location              | Effort |
 |---|-------------------------------|----------|---------------------------|--------|
-| 1 | No LLM-driven schema formation | CRITICAL | src/features/schema_formation.rs (Task 9 Phase 3) | L |
+| 1 | No labelled WikiSkill task-accuracy gate (`y_i`) | MODERATE | docs/consolidation-proxy.md — proxy is retrieval-only by design | — |
 | 2 | No GitHub topics set           | HIGH     | GitHub UI                 | XS     |
 | 3 | No screenshots/GIFs in README  | HIGH     | README.md                 | S      |
 | 4 | No HTTP MCP transport          | MODERATE | src/mcp/                  | M      |

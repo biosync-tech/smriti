@@ -320,7 +320,12 @@ Database statistics.
 
 Trigger a consolidation pass.
 
-**Request:**
+**Query or JSON body:** `policy` (`conservative` default), `dry_run` (`true` default).
+
+```
+POST /api/v1/consolidation/run?policy=conservative&dry_run=true
+```
+
 ```json
 {
   "policy": "conservative",
@@ -365,6 +370,22 @@ Audit log of consolidation events.
     "created_at": "2026-08-29T00:00:00Z"
   }
 ]
+```
+
+---
+
+### `GET /api/v1/consolidation/proposals`
+
+Pending schema proposals (events only — not live notes).
+
+### `POST /api/v1/consolidation/proposals/:id/accept`
+
+Human gate. `:id` may be a proposal id or a source episode id.
+
+### `POST /api/v1/consolidation/proposals/:id/reject`
+
+```json
+{ "by": "operator", "reason": "too vague" }
 ```
 
 ---

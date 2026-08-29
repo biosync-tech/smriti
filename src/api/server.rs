@@ -12,7 +12,7 @@ use crate::inference::{AuditedInference, InferenceBackend, InferenceConfig, Shar
 use crate::licensing::FeatureGate;
 use crate::storage::Database;
 
-use super::routes::{agent, ai as ai_routes, graph, notes, semantic};
+use super::routes::{agent, ai as ai_routes, consolidation, graph, notes, semantic};
 
 /// Shared application state passed to all handlers
 #[derive(Clone)]
@@ -72,6 +72,25 @@ pub fn create_router(db: Arc<Database>) -> Router {
         // Path A: local KG — document ingest + context retrieval
         .route("/api/v1/ingest/document", post(notes::ingest_document))
         .route("/api/v1/retrieve", post(notes::retrieve_context))
+        .route("/api/v1/consolidation/run", post(consolidation::run))
+        .route("/api/v1/consolidation/events", get(consolidation::events))
+        .route(
+            "/api/v1/consolidation/proposals",
+            get(consolidation::proposals),
+        )
+        .route(
+            "/api/v1/consolidation/proposals/{id}/accept",
+            post(consolidation::accept_proposal),
+        )
+        .route(
+            "/api/v1/consolidation/proposals/{id}/reject",
+            post(consolidation::reject_proposal_route),
+        )
+        .route("/api/v1/notes/{id}/lineage", get(consolidation::lineage))
+        .route(
+            "/api/v1/notes/{id}/access",
+            post(consolidation::record_access),
+        )
         // Embedding / semantic search routes
         .route("/api/v1/notes/{id}/embed", post(semantic::store_embedding))
         .route(
