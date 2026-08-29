@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Biosync — Reproducible bioinformatics, from QC to a package you can file</title>
+<meta name="description" content="Reproducible bioinformatics consulting for omics, healthcare data, and biomedical knowledge graphs. Atlas-grade analysis. Submission-grade provenance.">
+<link rel="canonical" href="https://bio-sync.tech">
+
+<!-- JSON-LD Structured Data for Organization -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Biosync",
+  "url": "https://bio-sync.tech",
+  "email": "hello@bio-sync.tech",
+  "logo": "https://bio-sync.tech/assets/logo-mark.png",
+  "description": "Reproducible bioinformatics consulting for omics, healthcare data, and biomedical knowledge graphs. Atlas-grade analysis. Submission-grade provenance.",
+  "sameAs": "https://www.linkedin.com/in/biosyncai",
+  "areaServed": "Global",
+  "serviceType": [
+    "Bioinformatics Consulting",
+    "Omics Analysis",
+    "Healthcare Data Analytics",
+    "Biomedical Knowledge Graphs",
+    "Computational Biology"
+  ],
+  "knowsAbout": [
+    "RNA-seq",
+    "Single-cell RNA-seq",
+    "Spatial transcriptomics",
+    "Proteomics",
+    "ATAC-seq",
+    "ChIP-seq",
+    "CRISPR screening",
+    "Neoantigen prediction",
+    "MIMIC-III",
+    "NEISS",
+    "SEER",
+    "Real-world evidence",
+    "Biomedical knowledge graphs",
+    "Graph neural networks"
+  ],
+  "slogan": "Atlas-grade analysis. Submission-grade provenance."
+}
+</script>
+
+<!-- JSON-LD Structured Data for Services -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ProfessionalService",
+  "name": "Biosync Bioinformatics Services",
+  "provider": {
+    "@type": "Organization",
+    "name": "Biosync"
+  },
+  "areaServed": "Global",
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "Bioinformatics Services",
+    "itemListElement": [
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "Multi-omics & Bioinformatics",
+          "description": "Publication-grade analyses, built to be rerun, audited, and extended",
+          "serviceType": "Omics Analysis",
+          "termsOfService": "Fixed-scope sprints typically range $15K–$75K depending on complexity and timeline"
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "Clinical & Real-world Analytics",
+          "description": "Public and proprietary clinical datasets turned into a baseline a hospital, payer, or investor can interrogate",
+          "serviceType": "Healthcare Data Analytics"
+        }
+      },
+      {
+        "@type": "Offer",
+        "itemOffered": {
+          "@type": "Service",
+          "name": "Biomedical Knowledge Graphs",
+          "description": "A queryable layer over genes, diseases, drugs, and literature",
+          "serviceType": "Knowledge Graph Construction"
+        }
+      }
+    ]
+  }
+}
+</script>
+
+<!-- JSON-LD Structured Data for FAQs -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What does a first engagement look like?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A 2–6 week fixed-scope sprint with an explicit deliverable (report, pipeline, figures, or diligence memo), success criteria, and a kill switch. NDA first. No long-term retainer required to start. Fixed-scope sprints typically range $15K–$75K depending on complexity and timeline."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do you handle PHI / HIPAA-regulated data?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, under a signed BAA, typically inside your HIPAA-eligible cloud tenancy. We are HIPAA-aligned and BAA-ready — not HIPAA certified. We do not take custody of regulated data unless the workflow requires it, and we will not accept PHI through the public form or ordinary email."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Who actually does the work?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "One senior scientific owner, end to end. Full CV after NDA. Specialists, if needed, are named under that NDA. No bait-and-switch between the first call and delivery."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do you price?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Fixed-scope sprints typically range $15K–$75K depending on complexity and timeline. Longer work can shift to a monthly retainer. We can work against pharma MSAs and university purchase-order frameworks. We do not publish exact dollar amounts on this site. Contact for a scoped quote."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Are pipelines reproducible?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Version-controlled, containerized, documented with parameter provenance. Deliverables include the code, the environment, and the report so a reviewer can reproduce the steps."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can you support academic labs and manuscripts?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Grant-funded work, publication-grade figures, methods sections, and co-authorship where the contribution merits it are a core part of the practice."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How long does a typical engagement take?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "2–6 weeks for fixed-scope sprints. Straightforward analyses can ship in a couple of weeks; multi-modal work takes longer. Longer engagements shift to monthly retainers."
+      }
+    }
+  ]
+}
+</script>
+
+<!-- JSON-LD Structured Data for Smriti Product -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Smriti",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Linux, macOS, Windows",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "description": "Self-hosted agent memory layer (one binary, offline) where every claim cites a source, facts carry valid-from/valid-until, contradictions surface, and model calls replay bit-identically.",
+  "url": "https://bio-sync.tech/smriti/",
+  "provider": {
+    "@type": "Organization",
+    "name": "Biosync"
+  }
+}
+</script>
+
+<style>
+:root {
+  --bg: #fbfbfd;
+  --text: #1d1d1f;
+  --accent: #0071e3;
+  --muted: #6e6e73;
+  --border: #d2d2d7;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+header {
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--border);
+}
+.logo {
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--text);
+}
+main {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 60px 28px;
+}
+h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 20px;
+}
+.tagline {
+  font-size: 1.1rem;
+  color: var(--muted);
+  margin-bottom: 40px;
+}
+section {
+  margin-bottom: 80px;
+}
+h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.services {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 28px;
+  margin-top: 32px;
+}
+.service-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+}
+.service-card h3 {
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+}
+.service-card ul {
+  list-style: none;
+  padding: 0;
+}
+.service-card li {
+  padding: 6px 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.service-card li::before {
+  content: "• ";
+  color: var(--accent);
+}
+.cta {
+  display: inline-block;
+  background: var(--accent);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  margin-top: 20px;
+}
+.cta:hover {
+  opacity: 0.9;
+}
+footer {
+  text-align: center;
+  padding: 40px 28px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+</style>
+</head>
+<body>
+
+<header role="banner">
+  <div class="logo">Biosync</div>
+</header>
+
+<main role="main">
+  <section aria-labelledby="hero">
+    <h1 id="hero">Reproducible bioinformatics, from QC to a package you can file.</h1>
+    <p class="tagline">Atlas-grade analysis. Submission-grade provenance.</p>
+    <p>When a computational-biology lead, PI, or founder needs an omics result they can defend — not a slide that collapses under review — Biosync runs the analysis from intake to a written handoff you keep. One senior scientific owner. Reproducible methods. NDA before any files move.</p>
+    <a href="mailto:hello@bio-sync.tech?subject=Discovery%20call" class="cta">Request a discovery call</a>
+  </section>
+
+  <section aria-labelledby="services" itemscope itemtype="https://schema.org/Service">
+    <h2 id="services">Three lanes · omics is the door</h2>
+    <p>Most engagements begin as bulk, single-cell, spatial, or multi-omic analysis. Healthcare data and biomedical graphs come in when the same decision needs clinical context or a reasoning layer over literature and databases.</p>
+    
+    <div class="services">
+      <article class="service-card" itemscope itemtype="https://schema.org/Service">
+        <h3 itemprop="name">01 / Omics</h3>
+        <p itemprop="description">Publication-grade analyses, built to be rerun, audited, and extended — not one-off notebooks.</p>
+        <ul itemprop="serviceOutput">
+          <li>Bulk RNA-seq and single-cell RNA-seq</li>
+          <li>Spatial transcriptomics and cell atlasing</li>
+          <li>Proteomics, alongside matched RNA</li>
+          <li>Epigenomics — ATAC-seq and ChIP-seq</li>
+          <li>Neoantigen / HLA / mRNA antigen selection</li>
+          <li>CRISPR-screen RNA-seq QC gates</li>
+          <li>Multi-omic integration and biomarker ID</li>
+        </ul>
+      </article>
+
+      <article class="service-card" itemscope itemtype="https://schema.org/Service">
+        <h3 itemprop="name">02 / Healthcare data</h3>
+        <p itemprop="description">Public and proprietary clinical datasets turned into a baseline a hospital, payer, or investor can interrogate.</p>
+        <ul itemprop="serviceOutput">
+          <li>Critical-care analytics (MIMIC-III / IV)</li>
+          <li>Injury surveillance (NEISS)</li>
+          <li>Claims, eligibility & denials</li>
+          <li>Real-world evidence & RWD</li>
+          <li>Outcomes & risk stratification</li>
+        </ul>
+      </article>
+
+      <article class="service-card" itemscope itemtype="https://schema.org/Service">
+        <h3 itemprop="name">03 / KG & AI</h3>
+        <p itemprop="description">A queryable layer over genes, diseases, drugs, and literature — so hypothesis generation is a path, not a pile of PDFs.</p>
+        <ul itemprop="serviceOutput">
+          <li>Heterogeneous GNN & link prediction on multi-omics KGs</li>
+          <li>Agentic pipeline, graph, and tool orchestration</li>
+          <li>Literature RAG with citations</li>
+          <li>Biomedical knowledge-graph construction</li>
+          <li>Target discovery & repurposing</li>
+          <li>Ontology harmonization & FAIR data</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <section aria-labelledby="work">
+    <h2 id="work">Representative work</h2>
+    <p style="margin-bottom: 32px;">Problem shapes and analyses we have run. Named clients, full write-ups, and code samples sit behind NDA. Outcomes below are from the original public descriptions of this work; we are not adding new metrics here.</p>
+    
+    <article style="border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin-bottom: 20px;" itemscope itemtype="https://schema.org/ResearchProject">
+      <div style="font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Featured · Translational</div>
+      <h3 itemprop="name" style="font-size: 1.4rem; margin-bottom: 12px;">Uncovering drug mechanism-of-action in tumor models</h3>
+      <meta itemprop="keywords" content="RNA-seq, differential expression, pathway analysis, MoA, tumor models">
+      <p itemprop="description" style="color: var(--muted); margin-bottom: 16px;">Lead compound worked in xenografts but the MoA was unclear — blocking IND-enabling work.</p>
+      <p><strong>Problem:</strong> Efficacy signal without mechanism — regulatory narrative was stalled until the team could explain why it worked.</p>
+      <p><strong>Approach:</strong> QC & alignment → differential expression (treated vs. control) → pathway enrichment → upstream regulator analysis → cross-reference with public drug-response databases.</p>
+      <p><strong>Outcome:</strong> Surfaced two converging signaling pathways and a candidate resistance marker — anchored the MoA story for regulatory filings.</p>
+    </article>
+
+    <article style="border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin-bottom: 20px;" itemscope itemtype="https://schema.org/ResearchProject">
+      <div style="font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Featured · Immuno-oncology</div>
+      <h3 itemprop="name" style="font-size: 1.4rem; margin-bottom: 12px;">Building a single-cell atlas of the tumor immune microenvironment</h3>
+      <meta itemprop="keywords" content="single-cell RNA-seq, tumor immune microenvironment, T-cell exhaustion, patient stratification">
+      <p itemprop="description" style="color: var(--muted); margin-bottom: 16px;">47 patient samples, no unified view of which immune states drove response vs. resistance.</p>
+      <p><strong>Problem:</strong> Data existed but fragmented across batches; no cell-state framework to support patient stratification.</p>
+      <p><strong>Approach:</strong> Harmonized QC across batches → integration & clustering → cell-type annotation → responder vs. non-responder differential testing → trajectory analysis on T-cell exhaustion.</p>
+      <p><strong>Outcome:</strong> Two previously unappreciated exhaustion-associated states identified — now anchor the lead program's patient stratification strategy.</p>
+    </article>
+
+    <article style="border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin-bottom: 20px;" itemscope itemtype="https://schema.org/ResearchProject">
+      <div style="font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Featured · Digital health</div>
+      <h3 itemprop="name" style="font-size: 1.4rem; margin-bottom: 12px;">Early sepsis prediction in the ICU</h3>
+      <meta itemprop="keywords" content="MIMIC-III, sepsis prediction, machine learning, ICU, AUROC">
+      <p itemprop="description" style="color: var(--muted); margin-bottom: 16px;">Investor diligence needed a defensible ICU early-warning baseline before clinical pilots.</p>
+      <p><strong>Problem:</strong> Team had a model idea but no rigorous benchmark to stand behind in conversations with hospitals and investors.</p>
+      <p><strong>Approach:</strong> MIMIC-III cohort extraction → feature engineering on vitals, labs & meds → time-aware splits → benchmarking against Sepsis-3 → interpretability via SHAP.</p>
+      <p><strong>Outcome:</strong> Validated predictive model with AUROC > 0.85 at 6 hours pre-onset — de-risked diligence and anchored the first hospital pilot.</p>
+    </article>
+
+    <article style="border: 1px solid var(--border); border-radius: 12px; padding: 28px; margin-bottom: 20px;" itemscope itemtype="https://schema.org/ResearchProject">
+      <div style="font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Featured · Drug discovery</div>
+      <h3 itemprop="name" style="font-size: 1.4rem; margin-bottom: 12px;">A biomedical knowledge graph for drug-repurposing hypothesis generation</h3>
+      <meta itemprop="keywords" content="knowledge graph, drug repurposing, graph embeddings, LLM, RAG">
+      <p itemprop="description" style="color: var(--muted); margin-bottom: 16px;">Scanning literature and public databases for an orphan disease — at a scale humans can't.</p>
+      <p><strong>Problem:</strong> Manual literature review was unfeasible; scattered sources made systematic hypothesis generation impossible.</p>
+      <p><strong>Approach:</strong> Built a KG linking genes, diseases, drugs, pathways & literature → entity resolution & ontology harmonization → graph embeddings → path-based scoring of drug-disease hypotheses → LLM-assisted evidence summarization.</p>
+      <p><strong>Outcome:</strong> Ranked list of 14 candidate molecules with mechanistic rationale — two progressed into in-vitro validation.</p>
+    </article>
+
+    <p style="color: var(--muted); margin-top: 32px;">Need deep technical work on ChIP-seq, ATAC-seq, spatial transcriptomics, multi-omic integration, injury surveillance, or survival modeling? Those sit behind NDA along with client names and full methods. <a href="mailto:hello@bio-sync.tech?subject=NDA%20request" style="color: var(--accent);">Request NDA</a>.</p>
+  </section>
+
+  <section aria-labelledby="smriti" itemscope itemtype="https://schema.org/SoftwareApplication">
+    <h2 id="smriti" itemprop="name">Smriti — agent memory you can defend</h2>
+    <p itemprop="description">For teams shipping agents into trials, drug safety, and translational research. Every output reconstructs from stored evidence. Every claim cites a source. Every change is verifiable. Self-hosted. Your machine.</p>
+    <a href="https://bio-sync.tech/smriti/" class="cta" itemprop="url">Product page</a>
+    <a href="mailto:hello@bio-sync.tech?subject=Smriti" class="cta" style="margin-left: 12px; background: white; color: var(--accent); border: 1px solid var(--accent);">Discovery call</a>
+  </section>
+
+  <section aria-labelledby="faq" itemscope itemtype="https://schema.org/FAQPage">
+    <h2 id="faq">What scientific leads usually ask first</h2>
+    
+    <article style="margin-bottom: 24px;" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <h3 itemprop="name" style="font-size: 1.1rem; margin-bottom: 8px;">What does a first engagement look like?</h3>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <p itemprop="text">A 2–6 week fixed-scope sprint with an explicit deliverable (report, pipeline, figures, or diligence memo), success criteria, and a kill switch. NDA first. No long-term retainer required to start. <strong>Fixed-scope sprints typically range $15K–$75K</strong> depending on complexity and timeline.</p>
+      </div>
+    </article>
+
+    <article style="margin-bottom: 24px;" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <h3 itemprop="name" style="font-size: 1.1rem; margin-bottom: 8px;">Do you handle PHI / HIPAA-regulated data?</h3>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <p itemprop="text">Yes, under a signed BAA, typically inside your HIPAA-eligible cloud tenancy. We are HIPAA-aligned and BAA-ready — not HIPAA certified. We do not take custody of regulated data unless the workflow requires it, and we will not accept PHI through the public form or ordinary email.</p>
+      </div>
+    </article>
+
+    <article style="margin-bottom: 24px;" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <h3 itemprop="name" style="font-size: 1.1rem; margin-bottom: 8px;">Who actually does the work?</h3>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <p itemprop="text">One senior scientific owner, end to end. Full CV after NDA. Specialists, if needed, are named under that NDA. No bait-and-switch between the first call and delivery.</p>
+      </div>
+    </article>
+
+    <article style="margin-bottom: 24px;" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <h3 itemprop="name" style="font-size: 1.1rem; margin-bottom: 8px;">How long does a typical engagement take?</h3>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <p itemprop="text">2–6 weeks for fixed-scope sprints. Straightforward analyses can ship in a couple of weeks; multi-modal work takes longer. Longer engagements shift to monthly retainers.</p>
+      </div>
+    </article>
+  </section>
+</main>
+
+<footer role="contentinfo">
+  <p>Biosync — <a href="mailto:hello@bio-sync.tech" style="color: var(--accent);">hello@bio-sync.tech</a> — <a href="https://www.linkedin.com/in/biosyncai" style="color: var(--accent);">LinkedIn</a></p>
+</footer>
+
+</body>
+</html>
