@@ -335,6 +335,47 @@ pub enum Commands {
         #[arg(long)]
         json: bool,
     },
+
+    /// List schema proposals pending human review (Conservative policy)
+    #[command(
+        display_order = 58,
+        name = "proposals",
+        after_help = "\x1b[1mExample:\x1b[0m\n  \
+            smriti proposals"
+    )]
+    Proposals {
+        /// Output as JSON
+        #[arg(long)]
+        json: bool,
+    },
+
+    /// Approve a flagged schema proposal (Conservative policy)
+    #[command(
+        display_order = 59,
+        name = "approve",
+        after_help = "\x1b[1mExample:\x1b[0m\n  \
+            smriti approve <cluster_id>"
+    )]
+    ApproveProposal {
+        /// Cluster ID or note ID from the flagged proposal
+        cluster_id: String,
+    },
+
+    /// Reject a flagged schema proposal (Conservative policy)
+    #[command(
+        display_order = 60,
+        name = "reject",
+        after_help = "\x1b[1mExample:\x1b[0m\n  \
+            smriti reject <cluster_id> --reason \"Not a meaningful pattern\""
+    )]
+    RejectProposal {
+        /// Cluster ID or note ID from the flagged proposal
+        cluster_id: String,
+
+        /// Reason for rejection
+        #[arg(long, short)]
+        reason: String,
+    },
 }
 
 /// Custom styles for colorized --help output.

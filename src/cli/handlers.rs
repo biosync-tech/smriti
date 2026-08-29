@@ -823,3 +823,146 @@ pub fn handle_consolidate(
 
     Ok(())
 }
+
+/// List schema proposals flagged for review (Conservative policy).
+pub fn handle_proposals(db: &Database, json: bool) -> AppResult<()> {
+    #[derive(serde::Serialize)]
+    struct Proposal {
+        note_id: String,
+        title: String,
+        flagged_at: String,
+        consolidation_score: f32,
+    }
+
+    let proposals: Vec<Proposal> = db.execute(|conn| {
+        let mut stmt = conn.prepare(
+            "SELECT DISTINCT n.id, n.title, ce.created_at, n.consolidation_score
+             FROM consolidation_events ce
+             JOIN notes n ON n.id = ce.note_id
+             WHERE ce.event_type = 'flagged_for_review'
+             AND n.node_type = 'episode'
+             AND n.parent_schema_id IS NULL
+             ORDER BY ce.created_at DESC
+             LIMIT 50"
+        )?;
+        let rows = stmt
+            .query_map([], |r| {
+                Ok(Proposal {
+                    note_id: r.get(0)?,
+                    title: r.get(1)?,
+                    flagged_at: r.get(2)?,
+                    consolidation_score: r.get(3)?,
+                })
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(rows)
+    })?;
+
+    if json {
+        println!("{}", serde_json::to_string_pretty(&proposals)?);
+    } else {
+        if proposals.is_empty() {
+            println!("No schema proposals pending review.");
+        } else {
+            println!("Schema proposals pending review ({}):", proposals.len());
+            for p in &proposals {
+                println!(
+                    "  {} (score: {:.3}, flagged: {}): {}",
+                    p.note_id, p.consolidation_score, p.flagged_at, p.title
+                );
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Approve a flagged schema proposal (Conservative policy).
+pub fn handle_approve_proposal(db: &Database, cluster_id: &str) -> AppResult<()> {
+    // For now, cluster_id is a note ID from the flagged episode
+    // We need to find similar notes and form a schema
+    
+    // Check that the note is flagged
+    let is_flagged: bool = db.execute(|conn| {
+        conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM consolidation_events 
+             WHERE note_id = ?1 AND event_type = 'flagged_for_review')",
+            rusqlite::params![cluster_id],
+            |r| r.get(0),
+        )
+        .map_err(|e| e.into())
+    })?;
+
+    if !is_flagged {
+        return Err(crate::errors::AppError::BadRequest(format!(
+            "Note {} is not flagged for review", cluster_id
+        )));
+    }
+
+    // TODO: Actually run schema formation on this cluster
+    // For now, just log approval
+    db.execute(|conn| {
+        use chrono::Utc;
+        use uuid::Uuid;
+        conn.execute(
+            "INSERT INTO consolidation_events
+             (id, note_id, event_type, score_before, score_after, reason, created_at)
+             VALUES (?1, ?2, 'proposal_approved', NULL, NULL, ?3, ?4)",
+            rusqlite::params![
+                Uuid::new_v4().to_string(),
+                cluster_id,
+                "approved by human operator",
+                Utc::now().to_rfc3339(),
+            ],
+        )?;
+        Ok(())
+    })?;
+
+    println!("✓ Approved proposal for note {}", cluster_id);
+    println!("  Note: Schema formation implementation pending");
+
+    Ok(())
+}
+
+/// Reject a flagged schema proposal (Conservative policy).
+pub fn handle_reject_proposal(db: &Database, cluster_id: &str, reason: &str) -> AppResult<()> {
+    // Check that the note is flagged
+    let is_flagged: bool = db.execute(|conn| {
+        conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM consolidation_events 
+             WHERE note_id = ?1 AND event_type = 'flagged_for_review')",
+            rusqlite::params![cluster_id],
+            |r| r.get(0),
+        )
+        .map_err(|e| e.into())
+    })?;
+
+    if !is_flagged {
+        return Err(crate::errors::AppError::BadRequest(format!(
+            "Note {} is not flagged for review", cluster_id
+        )));
+    }
+
+    // Log rejection (rollback without affecting already-committed schemas)
+    db.execute(|conn| {
+        use chrono::Utc;
+        use uuid::Uuid;
+        conn.execute(
+            "INSERT INTO consolidation_events
+             (id, note_id, event_type, score_before, score_after, reason, created_at)
+             VALUES (?1, ?2, 'proposal_rejected', NULL, NULL, ?3, ?4)",
+            rusqlite::params![
+                Uuid::new_v4().to_string(),
+                cluster_id,
+                format!("rejected by human: {}", reason),
+                Utc::now().to_rfc3339(),
+            ],
+        )?;
+        Ok(())
+    })?;
+
+    println!("✓ Rejected proposal for note {}", cluster_id);
+    println!("  Reason: {}", reason);
+
+    Ok(())
+}

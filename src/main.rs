@@ -311,6 +311,18 @@ async fn main() -> anyhow::Result<()> {
         } => {
             handlers::handle_consolidate(&db, &policy, dry_run, explain, json)?;
         }
+
+        Commands::Proposals { json } => {
+            handlers::handle_proposals(&db, json)?;
+        }
+
+        Commands::ApproveProposal { cluster_id } => {
+            handlers::handle_approve_proposal(&db, &cluster_id)?;
+        }
+
+        Commands::RejectProposal { cluster_id, reason } => {
+            handlers::handle_reject_proposal(&db, &cluster_id, &reason)?;
+        }
     }
 
     Ok(())
