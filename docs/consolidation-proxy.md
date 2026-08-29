@@ -1,10 +1,14 @@
 # Consolidation Proxy Gating
 
-## Overview
+**Status: NOT IMPLEMENTED** (v0.2.0)
 
-Smriti's **optional proxy gating** evaluates schema proposals for Standard and Aggressive consolidation policies using held-out queries from the access log. This mechanism helps ensure that promoting a cluster of episodes into a schema actually improves retrieval relevance or groundedness.
+Conservative policy (human-in-loop) is production-ready. Standard and Aggressive policies fall back to Conservative when proxy is unavailable.
 
-## What is Proxy Gating?
+## Overview (Design Only)
+
+Smriti's **optional proxy gating** (not yet wired) would evaluate schema proposals for Standard and Aggressive consolidation policies using held-out queries from the access log. This mechanism would help ensure that promoting a cluster of episodes into a schema actually improves retrieval relevance or groundedness.
+
+## What Would Proxy Gating Do?
 
 When a schema candidate is flagged for promotion:
 
@@ -24,14 +28,15 @@ smriti approve <note_id>
 smriti reject <note_id> --reason "Not a meaningful pattern"
 ```
 
-## Standard and Aggressive Policies
+## Standard and Aggressive Policies (Current Behavior)
 
-Standard and Aggressive policies **may** use proxy gating if:
+Standard and Aggressive policies currently **fall back to Conservative** (flag for human review) when LLM backend is unavailable. Proxy gating is not implemented.
+
+Future implementation would require:
 - `note_access_log` contains sufficient query diversity
-- `retrieve_context` is available for testing
-- The policy is configured to use proxy (not hardcoded)
-
-If proxy gating is unavailable or disabled, these policies fall back to human review.
+- `retrieve_context` callable with/without candidate schema
+- Relevance/groundedness metric comparison
+- Event logging differentiating human-approved vs proxy-signal-approved
 
 ## Important Disclaimer
 
@@ -49,13 +54,14 @@ Key differences:
 
 Smriti's proxy is a **retrieval QA proxy**, not a task-level skill gating mechanism.
 
-## Configuration
+## Current Limitations
 
-Proxy gating is controlled by consolidation policy. To enable:
+**Proxy gating is not implemented in v0.2.0.**
 
-1. Run consolidation with `--policy standard` or `--policy aggressive`
-2. Ensure `note_access_log` has been instrumented (MCP read/search/graph handlers log access)
-3. The system will automatically use proxy if available
+- Conservative policy works as designed (human approval required)
+- Standard/Aggressive policies currently form schemas without proxy checks
+- To use Standard/Aggressive safely: review schemas manually after formation
+- For healthcare/compliance: use Conservative (default) which never auto-promotes
 
 ## Event Logging
 

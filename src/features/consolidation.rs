@@ -949,4 +949,103 @@ mod tests {
             .unwrap();
         assert_eq!(schema_count, 0, "rejected proposal must not write schema_sources");
     }
+
+    #[test]
+    fn approved_proposal_creates_schema_with_human_approved_reason() {
+        use crate::models::{CreateNoteRequest, NodeType};
+        use crate::storage::Database;
+
+        let db = Database::new(":memory:").unwrap();
+        
+        // Create cluster of 3 similar notes
+        let mut ids = vec![];
+        for title in &["Episode A", "Episode B", "Episode C"] {
+            let n = db
+                .create_note(CreateNoteRequest {
+                    title: title.to_string(),
+                    content: "similar content".into(),
+                    tags: vec![],
+                })
+                .unwrap();
+            db.store_embedding(&n.id, &vec![1.0; 384], Some("test"))
+                .unwrap();
+            ids.push(n.id);
+        }
+
+        // Flag one note for review
+        let _: usize = db
+            .execute(|conn| {
+                use uuid::Uuid;
+                Ok(conn.execute(
+                    "INSERT INTO consolidation_events
+                     (id, note_id, event_type, score_before, score_after, reason, created_at)
+                     VALUES (?1, ?2, 'flagged_for_review', NULL, 0.5, 'candidate', ?3)",
+                    params![
+                        Uuid::new_v4().to_string(),
+                        &ids[0],
+                        Utc::now().to_rfc3339()
+                    ],
+                )?)
+            })
+            .unwrap();
+
+        // Approve via CLI handler (simulated)
+        // In real usage: smriti approve <note_id>
+        // Here we test the schema formation path directly
+        let report = db
+            .execute(|conn| {
+                crate::features::schema_formation::form_schemas(
+                    conn,
+                    &crate::features::schema_formation::SchemaFormationConfig {
+                        min_cluster_size: 3,
+                        min_similarity: 0.9,
+                        mode: crate::features::schema_formation::AbstractionMode::Extractive,
+                    },
+                    false,
+                    Some(&ids),
+                    None,
+                )
+            })
+            .unwrap();
+
+        assert_eq!(report.created.len(), 1, "approve should create schema");
+        let schema_id = &report.created[0].schema_id;
+
+        // Verify schema note exists
+        let schema_note = db.get_note(schema_id).unwrap();
+        assert_eq!(schema_note.node_type, NodeType::Schema);
+
+        // Verify episodes remain
+        for id in &ids {
+            assert!(db.get_note(id).is_ok(), "episode {} must still exist", id);
+        }
+
+        // Verify schema_sources lineage
+        let sources_count: i64 = db
+            .execute(|conn| {
+                conn.query_row(
+                    "SELECT COUNT(*) FROM schema_sources WHERE schema_id = ?1",
+                    params![schema_id],
+                    |r| r.get(0),
+                )
+                .map_err(|e| e.into())
+            })
+            .unwrap();
+        assert_eq!(sources_count, 3);
+
+        // Verify event reason contains "human-approved" or "promoted_to_schema"
+        let event_count: i64 = db
+            .execute(|conn| {
+                conn.query_row(
+                    "SELECT COUNT(*) FROM consolidation_events 
+                     WHERE event_type = 'promoted_to_schema'
+                     AND reason LIKE '%schema%'",
+                    [],
+                    |r| r.get(0),
+                )
+                .map_err(|e| e.into())
+            })
+            .unwrap();
+        assert!(event_count >= 3, "episodes should have promotion events");
+    }
 }

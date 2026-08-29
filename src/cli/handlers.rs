@@ -878,9 +878,9 @@ pub fn handle_proposals(db: &Database, json: bool) -> AppResult<()> {
 }
 
 /// Approve a flagged schema proposal (Conservative policy).
+/// Actually forms the schema by clustering similar notes and calling form_schemas.
 pub fn handle_approve_proposal(db: &Database, cluster_id: &str) -> AppResult<()> {
-    // For now, cluster_id is a note ID from the flagged episode
-    // We need to find similar notes and form a schema
+    use crate::features::schema_formation::{form_schemas, SchemaFormationConfig, AbstractionMode};
     
     // Check that the note is flagged
     let is_flagged: bool = db.execute(|conn| {
@@ -899,27 +899,119 @@ pub fn handle_approve_proposal(db: &Database, cluster_id: &str) -> AppResult<()>
         )));
     }
 
-    // TODO: Actually run schema formation on this cluster
-    // For now, just log approval
+    // Get the note's embedding to find its cluster
+    let has_embedding: bool = db.execute(|conn| {
+        conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM note_embeddings_meta WHERE note_id = ?1)",
+            rusqlite::params![cluster_id],
+            |r| r.get(0),
+        )
+        .map_err(|e| e.into())
+    })?;
+
+    if !has_embedding {
+        return Err(crate::errors::AppError::BadRequest(format!(
+            "Note {} has no embedding; cannot cluster for schema formation", cluster_id
+        )));
+    }
+
+    // Find cluster: all notes within min_similarity of this note
+    let cluster: Vec<String> = db.execute(|conn| {
+        // Get target embedding
+        let target_emb: Vec<f32> = conn.query_row(
+            "SELECT embedding FROM note_embeddings_meta WHERE note_id = ?1",
+            rusqlite::params![cluster_id],
+            |r| {
+                let blob: Vec<u8> = r.get(0)?;
+                Ok(blob.chunks(4)
+                    .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+                    .collect())
+            },
+        )?;
+
+        // Find similar notes (cosine > 0.85)
+        let mut similar = vec![cluster_id.to_string()];
+        let mut stmt = conn.prepare(
+            "SELECT note_id, embedding FROM note_embeddings_meta WHERE note_id != ?1"
+        )?;
+        let rows = stmt.query_map(rusqlite::params![cluster_id], |r| {
+            let nid: String = r.get(0)?;
+            let blob: Vec<u8> = r.get(1)?;
+            let emb: Vec<f32> = blob.chunks(4)
+                .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+                .collect();
+            Ok((nid, emb))
+        })?;
+
+        for row in rows {
+            let (nid, emb) = row?;
+            let sim = crate::features::schema_formation::cosine(&target_emb, &emb);
+            if sim > 0.85 {
+                similar.push(nid);
+            }
+        }
+
+        Ok(similar)
+    })?;
+
+    // Enforce min_cluster_size (default 3)
+    if cluster.len() < 3 {
+        return Err(crate::errors::AppError::BadRequest(format!(
+            "Cluster too small ({} notes); need at least 3 for schema formation", cluster.len()
+        )));
+    }
+
+    // Try to create backend
+    let backend = try_create_backend_for_consolidation();
+    let mode = if backend.is_some() {
+        AbstractionMode::Llm
+    } else {
+        AbstractionMode::Extractive
+    };
+
+    // Form schema on this cluster
+    let report = db.execute(|conn| {
+        form_schemas(
+            conn,
+            &SchemaFormationConfig {
+                min_cluster_size: 3,
+                min_similarity: 0.85,
+                mode,
+            },
+            false,  // NOT dry run
+            Some(&cluster),
+            backend,
+        )
+    })?;
+
+    if report.created.is_empty() {
+        return Err(crate::errors::AppError::BadRequest(
+            "Schema formation failed; no schema created".into()
+        ));
+    }
+
+    let schema_id = &report.created[0].schema_id;
+
+    // Log human approval
     db.execute(|conn| {
         use chrono::Utc;
         use uuid::Uuid;
-        conn.execute(
+        Ok(conn.execute(
             "INSERT INTO consolidation_events
              (id, note_id, event_type, score_before, score_after, reason, created_at)
              VALUES (?1, ?2, 'proposal_approved', NULL, NULL, ?3, ?4)",
             rusqlite::params![
                 Uuid::new_v4().to_string(),
                 cluster_id,
-                "approved by human operator",
+                format!("human-approved: formed schema {}", schema_id),
                 Utc::now().to_rfc3339(),
             ],
-        )?;
-        Ok(())
+        )?)
     })?;
 
-    println!("✓ Approved proposal for note {}", cluster_id);
-    println!("  Note: Schema formation implementation pending");
+    println!("✓ Approved and formed schema {}", schema_id);
+    println!("  Source episodes: {}", cluster.len());
+    println!("  Mode: {:?}", mode);
 
     Ok(())
 }
