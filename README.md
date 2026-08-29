@@ -103,45 +103,40 @@ Notes connect to each other through typed wiki-links — write `[[rel:causal|Dec
 
 ### Grounded research memory
 
-Every claim in your draft cites a source. When your advisor asks "where did you get this?" at 11pm, the answer is one command away.
+Every claim in your draft cites a source. When your advisor asks "where did you get this?" at 11pm, the answer is one MCP call away.
 
 ```bash
-# Ingest sources
-smriti ingest ~/papers/foster-wilson-2006.pdf --uri "doi:10.1038/nature04587"
+# Create notes with wiki-links and tags auto-extracted
+smriti create "Hippocampal replay mechanisms" \
+  --content "Foster & Wilson 2006 showed [[reverse replay]] during rest. #neuroscience" \
+  --tags memory
 
-# Write a grounded note (via MCP or CLI)
-smriti wiki-tx submit --require-provenance \
-  --op create_note \
-  --title "Hippocampal replay mechanisms" \
-  --content "Replay events are biased toward rewarded trajectories." \
-  --claim "biased toward rewarded trajectories" \
-    --source doi:10.1038/nature04587 \
-    --span "...replay events were biased toward trajectories...associated with reward..."
+# Link notes with typed edges
+smriti link "Foster & Wilson 2006" "reverse replay" --type cites
 
-# If the claim doesn't overlap the source, the transaction rolls back.
-# Verify your entire vault any time:
-smriti verify   # → notes=412  sources=89  claim_spans=1,204  events=3,712  OK
+# For provenance enforcement, use the MCP tool (via Claude Desktop or API):
+# MCP: wiki_transaction_submit with require_provenance=true
+# → Agent writes grounded drafts; ungrounded claims are rejected at write time
+
+# Verify integrity any time
+smriti verify
+# → Checks referential integrity + provenance spans + event-log hash chain
 ```
 
 ### Clinical trial amendment ledger
 
-Which protocol version was active when Subject 14 was screened? Bi-temporal edges answer in milliseconds.
+Which protocol version was active when Subject 14 was screened? The graph + MCP time-aware retrieval answer in milliseconds.
 
 ```bash
-# Link protocol versions with valid-from dates
-smriti link add \
-  --from "Trial-A-Protocol-v2.1" \
-  --to "Trial-A-Protocol-v2.3" \
-  --type amended_by \
-  --valid-from 2026-03-14
+# Link protocol versions (bi-temporal edges via MCP)
+smriti link "Trial-A-Protocol-v2.1" "Trial-A-Protocol-v2.3" --type amended_by
 
-# Query the active version on any date
-smriti graph --as-of 2026-03-10 trial-A
-# → Returns v2.1, not v2.3 (which took effect 4 days later)
+# MCP: notes_graph tool with as_of="2026-03-10"
+# → Returns v2.1, not v2.3 (which took effect 2026-03-14)
 
-# Before every monitor visit:
-smriti verify --trial Trial-A --since 2026-03-01
-# → 47 claims rechecked, 1 FAIL flagged before the monitor sits down
+# Before every monitor visit, verify integrity
+smriti verify
+# → 47 claims rechecked, referential + provenance + chain intact
 ```
 
 ### Senescence biomarker consolidation
@@ -149,7 +144,7 @@ smriti verify --trial Trial-A --since 2026-03-01
 Three IPF cohorts cite overlapping markers. Which are replicated science vs. spurious? Consolidation promotes the durable pattern into a schema, lineage intact.
 
 ```bash
-# Score notes by replay frequency + structural centrality + context diversity
+# Score notes by cascade salience + structural centrality + context diversity
 smriti consolidate --dry-run --policy conservative
 # → 3 episodes cluster (p16INK4a, MMP-7 replicated; IL-6 disputed)
 
@@ -169,18 +164,14 @@ smriti approve schema_candidate_001
 100 mg is safe but sub-efficacious. 300 mg triggers DLT. The recommendation must reconstruct in front of an FDA reviewer.
 
 ```bash
-# Multi-hop traversal returns the evidence chain
-smriti graph traverse CB-209 --depth 2
-# → [compound] CB-209
-#     ├─ [dosage 100mg] safe; 18% CRP < 30% endpoint
-#     └─ [dosage 300mg] efficacious; 29% Tn-T > 0.10 (DLT)
+# Multi-hop graph traversal via MCP
+# MCP: notes_graph with note_id="CB-209", depth=2
+# → Returns compound → dosage arms → biomarker chain
 
-# Replay the model call that recommended 200 mg MTD
-smriti audit replay call_7d3a
-# → Output: 200 mg once daily (MTD for Phase III)
-#    Verified spans: 2 of 2 → trial protocol + Troponin-T ref
-#    Stored hash: 2e8b…7c4b
-#    Re-run hash:  2e8b…7c4b  ✓ bit-identical
+# Provenance verification shows every claim traces to stored sources
+smriti verify
+# → All claim spans have overlap scores ≥ 0.55 with source excerpts
+#    Event log intact, no tampering detected
 ```
 
 ---

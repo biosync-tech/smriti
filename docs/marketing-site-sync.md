@@ -92,26 +92,45 @@
    - Matches shipped: ✅ Consolidation (Task 9 Phase 1+2), human approve (shipped), schema_sources (Migration 009).  
    - **Positioning wedge:** First memory layer that gets *cleaner* over time, not just bigger (vs Mem0/Zep/LangMem).
 
-4. **Denial overturn** — ⚠️ **Replace or demote**  
+### Recommended Set (matches what shipped + deepest pain)
+
+**Note:** These are the four use cases refined in this PR. The marketing site (bio-sync.tech/smriti/) keeps all four existing demos (trial / CB-209 / senescence / denial). Grounded Research Memory is GitHub-only (README + docs), not added to the consulting marketing site.
+
+1. **Trial amendment ledger** — ✅ **Keep on marketing site**  
+   - Pain: Site coordinators scramble before monitor visits; protocol v2.1 vs v2.3 temporal confusion.  
+   - What Smriti solves: Bi-temporal edges (MCP: `notes_graph` with `as_of`) + hash-chained event log + `smriti verify`.  
+   - Demo: MCP returns active protocol v2.1 on date, not v2.3.  
+   - Matches shipped: ✅ Bi-temporal (Migration 002), event log (Migration 007), verify (shipped).  
+   - **Positioning wedge:** ICH E6(R3) §4.1 essential records + §8 data integrity.
+
+2. **IND dose synthesis (CB-209)** — ✅ **Keep on marketing site**  
+   - Pain: 100 mg safe but sub-efficacious; 300 mg triggers DLT. Recommendation must reconstruct.  
+   - What Smriti solves: Multi-hop graph traversal (MCP: `notes_graph` depth=2) + provenance spans.  
+   - Demo: MCP returns compound → dosage → biomarker chain.  
+   - Matches shipped: ✅ Graph BFS (shipped), provenance (Migration 004), event log (Migration 007).  
+   - **Positioning wedge:** FDA IND amendment narrative reconstruction.
+
+3. **Senescence panel consolidation** — ✅ **Keep on marketing site (update demo)**  
+   - Pain: Three IPF cohorts cite overlapping markers; which are replicated vs. spurious?  
+   - What Smriti solves: `smriti consolidate` → `smriti proposals` → `smriti approve` → schema with lineage.  
+   - Demo: CLI approval flow (Conservative policy: flag only, human review).  
+   - Matches shipped: ✅ Consolidation (Task 9 Phase 1+2), human approve (shipped), schema_sources (Migration 009).  
+   - **Positioning wedge:** First memory layer that gets *cleaner* over time, not just bigger (vs Mem0/Zep/LangMem).
+
+4. **Denial overturn** — ✅ **Keep on marketing site (no changes)**  
    - Pain: Payer policy in force on date of service vs. current policy.  
-   - What Smriti solves: Bi-temporal edges pin retrieval to 2024-03-14.  
-   - Why weaker: This is just bi-temporal edges (already showcased in Trial Amendment). No unique consolidation / schema / contradiction story.  
-   - **Recommendation:** Replace with "Grounded Research Memory" (PhD-student-at-11pm pitch — widest wedge, TAM ~50M).
+   - What Smriti solves: Bi-temporal edges (MCP: `notes_graph` with `as_of`).  
+   - Why included: Revenue cycle / payer appeals is a real pain point for healthcare providers.  
+   - Matches shipped: ✅ Bi-temporal edges (Migration 002).
 
-### Proposed Final Four (ordered by positioning strength)
-
-1. **Grounded Research Memory** — NEW (replaces Denial Overturn)  
+5. **Grounded Research Memory** — 🆕 **GitHub-only (not on marketing site)**  
    - Pain: Advisor texts "where did you get this?" at 11pm. Fabricated citations in LLM-drafted thesis.  
-   - What Smriti solves: Wiki transactions enforce provenance at write time; `smriti verify` audits every claim.  
-   - Demo: Agent tries to commit ungrounded claim → transaction rolls back → `smriti verify` green.  
+   - What Smriti solves: Wiki transactions (MCP) enforce provenance at write time; `smriti verify` audits integrity.  
+   - Demo: MCP: `wiki_transaction_submit` with `require_provenance=true` → ungrounded claim rejected.  
    - Matches shipped: ✅ Wiki transactions (Migration 005), provenance (Migration 004), verify (shipped).  
-   - **Positioning wedge:** Widest adoption funnel (TAM ~50M); Obsidian plugin path; viral on HN/Twitter.
-
-2. **Trial Amendment Ledger** (keep, tighten)  
-3. **Senescence Panel Consolidation** (keep, tighten — this is the consolidation showcase)  
-4. **IND Dose Synthesis (CB-209)** (keep, tighten)
-
-**Rationale:** Research memory is the activation wedge (individual, zero compliance gate, demo-able without PHI). Trial + IND are high-value enterprise upsells. Senescence showcases the NEW consolidation primitive. Denial overturn is redundant (bi-temporal already in Trial Amendment).
+   - **Positioning wedge:** Widest adoption funnel (TAM ~50M); Obsidian plugin path; viral on HN/Twitter.  
+   - **File:** `docs/use-case-research-memory.md` (created in this PR)  
+   - **Marketing site:** NOT added (bio-sync.tech sells trial/IND/safety to enterprises, not PhD-student tools)
 
 ---
 
@@ -152,7 +171,7 @@ Biomedical knowledge graphs
 
 ### /smriti/ Hero + Use-Case Cards
 
-#### Hero (tighten "Replay" claim)
+#### Hero (add Replay caveat)
 
 ```
 # An AI agent's memory you can defend.
@@ -181,42 +200,27 @@ Replay — re-runs a model call from stored metadata*
 *Requires stored prompt + retrieval set; manual reconstruction from event log.
 ```
 
-#### Four Use Cases (updated to match recommended set)
+#### Four Use Cases (KEEP EXISTING — trial/CB-209/senescence/denial)
 
-```
-### Grounded Research Memory [NEW]
-The advisor texts "where did you get this?" at 11pm. Every sentence in your draft traces
-to a source span. The rollback moment: agent tries to commit ungrounded claim → transaction
-rolls back → smriti verify green.
-[Open the live demo →]
+**No changes to use-case cards.** All four demos stay on the marketing site:
 
-### Trial Amendment Ledger
-Clinical trials. Pick any date. See which protocol version was in force, with the source
-document and audit chain.
-[Open the live demo →]
+1. Trial Amendment Ledger
+2. CB-209 Dose Synthesis
+3. Senescence Panel Consolidation (update demo to show approval flow)
+4. Denial Overturn
 
-### Senescence Panel Consolidation
-Translational. Three IPF cohorts consolidate into a schema. Disputed markers are flagged,
-never deleted.
-[Open the live demo →]
-
-### CB-209 Dose Synthesis
-IND amendment. Traverse the compound → dosage → biomarker chain and return a grounded
-recommendation.
-[Open the live demo →]
-```
+**Grounded Research Memory** remains GitHub/OSS-only (README + docs). It is not added to the Biosync consulting site (which sells trial/IND/safety to enterprises, not PhD-student tools).
 
 ---
 
 ### Demo Labels (for Pages site `/demos/` directory)
 
-| File | Updated Label | Eyebrow |
-|------|---------------|---------|
-| `grounded-research-memory.html` | NEW | Live demo · Grounded research memory |
-| `trial-amendment-ledger.html` | (no change) | Live demo · Trial amendment ledger |
-| `senescence-panel-consolidation.html` | (update to show proposals → approve flow) | Live demo · Memory consolidation · Senescence biomarker panel |
-| `cb-209-synthesis.html` | (no change) | Live demo · Dose synthesis · IND amendment |
-| ~~`denial-overturn.html`~~ | **Archive or demote to supplementary** | — |
+| File | Action | Eyebrow |
+|------|--------|---------|
+| `trial-amendment-ledger.html` | No change | Live demo · Trial amendment ledger |
+| `cb-209-synthesis.html` | No change | Live demo · Dose synthesis · IND amendment |
+| `senescence-panel-consolidation.html` | **Update to show proposals → approve flow** | Live demo · Memory consolidation · Senescence biomarker panel |
+| `denial-overturn.html` | No change | Live demo · Denial overturn |
 
 ---
 
@@ -228,16 +232,17 @@ Assuming the marketing site lives at a separate Cloudflare Pages repo (not `/wor
 marketing-pages-repo/
 ├── index.html                          # Homepage — services list (no change)
 ├── smriti/
-│   ├── index.html                      # Product page — hero + use-case cards (tighten Replay claim)
+│   ├── index.html                      # Product page — hero (add Replay caveat)
 │   └── demos/
-│       ├── grounded-research-memory.html   # NEW — create from template
 │       ├── trial-amendment-ledger.html     # No change
-│       ├── senescence-panel-consolidation.html  # Update to show proposals → approve
 │       ├── cb-209-synthesis.html           # No change
-│       └── denial-overturn.html            # Archive or demote
+│       ├── senescence-panel-consolidation.html  # Update to show proposals → approve
+│       └── denial-overturn.html            # No change (keep all four demos)
 └── assets/
     └── logo-mark.png                   # Biosync logo (already exists)
 ```
+
+**Grounded Research Memory** is NOT added to the marketing site. It lives in GitHub README + docs as an OSS wedge.
 
 ---
 
@@ -272,10 +277,11 @@ marketing-pages-repo/
 
 1. ✅ **Homepage** — no change needed (services list is accurate).
 2. ⚠️ **Product page hero** — add caveat to Replay primitive: "requires stored prompt + retrieval set; manual reconstruction from event log."
-3. ✅ **Product page use-case cards** — replace Denial Overturn with Grounded Research Memory.
-4. ✅ **Demo: senescence-panel-consolidation.html** — update to show `smriti proposals` → `smriti approve <id>` → schema formed with lineage (see THIS repo `/workspace/smriti-landing/public/demos/senescence-panel-consolidation.html` as reference; it already shows the flow correctly).
-5. 🆕 **Demo: grounded-research-memory.html** — create NEW demo showing wiki transaction rollback (see `/workspace/docs/use-case-grounded-research-memory.md` for copy).
-6. 📦 **Archive: denial-overturn.html** — demote or remove (redundant with trial-amendment-ledger bi-temporal story).
+3. ✅ **Product page use-case cards** — KEEP ALL FOUR (trial / CB-209 / senescence / denial). Do NOT replace Denial Overturn. It stays.
+4. ✅ **Demo: senescence-panel-consolidation.html** — update to show `smriti consolidate` → `smriti proposals` → `smriti approve <id>` → schema formed with lineage (see THIS repo `/workspace/smriti-landing/public/demos/senescence-panel-consolidation.html` as reference; already updated in this PR).
+5. ✅ **All other demos** — no changes (trial-amendment-ledger, cb-209-synthesis, denial-overturn stay as-is).
+
+**Grounded Research Memory is GitHub-only.** It is NOT added to the Biosync consulting marketing site (bio-sync.tech), which sells trial/IND/safety to pharma/biotech. The 11pm PhD-student pitch is an OSS activation wedge, not an enterprise consulting offer.
 
 ---
 
