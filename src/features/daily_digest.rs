@@ -144,7 +144,7 @@ impl DigestGenerator {
             })
             .collect();
 
-        topics.sort_by(|a, b| b.count.cmp(&a.count));
+        topics.sort_by_key(|a| std::cmp::Reverse(a.count));
         topics.truncate(10);
 
         Ok(topics)

@@ -674,7 +674,7 @@ mod tests {
                     true,
                     ScoreWeights::default(),
                     Thresholds::default(),
-                    None,  // No backend for test
+                    None, // No backend for test
                 )
             })
             .unwrap();
@@ -718,7 +718,7 @@ mod tests {
                     false,
                     ScoreWeights::default(),
                     thresholds,
-                    None,  // No backend for test
+                    None, // No backend for test
                 )
             })
             .unwrap();
@@ -785,7 +785,7 @@ mod tests {
                     false,
                     ScoreWeights::default(),
                     Thresholds::default(),
-                    None,  // No backend for test
+                    None, // No backend for test
                 )
             })
             .unwrap();
@@ -829,7 +829,7 @@ mod tests {
                     false,
                     ScoreWeights::default(),
                     thresholds,
-                    None,  // No backend for test
+                    None, // No backend for test
                 )
             })
             .unwrap();
@@ -881,11 +881,7 @@ mod tests {
                     "INSERT INTO consolidation_events
                      (id, note_id, event_type, score_before, score_after, reason, created_at)
                      VALUES (?1, ?2, 'flagged_for_review', NULL, 0.5, 'candidate', ?3)",
-                    params![
-                        Uuid::new_v4().to_string(),
-                        ep_b,
-                        Utc::now().to_rfc3339()
-                    ],
+                    params![Uuid::new_v4().to_string(), ep_b, Utc::now().to_rfc3339()],
                 )?)
             })
             .unwrap();
@@ -898,11 +894,7 @@ mod tests {
                     "INSERT INTO consolidation_events
                      (id, note_id, event_type, score_before, score_after, reason, created_at)
                      VALUES (?1, ?2, 'proposal_rejected', NULL, NULL, 'rejected by test', ?3)",
-                    params![
-                        Uuid::new_v4().to_string(),
-                        ep_b,
-                        Utc::now().to_rfc3339()
-                    ],
+                    params![Uuid::new_v4().to_string(), ep_b, Utc::now().to_rfc3339()],
                 )?)
             })
             .unwrap();
@@ -947,7 +939,10 @@ mod tests {
                 .map_err(|e| e.into())
             })
             .unwrap();
-        assert_eq!(schema_count, 0, "rejected proposal must not write schema_sources");
+        assert_eq!(
+            schema_count, 0,
+            "rejected proposal must not write schema_sources"
+        );
     }
 
     #[test]
@@ -956,7 +951,7 @@ mod tests {
         use crate::storage::Database;
 
         let db = Database::new(":memory:").unwrap();
-        
+
         // Create cluster of 3 similar notes
         let mut ids = vec![];
         for title in &["Episode A", "Episode B", "Episode C"] {
@@ -980,11 +975,7 @@ mod tests {
                     "INSERT INTO consolidation_events
                      (id, note_id, event_type, score_before, score_after, reason, created_at)
                      VALUES (?1, ?2, 'flagged_for_review', NULL, 0.5, 'candidate', ?3)",
-                    params![
-                        Uuid::new_v4().to_string(),
-                        &ids[0],
-                        Utc::now().to_rfc3339()
-                    ],
+                    params![Uuid::new_v4().to_string(), &ids[0], Utc::now().to_rfc3339()],
                 )?)
             })
             .unwrap();

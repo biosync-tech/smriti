@@ -13,16 +13,11 @@ use crate::storage::Database;
 /// Returns None if config missing or backend unavailable (non-fatal).
 fn try_create_backend_for_mcp() -> Option<crate::inference::SharedBackend> {
     use crate::inference::{create_backend, InferenceConfig};
-    
+
     let config = InferenceConfig::default();
-    
+
     match tokio::runtime::Handle::try_current() {
-        Ok(handle) => {
-            match handle.block_on(create_backend(&config)) {
-                Ok(backend) => Some(backend),
-                Err(_) => None,
-            }
-        }
+        Ok(handle) => handle.block_on(create_backend(&config)).ok(),
         Err(_) => None,
     }
 }

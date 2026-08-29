@@ -552,7 +552,10 @@ pub fn handle_init(db_path: &str) -> AppResult<()> {
     // Initialize the database
     let _db = Database::new(db_path)?;
 
-    println!("\n✓ Initialized Smriti database at: {}\n", abs_path.display());
+    println!(
+        "\n✓ Initialized Smriti database at: {}\n",
+        abs_path.display()
+    );
 
     // Print MCP configuration block
     println!("Add this to your Claude Desktop config (claude_desktop_config.json):\n");
@@ -560,7 +563,10 @@ pub fn handle_init(db_path: &str) -> AppResult<()> {
     println!("  \"mcpServers\": {{");
     println!("    \"smriti\": {{");
     println!("      \"command\": \"smriti\",");
-    println!("      \"args\": [\"mcp\", \"--db\", \"{}\"]", abs_path.display());
+    println!(
+        "      \"args\": [\"mcp\", \"--db\", \"{}\"]",
+        abs_path.display()
+    );
     println!("    }}");
     println!("  }}");
     println!("}}\n");
@@ -607,7 +613,7 @@ fn explain_schema_provenance(db: &Database, schema_id: &str, json: bool) -> AppR
              FROM schema_sources ss
              JOIN notes n ON n.id = ss.source_note_id
              WHERE ss.schema_id = ?1
-             ORDER BY ss.similarity_score DESC"
+             ORDER BY ss.similarity_score DESC",
         )?;
         let rows = stmt
             .query_map(rusqlite::params![schema_id], |r| {
@@ -647,7 +653,10 @@ fn explain_schema_provenance(db: &Database, schema_id: &str, json: bool) -> AppR
     if json {
         println!("{}", serde_json::to_string_pretty(&provenance)?);
     } else {
-        println!("WikiSkill Provenance for Schema: {}", provenance.schema_title);
+        println!(
+            "WikiSkill Provenance for Schema: {}",
+            provenance.schema_title
+        );
         println!("  Schema ID: {}", provenance.schema_id);
         println!("  Source Episodes ({}):", provenance.source_episodes.len());
         for ep in &provenance.source_episodes {
@@ -664,34 +673,6 @@ fn explain_schema_provenance(db: &Database, schema_id: &str, json: bool) -> AppR
     Ok(())
 }
 
-/// Try to create an inference backend for schema formation.
-/// Returns None if config missing or backend unavailable (non-fatal).
-fn try_create_backend_for_consolidation() -> Option<crate::inference::SharedBackend> {
-    use crate::inference::{create_backend, InferenceConfig};
-    
-    // Try to load config from env or default locations
-    let config = InferenceConfig::default();
-    
-    // Attempt backend creation (may fail if Ollama not running, etc.)
-    match tokio::runtime::Handle::try_current() {
-        Ok(handle) => {
-            match handle.block_on(create_backend(&config)) {
-                Ok(backend) => {
-                    tracing::info!("Inference backend available for schema formation: {}", backend.name());
-                    Some(backend)
-                }
-                Err(e) => {
-                    tracing::debug!("Inference backend unavailable (will fall back to Extractive): {}", e);
-                    None
-                }
-            }
-        }
-        Err(_) => {
-            tracing::debug!("No tokio runtime for inference backend");
-            None
-        }
-    }
-}
 
 /// Handle `smriti consolidate` — run CLS-inspired consolidation pass.
 pub fn handle_consolidate(
@@ -702,7 +683,7 @@ pub fn handle_consolidate(
     json: bool,
 ) -> AppResult<()> {
     use crate::features::consolidation::{
-        run_consolidation_pass, explain_score, ConsolidationPolicy, ScoreWeights, Thresholds,
+        explain_score, run_consolidation_pass, ConsolidationPolicy, ScoreWeights, Thresholds,
     };
 
     let policy = match policy_str {
@@ -734,31 +715,45 @@ pub fn handle_consolidate(
             explain_schema_provenance(db, &note_id, json)?;
         } else {
             // Show consolidation score breakdown for episode notes
-            let breakdown = db.execute(|conn| {
-                explain_score(conn, &note_id, ScoreWeights::default())
-            })?;
+            let breakdown =
+                db.execute(|conn| explain_score(conn, &note_id, ScoreWeights::default()))?;
             if json {
                 println!("{}", serde_json::to_string_pretty(&breakdown)?);
             } else {
-                println!("Consolidation score breakdown for note {}:", breakdown.note_id);
+                println!(
+                    "Consolidation score breakdown for note {}:",
+                    breakdown.note_id
+                );
                 println!("  Cascade salience:    {:.6}", breakdown.cascade_salience);
                 println!("  Degree (link count): {}", breakdown.degree);
                 println!("  Context diversity:   {:.3}", breakdown.context_diversity);
                 println!();
-                println!("  Salience component:  {:.4}  (weight × salience)", breakdown.salience_component);
-                println!("  Degree component:    {:.4}  (weight × ln(1+degree))", breakdown.degree_component);
-                println!("  Diversity component: {:.4}  (weight × diversity)", breakdown.diversity_component);
+                println!(
+                    "  Salience component:  {:.4}  (weight × salience)",
+                    breakdown.salience_component
+                );
+                println!(
+                    "  Degree component:    {:.4}  (weight × ln(1+degree))",
+                    breakdown.degree_component
+                );
+                println!(
+                    "  Diversity component: {:.4}  (weight × diversity)",
+                    breakdown.diversity_component
+                );
                 println!();
                 println!("  Raw sum:             {:.4}", breakdown.raw_sum);
-                println!("  Final score:         {:.4}  (sigmoid(raw_sum))", breakdown.score);
+                println!(
+                    "  Final score:         {:.4}  (sigmoid(raw_sum))",
+                    breakdown.score
+                );
             }
         }
         return Ok(());
     }
 
-    // Try to create an inference backend for Llm mode (optional)
-    // Falls back to Extractive if backend unavailable or not configured
-    let backend = try_create_backend_for_consolidation();
+    // CLI context: no tokio runtime for LLM backend
+    // MCP server has its own runtime and can use Llm mode
+    let backend = None;
 
     // Run full consolidation pass
     let report = db.execute(|conn| {
@@ -776,7 +771,10 @@ pub fn handle_consolidate(
         println!("{}", serde_json::to_string_pretty(&report)?);
     } else {
         let mode = if dry_run { "(dry run)" } else { "" };
-        println!("Consolidation pass complete {} — policy: {:?}", mode, report.policy);
+        println!(
+            "Consolidation pass complete {} — policy: {:?}",
+            mode, report.policy
+        );
         println!("  Scanned:  {} episode notes", report.scanned);
         println!("  Promoted: {} schema(s)", report.promoted.len());
         println!("  Flagged:  {} for review", report.flagged.len());
@@ -799,7 +797,10 @@ pub fn handle_consolidate(
                 }
             }
         } else if report.flagged.len() > 10 {
-            println!("\n{} notes flagged (showing first 10):", report.flagged.len());
+            println!(
+                "\n{} notes flagged (showing first 10):",
+                report.flagged.len()
+            );
             for id in report.flagged.iter().take(10) {
                 if let Some(reason) = report.reasons.get(id) {
                     println!("  {} — {}", &id[..8], reason);
@@ -843,7 +844,7 @@ pub fn handle_proposals(db: &Database, json: bool) -> AppResult<()> {
              AND n.node_type = 'episode'
              AND n.parent_schema_id IS NULL
              ORDER BY ce.created_at DESC
-             LIMIT 50"
+             LIMIT 50",
         )?;
         let rows = stmt
             .query_map([], |r| {
@@ -880,8 +881,8 @@ pub fn handle_proposals(db: &Database, json: bool) -> AppResult<()> {
 /// Approve a flagged schema proposal (Conservative policy).
 /// Actually forms the schema by clustering similar notes and calling form_schemas.
 pub fn handle_approve_proposal(db: &Database, cluster_id: &str) -> AppResult<()> {
-    use crate::features::schema_formation::{form_schemas, SchemaFormationConfig, AbstractionMode};
-    
+    use crate::features::schema_formation::{form_schemas, AbstractionMode, SchemaFormationConfig};
+
     // Check that the note is flagged
     let is_flagged: bool = db.execute(|conn| {
         conn.query_row(
@@ -895,7 +896,8 @@ pub fn handle_approve_proposal(db: &Database, cluster_id: &str) -> AppResult<()>
 
     if !is_flagged {
         return Err(crate::errors::AppError::BadRequest(format!(
-            "Note {} is not flagged for review", cluster_id
+            "Note {} is not flagged for review",
+            cluster_id
         )));
     }
 
@@ -911,7 +913,8 @@ pub fn handle_approve_proposal(db: &Database, cluster_id: &str) -> AppResult<()>
 
     if !has_embedding {
         return Err(crate::errors::AppError::BadRequest(format!(
-            "Note {} has no embedding; cannot cluster for schema formation", cluster_id
+            "Note {} has no embedding; cannot cluster for schema formation",
+            cluster_id
         )));
     }
 
@@ -923,7 +926,8 @@ pub fn handle_approve_proposal(db: &Database, cluster_id: &str) -> AppResult<()>
             rusqlite::params![cluster_id],
             |r| {
                 let blob: Vec<u8> = r.get(0)?;
-                Ok(blob.chunks(4)
+                Ok(blob
+                    .chunks(4)
                     .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
                     .collect())
             },
@@ -937,12 +941,13 @@ pub fn handle_approve_proposal(db: &Database, cluster_id: &str) -> AppResult<()>
              JOIN notes n ON n.id = v.note_id
              WHERE v.note_id != ?1
              AND n.node_type = 'episode'
-             AND n.parent_schema_id IS NULL"
+             AND n.parent_schema_id IS NULL",
         )?;
         let rows = stmt.query_map(rusqlite::params![cluster_id], |r| {
             let nid: String = r.get(0)?;
             let blob: Vec<u8> = r.get(1)?;
-            let emb: Vec<f32> = blob.chunks(4)
+            let emb: Vec<f32> = blob
+                .chunks(4)
                 .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
                 .collect();
             Ok((nid, emb))
@@ -962,12 +967,14 @@ pub fn handle_approve_proposal(db: &Database, cluster_id: &str) -> AppResult<()>
     // Enforce min_cluster_size (default 3)
     if cluster.len() < 3 {
         return Err(crate::errors::AppError::BadRequest(format!(
-            "Cluster too small ({} notes); need at least 3 for schema formation", cluster.len()
+            "Cluster too small ({} notes); need at least 3 for schema formation",
+            cluster.len()
         )));
     }
 
-    // Try to create backend
-    let backend = try_create_backend_for_consolidation();
+    // CLI context: no tokio runtime for backend creation
+    // Backend only available via MCP server (which has its own runtime)
+    let backend = None;
     let mode = if backend.is_some() {
         AbstractionMode::Llm
     } else {
@@ -983,7 +990,7 @@ pub fn handle_approve_proposal(db: &Database, cluster_id: &str) -> AppResult<()>
                 min_similarity: 0.85,
                 mode,
             },
-            false,  // NOT dry run
+            false, // NOT dry run
             Some(&cluster),
             backend,
         )
@@ -991,7 +998,7 @@ pub fn handle_approve_proposal(db: &Database, cluster_id: &str) -> AppResult<()>
 
     if report.created.is_empty() {
         return Err(crate::errors::AppError::BadRequest(
-            "Schema formation failed; no schema created".into()
+            "Schema formation failed; no schema created".into(),
         ));
     }
 
@@ -1036,7 +1043,8 @@ pub fn handle_reject_proposal(db: &Database, cluster_id: &str, reason: &str) -> 
 
     if !is_flagged {
         return Err(crate::errors::AppError::BadRequest(format!(
-            "Note {} is not flagged for review", cluster_id
+            "Note {} is not flagged for review",
+            cluster_id
         )));
     }
 

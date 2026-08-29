@@ -1827,7 +1827,7 @@ mod tests {
         db.store_embedding(&note.id, &vec![0.1_f32; 384], Some("all-minilm"))
             .unwrap();
         let err = db
-            .store_embedding(&note.id, &vec![0.1_f32; 8], Some("toy-model"))
+            .store_embedding(&note.id, &[0.1_f32; 8], Some("toy-model"))
             .unwrap_err();
         let msg = err.to_string();
         assert!(

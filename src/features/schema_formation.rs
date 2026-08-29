@@ -222,7 +222,9 @@ pub fn form_schemas(
                     // Create LLM schema via tokio Runtime (isolation: not on request path)
                     create_llm_schema_sync(conn, &member_ids, mean, backend_arc.clone())?
                 } else {
-                    tracing::warn!("Llm mode requested but no backend available; falling back to extractive");
+                    tracing::warn!(
+                        "Llm mode requested but no backend available; falling back to extractive"
+                    );
                     create_extractive_schema(conn, &member_ids, mean)?
                 };
                 report.created.push(formed);
@@ -254,8 +256,8 @@ fn load_episode_embeddings(conn: &Connection) -> AppResult<Vec<(String, Vec<f32>
             continue;
         }
         let mut vec = Vec::with_capacity(blob.len() / 4);
-        for chunk in blob.chunks_exact(4) {
-            vec.push(f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]));
+        for chunk in blob.as_chunks::<4>().0 {
+            vec.push(f32::from_le_bytes(*chunk));
         }
         items.push((id, vec));
     }
@@ -314,10 +316,11 @@ fn create_llm_schema_sync(
         let task = handle.spawn(async move {
             create_llm_abstraction(&episodes_clone, mean_similarity, backend_clone).await
         });
-        
+
         // Wait for the spawned task (but other tokio tasks can run concurrently)
-        handle.block_on(task)
-            .map_err(|e| crate::errors::AppError::BadRequest(format!("LLM task panicked: {}", e)))??
+        handle.block_on(task).map_err(|e| {
+            crate::errors::AppError::BadRequest(format!("LLM task panicked: {}", e))
+        })??
     };
 
     // Write schema to database
@@ -373,7 +376,7 @@ fn create_llm_schema_sync(
 
 /// Async LLM abstraction generation (pure, no DB I/O).
 async fn create_llm_abstraction(
-    episodes: &[(String, String, String)],  // (id, title, content)
+    episodes: &[(String, String, String)], // (id, title, content)
     _mean_similarity: f32,
     backend: crate::inference::SharedBackend,
 ) -> AppResult<(String, String)> {
@@ -390,16 +393,17 @@ async fn create_llm_abstraction(
     // Call LLM
     let req = GenerateRequest {
         prompt,
-        system: Some("You are a knowledge graph curator. Create concise, structured abstractions.".into()),
+        system: Some(
+            "You are a knowledge graph curator. Create concise, structured abstractions.".into(),
+        ),
         max_tokens: Some(512),
         temperature: Some(0.3),
         ..Default::default()
     };
 
-    let resp = backend
-        .generate(&req)
-        .await
-        .map_err(|e: InferenceError| crate::errors::AppError::BadRequest(format!("LLM generation failed: {}", e)))?;
+    let resp = backend.generate(&req).await.map_err(|e: InferenceError| {
+        crate::errors::AppError::BadRequest(format!("LLM generation failed: {}", e))
+    })?;
 
     // Parse the LLM response
     parse_llm_schema_response(&resp.text, episodes)
@@ -408,7 +412,7 @@ async fn create_llm_abstraction(
 /// Parse LLM response into (title, abstract). Fallback if parsing fails.
 fn parse_llm_schema_response(
     response: &str,
-    episodes: &[(String, String, String)],  // (id, title, content)
+    episodes: &[(String, String, String)], // (id, title, content)
 ) -> AppResult<(String, String)> {
     // Try to extract "Title:" and "Abstract:" from the response
     let title = if let Some(title_start) = response.find("Title:") {
@@ -417,7 +421,13 @@ fn parse_llm_schema_response(
         title_line[..title_end].trim().to_string()
     } else {
         // Fallback: use first episode title as basis
-        format!("Schema: {}", episodes.first().map(|(_id, t, _c)| t.as_str()).unwrap_or("Concept"))
+        format!(
+            "Schema: {}",
+            episodes
+                .first()
+                .map(|(_id, t, _c)| t.as_str())
+                .unwrap_or("Concept")
+        )
     };
 
     let abstract_text = if let Some(abstract_start) = response.find("Abstract:") {
@@ -615,7 +625,7 @@ mod tests {
                     },
                     false,
                     None,
-                    None,  // No backend for extractive mode
+                    None, // No backend for extractive mode
                 )
             })
             .unwrap();
@@ -660,7 +670,7 @@ mod tests {
                     },
                     false,
                     Some(&[]),
-                    None,  // No backend
+                    None, // No backend
                 )
             })
             .unwrap();
@@ -702,12 +712,16 @@ mod tests {
                     },
                     false,
                     None,
-                    None,  // No backend (extractive mode)
+                    None, // No backend (extractive mode)
                 )
             })
             .unwrap();
 
-        assert_eq!(report.created.len(), 1, "should create one extractive schema");
+        assert_eq!(
+            report.created.len(),
+            1,
+            "should create one extractive schema"
+        );
         let schema = &report.created[0];
         assert_eq!(schema.source_ids.len(), 3);
 
@@ -791,16 +805,22 @@ mod tests {
         // All episodes must remain
         let count: i64 = db
             .execute(|conn| {
-                conn.query_row("SELECT COUNT(*) FROM notes WHERE node_type = 'episode'", [], |r| {
-                    r.get(0)
-                })
+                conn.query_row(
+                    "SELECT COUNT(*) FROM notes WHERE node_type = 'episode'",
+                    [],
+                    |r| r.get(0),
+                )
                 .map_err(|e| e.into())
             })
             .unwrap();
         assert!(count >= 3, "all episodes must remain, found {}", count);
 
         for id in &ids {
-            assert!(db.get_note(id).is_ok(), "episode {} was deleted (forbidden)", id);
+            assert!(
+                db.get_note(id).is_ok(),
+                "episode {} was deleted (forbidden)",
+                id
+            );
         }
     }
 }

@@ -69,7 +69,7 @@ pub async fn embed_note_ids(
     }
 
     let model = backend.name().to_string();
-    for ((note_id, _), embedding) in texts.iter().zip(embeddings.into_iter()) {
+    for ((note_id, _), embedding) in texts.iter().zip(embeddings) {
         db.store_embedding(note_id, &embedding, Some(&model))
             .map_err(|e| InferenceError::GenerationFailed(format!("Failed to store: {}", e)))?;
     }
@@ -258,7 +258,7 @@ mod tests {
             })
             .unwrap();
         let backend: SharedBackend = Arc::new(MockBackend::new("unused"));
-        let n = embed_note_ids(&db, &backend, &[note.id.clone()])
+        let n = embed_note_ids(&db, &backend, std::slice::from_ref(&note.id))
             .await
             .unwrap();
         assert_eq!(n, 1);
