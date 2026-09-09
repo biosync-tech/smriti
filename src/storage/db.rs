@@ -366,7 +366,13 @@ impl Database {
              ON llm_audit(tool_name, created_at DESC);",
         );
 
-        // ── Migration 011: Benna-Fusi cascade synapses ───────────────────
+        // ── Migration 011: Generic edge attributes (Google PG Φ) ─────────
+        // Research ref: Google Procedural Graphs arXiv:2609.09153 §3.1
+        // Stores {condition, guidance, pitfalls, ...} as JSON on edges.
+        // Example: {"condition": "runway < 6mo", "guidance": "submit early"}
+        let _ = conn.execute_batch("ALTER TABLE links ADD COLUMN attributes TEXT;");
+
+        // ── Migration 012: Benna-Fusi cascade synapses ───────────────────
         // Research ref: Benna & Fusi 2016 — "Computational principles of
         // synaptic memory consolidation," Nature Neuroscience 19, 1697–1706.
         //

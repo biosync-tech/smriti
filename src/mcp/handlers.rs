@@ -713,3 +713,167 @@ pub fn handle_retrieve_context(db: &Database, args: &Value) -> Result<Value, Str
         "query": query,
     }))
 }
+
+/// Google PG-inspired graph guidance tool (Ψ).
+/// Returns local neighborhood + edge attributes to guide next actions.
+/// Research ref: Google Procedural Graphs arXiv:2609.09153 §3.2
+pub fn handle_notes_graph_guidance(db: &Database, args: &Value) -> Result<Value, String> {
+    let note_id = args
+        .get("note_id")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing 'note_id'")?;
+    
+    let hop_count = args
+        .get("hop_count")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(2) as usize;
+    
+    // Log traversal for consolidation scoring
+    let note_id_owned = note_id.to_string();
+    let _ = db.execute(move |conn| {
+        consolidation::log_access(conn, &note_id_owned, AccessKind::GraphTraverse, None, None)
+    });
+    
+    // Verify note exists
+    let center_note = db.get_note(note_id).map_err(|e| e.to_string())?;
+    
+    // Get all links to build the graph
+    let links = db.get_all_links().map_err(|e| e.to_string())?;
+    
+    // Get all notes for titles
+    let notes = db
+        .list_notes(&NoteListQuery {
+            limit: 10000,
+            offset: 0,
+            sort: SortOrder::UpdatedDesc,
+            tag: None,
+        })
+        .map_err(|e| e.to_string())?;
+    
+    let mut titles: HashMap<String, String> = HashMap::new();
+    let mut tag_counts: HashMap<String, usize> = HashMap::new();
+    for note in &notes {
+        titles.insert(note.id.clone(), note.title.clone());
+        tag_counts.insert(note.id.clone(), note.tag_count);
+    }
+    
+    let kg = KnowledgeGraph::from_links(&links, &titles, &tag_counts);
+    
+    // BFS traversal for h-hop neighborhood
+    let mut visited = HashSet::new();
+    let mut current_layer = vec![note_id.to_string()];
+    let mut local_context: Vec<serde_json::Value> = Vec::new();
+    visited.insert(note_id.to_string());
+    
+    for hop in 0..hop_count {
+        let mut next_layer = Vec::new();
+        
+        for current_id in &current_layer {
+            // Find all links from this node
+            for link in &links {
+                let (target_id, direction) = if link.source_note_id == *current_id {
+                    (link.target_note_id.clone(), "outbound")
+                } else if link.target_note_id == *current_id {
+                    (link.source_note_id.clone(), "inbound")
+                } else {
+                    continue;
+                };
+                
+                // Skip if already visited or invalid
+                if visited.contains(&target_id) || !link.is_currently_valid() {
+                    continue;
+                }
+                
+                visited.insert(target_id.clone());
+                next_layer.push(target_id.clone());
+                
+                // Get target note details
+                if let Ok(target_note) = db.get_note(&target_id) {
+                    let mut context_item = serde_json::json!({
+                        "note_id": target_note.id,
+                        "title": target_note.title,
+                        "link_type": link.link_type.as_str(),
+                        "direction": direction,
+                        "hop_distance": hop + 1,
+                        "consolidation_score": target_note.consolidation_score,
+                    });
+                    
+                    // Include attributes if present (Google PG's Φ)
+                    if let Some(ref attrs) = link.attributes {
+                        context_item["attributes"] = attrs.clone();
+                    }
+                    
+                    local_context.push(context_item);
+                }
+            }
+        }
+        
+        current_layer = next_layer;
+        if current_layer.is_empty() {
+            break;
+        }
+    }
+    
+    // Generate suggested next actions based on attributes and structure
+    let mut suggestions = Vec::new();
+    
+    // Look for guidance attributes
+    for item in &local_context {
+        if let Some(attrs) = item.get("attributes") {
+            if let Some(guidance) = attrs.get("guidance").and_then(|v| v.as_str()) {
+                suggestions.push(serde_json::json!({
+                    "action": "follow_guidance",
+                    "note_id": item["note_id"],
+                    "guidance": guidance,
+                }));
+            }
+            
+            if let Some(condition) = attrs.get("condition").and_then(|v| v.as_str()) {
+                suggestions.push(serde_json::json!({
+                    "action": "check_condition",
+                    "note_id": item["note_id"],
+                    "condition": condition,
+                }));
+            }
+            
+            if let Some(pitfalls) = attrs.get("pitfalls").and_then(|v| v.as_str()) {
+                suggestions.push(serde_json::json!({
+                    "action": "avoid_pitfall",
+                    "note_id": item["note_id"],
+                    "pitfall": pitfalls,
+                }));
+            }
+        }
+    }
+    
+    // Suggest highly-connected notes (high consolidation_score)
+    let high_score_notes: Vec<_> = local_context
+        .iter()
+        .filter(|item| {
+            item.get("consolidation_score")
+                .and_then(|v| v.as_f64())
+                .map(|s| s > 0.7)
+                .unwrap_or(false)
+        })
+        .collect();
+    
+    if !high_score_notes.is_empty() {
+        suggestions.push(serde_json::json!({
+            "action": "review_central_nodes",
+            "notes": high_score_notes.iter().map(|n| n["note_id"].clone()).collect::<Vec<_>>(),
+            "reason": "These nodes have high consolidation scores (>0.7) and are central to this subgraph",
+        }));
+    }
+    
+    Ok(serde_json::json!({
+        "center_note": {
+            "id": center_note.id,
+            "title": center_note.title,
+            "consolidation_score": center_note.consolidation_score,
+        },
+        "hop_count": hop_count,
+        "neighborhood_size": local_context.len(),
+        "local_context": local_context,
+        "suggested_actions": suggestions,
+    }))
+}
