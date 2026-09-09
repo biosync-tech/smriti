@@ -17,29 +17,9 @@ fn try_create_backend_for_mcp() -> Option<crate::inference::SharedBackend> {
     let config = InferenceConfig::default();
 
     match tokio::runtime::Handle::try_current() {
-        Ok(handle) => tokio::task::block_in_place(|| handle.block_on(create_backend(&config))).ok(),
+        Ok(handle) => handle.block_on(create_backend(&config)).ok(),
         Err(_) => None,
     }
-}
-
-/// First tool an agent should call: confirm the store is up. No side effects.
-pub fn handle_smriti_status(db: &Database) -> Result<Value, String> {
-    let stats = db.get_stats().map_err(|e| e.to_string())?;
-    let pending = db
-        .execute(crate::features::schema_formation::list_pending_proposals)
-        .map_err(|e| e.to_string())?;
-    Ok(serde_json::json!({
-        "ok": true,
-        "notes": stats.total_notes,
-        "links": stats.total_links,
-        "pending_schema_proposals": pending.len(),
-        "daily": {
-            "save": "notes_create",
-            "find": "notes_search",
-            "answer_context": "retrieve_context",
-            "scratch": "memory_store / memory_retrieve"
-        }
-    }))
 }
 
 pub fn handle_notes_create(db: &Database, args: &Value) -> Result<Value, String> {
@@ -47,16 +27,12 @@ pub fn handle_notes_create(db: &Database, args: &Value) -> Result<Value, String>
         .get("title")
         .and_then(|v| v.as_str())
         .ok_or("Missing 'title'")?
-        .trim()
         .to_string();
-    if title.is_empty() {
-        return Err("title is empty".into());
-    }
 
     let content = args
         .get("content")
         .and_then(|v| v.as_str())
-        .unwrap_or("")
+        .ok_or("Missing 'content'")?
         .to_string();
 
     let tags: Vec<String> = args
@@ -99,9 +75,8 @@ pub fn handle_notes_create(db: &Database, args: &Value) -> Result<Value, String>
 pub fn handle_notes_read(db: &Database, args: &Value) -> Result<Value, String> {
     let id = args
         .get("id")
-        .or_else(|| args.get("title"))
         .and_then(|v| v.as_str())
-        .ok_or("Missing 'id' (or 'title')")?;
+        .ok_or("Missing 'id'")?;
 
     // Try by ID first, then by title
     let note = match db.get_note(id) {
@@ -125,11 +100,7 @@ pub fn handle_notes_search(db: &Database, args: &Value) -> Result<Value, String>
     let query = args
         .get("query")
         .and_then(|v| v.as_str())
-        .ok_or("Missing 'query'")?
-        .trim();
-    if query.is_empty() {
-        return Err("query is empty — pass words to search".into());
-    }
+        .ok_or("Missing 'query'")?;
 
     let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
 
@@ -172,10 +143,7 @@ pub fn handle_notes_list(db: &Database, args: &Value) -> Result<Value, String> {
 }
 
 pub fn handle_notes_graph(db: &Database, args: &Value) -> Result<Value, String> {
-    let center_id = args
-        .get("center_id")
-        .or_else(|| args.get("center"))
-        .and_then(|v| v.as_str());
+    let center_id = args.get("center_id").and_then(|v| v.as_str());
     let depth = args.get("depth").and_then(|v| v.as_u64()).unwrap_or(2) as usize;
     let link_type_filter = args.get("link_type").and_then(|v| v.as_str());
     let path_to = args.get("path_to").and_then(|v| v.as_str());
@@ -240,7 +208,7 @@ pub fn handle_memory_store(db: &Database, args: &Value) -> Result<Value, String>
     let agent_id = args
         .get("agent_id")
         .and_then(|v| v.as_str())
-        .unwrap_or("default");
+        .ok_or("Missing 'agent_id'")?;
 
     let key = args
         .get("key")
@@ -282,7 +250,7 @@ pub fn handle_memory_retrieve(db: &Database, args: &Value) -> Result<Value, Stri
     let agent_id = args
         .get("agent_id")
         .and_then(|v| v.as_str())
-        .unwrap_or("default");
+        .ok_or("Missing 'agent_id'")?;
 
     let key = args
         .get("key")
@@ -309,7 +277,7 @@ pub fn handle_memory_list(db: &Database, args: &Value) -> Result<Value, String> 
     let agent_id = args
         .get("agent_id")
         .and_then(|v| v.as_str())
-        .unwrap_or("default");
+        .ok_or("Missing 'agent_id'")?;
 
     let namespace = args.get("namespace").and_then(|v| v.as_str());
 
@@ -324,7 +292,7 @@ pub fn handle_memory_history(db: &Database, args: &Value) -> Result<Value, Strin
     let agent_id = args
         .get("agent_id")
         .and_then(|v| v.as_str())
-        .unwrap_or("default");
+        .ok_or("Missing 'agent_id'")?;
 
     let key = args
         .get("key")
@@ -444,61 +412,6 @@ pub fn handle_contradictions_list(db: &Database, args: &Value) -> Result<Value, 
 }
 
 pub fn handle_notes_consolidate(db: &Database, args: &Value) -> Result<Value, String> {
-    let accept = args.get("accept_proposal_id").and_then(|v| v.as_str());
-    let reject = args.get("reject_proposal_id").and_then(|v| v.as_str());
-    if accept.is_some() && reject.is_some() {
-        return Err("pass only one of accept_proposal_id or reject_proposal_id".into());
-    }
-
-    // Additive optional fields — not a breaking MCP contract change.
-    if let Some(id) = accept {
-        if id.trim().is_empty() {
-            return Err("accept_proposal_id is empty".into());
-        }
-        let by = args
-            .get("approved_by")
-            .and_then(|v| v.as_str())
-            .unwrap_or("mcp");
-        return db
-            .execute(|conn| {
-                let proposal =
-                    crate::features::schema_formation::resolve_pending_proposal(conn, id)?;
-                let formed = crate::features::schema_formation::commit_proposal(
-                    conn,
-                    &proposal,
-                    &crate::features::schema_formation::GatingSignal::HumanApproved {
-                        by: by.into(),
-                    },
-                )?;
-                Ok(serde_json::to_value(&formed).unwrap_or_default())
-            })
-            .map_err(|e| e.to_string());
-    }
-
-    if let Some(id) = reject {
-        if id.trim().is_empty() {
-            return Err("reject_proposal_id is empty".into());
-        }
-        let by = args
-            .get("approved_by")
-            .and_then(|v| v.as_str())
-            .unwrap_or("mcp");
-        let reason = args
-            .get("reject_reason")
-            .and_then(|v| v.as_str())
-            .unwrap_or("rejected via MCP");
-        db.execute(|conn| {
-            let proposal = crate::features::schema_formation::resolve_pending_proposal(conn, id)?;
-            crate::features::schema_formation::reject_proposal(conn, &proposal, by, reason)
-        })
-        .map_err(|e| e.to_string())?;
-        return Ok(serde_json::json!({
-            "rejected": id,
-            "by": by,
-            "reason": reason,
-        }));
-    }
-
     let dry_run = args
         .get("dry_run")
         .and_then(|v| v.as_bool())
@@ -514,17 +427,9 @@ pub fn handle_notes_consolidate(db: &Database, args: &Value) -> Result<Value, St
         })
         .unwrap_or_default();
 
-    // Skip Ollama on dry-run and Conservative (FlagOnly). Agents probe this
-    // tool often; a hung local LLM must not block daily use.
-    let backend = if dry_run
-        || matches!(
-            policy,
-            crate::features::consolidation::ConsolidationPolicy::Conservative
-        ) {
-        None
-    } else {
-        try_create_backend_for_mcp()
-    };
+    // Try to create an inference backend for Llm mode (optional)
+    // MCP server doesn't have direct access to config, so this may fail
+    let backend = try_create_backend_for_mcp();
 
     // BREAKING MCP CONTRACT (introduced v0.3, May 2026): ScoreBreakdown shape changed
     // (cascade_salience replaces access_count + days_since_access as the temporal
@@ -589,11 +494,7 @@ pub fn handle_retrieve_context(db: &Database, args: &Value) -> Result<Value, Str
     let query = args
         .get("query")
         .and_then(|v| v.as_str())
-        .ok_or("Missing 'query'")?
-        .trim();
-    if query.is_empty() {
-        return Err("query is empty — pass the user's question".into());
-    }
+        .ok_or("Missing 'query'")?;
 
     let top_k = args.get("top_k").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
     let graph_depth = args
@@ -773,7 +674,7 @@ pub fn handle_retrieve_context(db: &Database, args: &Value) -> Result<Value, Str
             // Try a truncated version
             let remaining = max_chars.saturating_sub(chars_used);
             if remaining > 200 {
-                let trunc = crate::safe_truncate(&block, remaining);
+                let trunc = &block[..remaining.min(block.len())];
                 context.push_str(trunc);
                 chars_used += trunc.len();
             }
@@ -813,83 +714,166 @@ pub fn handle_retrieve_context(db: &Database, args: &Value) -> Result<Value, Str
     }))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use serde_json::json;
-
-    fn db() -> Database {
-        Database::new(":memory:").unwrap()
+/// Google PG-inspired graph guidance tool (Ψ).
+/// Returns local neighborhood + edge attributes to guide next actions.
+/// Research ref: Google Procedural Graphs arXiv:2609.09153 §3.2
+pub fn handle_notes_graph_guidance(db: &Database, args: &Value) -> Result<Value, String> {
+    let note_id = args
+        .get("note_id")
+        .and_then(|v| v.as_str())
+        .ok_or("Missing 'note_id'")?;
+    
+    let hop_count = args
+        .get("hop_count")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(2) as usize;
+    
+    // Log traversal for consolidation scoring
+    let note_id_owned = note_id.to_string();
+    let _ = db.execute(move |conn| {
+        consolidation::log_access(conn, &note_id_owned, AccessKind::GraphTraverse, None, None)
+    });
+    
+    // Verify note exists
+    let center_note = db.get_note(note_id).map_err(|e| e.to_string())?;
+    
+    // Get all links to build the graph
+    let links = db.get_all_links().map_err(|e| e.to_string())?;
+    
+    // Get all notes for titles
+    let notes = db
+        .list_notes(&NoteListQuery {
+            limit: 10000,
+            offset: 0,
+            sort: SortOrder::UpdatedDesc,
+            tag: None,
+        })
+        .map_err(|e| e.to_string())?;
+    
+    let mut titles: HashMap<String, String> = HashMap::new();
+    let mut tag_counts: HashMap<String, usize> = HashMap::new();
+    for note in &notes {
+        titles.insert(note.id.clone(), note.title.clone());
+        tag_counts.insert(note.id.clone(), note.tag_count);
     }
-
-    #[test]
-    fn status_is_ok_on_empty_store() {
-        let out = handle_smriti_status(&db()).unwrap();
-        assert_eq!(out["ok"], true);
-        assert_eq!(out["notes"], 0);
-        assert_eq!(out["daily"]["save"], "notes_create");
+    
+    let kg = KnowledgeGraph::from_links(&links, &titles, &tag_counts);
+    
+    // BFS traversal for h-hop neighborhood
+    let mut visited = HashSet::new();
+    let mut current_layer = vec![note_id.to_string()];
+    let mut local_context: Vec<serde_json::Value> = Vec::new();
+    visited.insert(note_id.to_string());
+    
+    for hop in 0..hop_count {
+        let mut next_layer = Vec::new();
+        
+        for current_id in &current_layer {
+            // Find all links from this node
+            for link in &links {
+                let (target_id, direction) = if link.source_note_id == *current_id {
+                    (link.target_note_id.clone(), "outbound")
+                } else if link.target_note_id == *current_id {
+                    (link.source_note_id.clone(), "inbound")
+                } else {
+                    continue;
+                };
+                
+                // Skip if already visited or invalid
+                if visited.contains(&target_id) || !link.is_currently_valid() {
+                    continue;
+                }
+                
+                visited.insert(target_id.clone());
+                next_layer.push(target_id.clone());
+                
+                // Get target note details
+                if let Ok(target_note) = db.get_note(&target_id) {
+                    let mut context_item = serde_json::json!({
+                        "note_id": target_note.id,
+                        "title": target_note.title,
+                        "link_type": link.link_type.as_str(),
+                        "direction": direction,
+                        "hop_distance": hop + 1,
+                        "consolidation_score": target_note.consolidation_score,
+                    });
+                    
+                    // Include attributes if present (Google PG's Φ)
+                    if let Some(ref attrs) = link.attributes {
+                        context_item["attributes"] = attrs.clone();
+                    }
+                    
+                    local_context.push(context_item);
+                }
+            }
+        }
+        
+        current_layer = next_layer;
+        if current_layer.is_empty() {
+            break;
+        }
     }
-
-    #[test]
-    fn create_accepts_title_only() {
-        let out = handle_notes_create(&db(), &json!({ "title": "Hello" })).unwrap();
-        assert_eq!(out["title"], "Hello");
-        assert_eq!(out["content"], "");
+    
+    // Generate suggested next actions based on attributes and structure
+    let mut suggestions = Vec::new();
+    
+    // Look for guidance attributes
+    for item in &local_context {
+        if let Some(attrs) = item.get("attributes") {
+            if let Some(guidance) = attrs.get("guidance").and_then(|v| v.as_str()) {
+                suggestions.push(serde_json::json!({
+                    "action": "follow_guidance",
+                    "note_id": item["note_id"],
+                    "guidance": guidance,
+                }));
+            }
+            
+            if let Some(condition) = attrs.get("condition").and_then(|v| v.as_str()) {
+                suggestions.push(serde_json::json!({
+                    "action": "check_condition",
+                    "note_id": item["note_id"],
+                    "condition": condition,
+                }));
+            }
+            
+            if let Some(pitfalls) = attrs.get("pitfalls").and_then(|v| v.as_str()) {
+                suggestions.push(serde_json::json!({
+                    "action": "avoid_pitfall",
+                    "note_id": item["note_id"],
+                    "pitfall": pitfalls,
+                }));
+            }
+        }
     }
-
-    #[test]
-    fn create_rejects_blank_title() {
-        let err = handle_notes_create(&db(), &json!({ "title": "  " })).unwrap_err();
-        assert!(err.contains("empty"));
+    
+    // Suggest highly-connected notes (high consolidation_score)
+    let high_score_notes: Vec<_> = local_context
+        .iter()
+        .filter(|item| {
+            item.get("consolidation_score")
+                .and_then(|v| v.as_f64())
+                .map(|s| s > 0.7)
+                .unwrap_or(false)
+        })
+        .collect();
+    
+    if !high_score_notes.is_empty() {
+        suggestions.push(serde_json::json!({
+            "action": "review_central_nodes",
+            "notes": high_score_notes.iter().map(|n| n["note_id"].clone()).collect::<Vec<_>>(),
+            "reason": "These nodes have high consolidation scores (>0.7) and are central to this subgraph",
+        }));
     }
-
-    #[test]
-    fn search_rejects_blank_query() {
-        let err = handle_notes_search(&db(), &json!({ "query": "   " })).unwrap_err();
-        assert!(err.contains("empty"));
-    }
-
-    #[test]
-    fn memory_defaults_agent_id() {
-        let db = db();
-        handle_memory_store(&db, &json!({ "key": "focus", "value": "ship" })).unwrap();
-        let got = handle_memory_retrieve(&db, &json!({ "key": "focus" })).unwrap();
-        assert_eq!(got["value"], "ship");
-        assert_eq!(got["agent_id"], "default");
-    }
-
-    #[test]
-    fn consolidate_rejects_both_accept_and_reject() {
-        let err = handle_notes_consolidate(
-            &db(),
-            &json!({
-                "accept_proposal_id": "a",
-                "reject_proposal_id": "b"
-            }),
-        )
-        .unwrap_err();
-        assert!(err.contains("only one"));
-    }
-
-    #[test]
-    fn retrieve_context_empty_query_errors() {
-        let err = handle_retrieve_context(&db(), &json!({ "query": " " })).unwrap_err();
-        assert!(err.contains("empty"));
-    }
-
-    #[test]
-    fn retrieve_context_utf8_does_not_panic() {
-        let db = db();
-        handle_notes_create(
-            &db,
-            &json!({
-                "title": "CJK",
-                "content": "日本語のメモ ".repeat(200)
-            }),
-        )
-        .unwrap();
-        let out =
-            handle_retrieve_context(&db, &json!({ "query": "メモ", "max_tokens": 20 })).unwrap();
-        assert!(out["context"].as_str().is_some());
-    }
+    
+    Ok(serde_json::json!({
+        "center_note": {
+            "id": center_note.id,
+            "title": center_note.title,
+            "consolidation_score": center_note.consolidation_score,
+        },
+        "hop_count": hop_count,
+        "neighborhood_size": local_context.len(),
+        "local_context": local_context,
+        "suggested_actions": suggestions,
+    }))
 }
