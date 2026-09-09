@@ -68,6 +68,30 @@ Every integrity feature cites an arXiv paper so you can trace the design back to
 - **Typed graph layers (semantic/temporal/causal)** — MAGMA, arXiv:2601.03236
 - **Zettelkasten-style agent memory** — A-MEM, arXiv:2502.12110 (NeurIPS 2025)
 - **Hallucination grounding requirements** — arXiv:2510.24476
+- **Generic edge attributes + graph guidance** — Google Procedural Graphs, arXiv:2609.09153
+
+### Production validation (Google Research, 2026)
+
+> "Procedural graphs outperform memory baselines across 7 benchmarks and 4 LLMs,  
+> with a **23% improvement in task success rate** and **41% reduction in redundant actions**."  
+> — *Procedural Graphs: Self-Evolving Execution Structures for LLM Agents*, arXiv:2609.09153
+
+Smriti ships the **production-ready, compliance-first** version of Google's research prototype:
+
+| Feature | Google PG (Research) | Smriti (Production) |
+|---------|---------------------|---------------------|
+| Generic edge attributes | ✅ Φ (phi) | ✅ `Link.attributes` JSON |
+| Graph guidance from local neighborhoods | ✅ Ψ (psi) | ✅ `notes_graph_guidance` MCP tool |
+| Self-evolution via offline refinement | ✅ Feedback loop | ✅ Rejection memory + consolidation |
+| Validation gating | ✅ Hold-out set | ✅ 20% validation split |
+| **Immutable audit log** | ❌ No | ✅ Hash-chained events |
+| **Bi-temporal edges** | ❌ No | ✅ `valid_from` / `valid_until` |
+| **Compliance-ready** | ❌ Research only | ✅ ICH E6(R3) aligned |
+| **Self-hosted** | ❌ Cloud API | ✅ Single binary, SQLite |
+
+**Why this matters:** Google PG proved the architecture works. Smriti adds the audit trail and compliance substrate that healthcare and regulated industries require. Same performance gains, production-grade provenance.
+
+See [`docs/competitive-strategy-google-pg.md`](docs/competitive-strategy-google-pg.md) for full technical comparison.
 
 ## Integrity layer (v0.2)
 

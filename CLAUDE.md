@@ -262,30 +262,31 @@ pub struct GraphCache {
 
 ---
 
-## MCP Tools (18 confirmed, stdio + HTTP transport)
+## MCP Tools (20 confirmed, stdio + HTTP transport)
 
-| Tool                         | Description                                                              |
+| Tool | Description |
 |------------------------------|--------------------------------------------------------------------------|
-| notes_create                 | Create note; auto-detects [[wiki-links]] and #tags                       |
-| notes_read                   | Read note by ID or title (instruments access log for CLS replay signal)  |
-| notes_search                 | FTS5 full-text search (instruments search hits for CLS replay signal)    |
-| notes_list                   | List notes, filter by tag                                                |
-| notes_graph                  | Full graph or subgraph around a note (BFS), optional link_type filter    |
-| notes_search_semantic        | Semantic search via sqlite-vec; optional hybrid FTS5+cosine with RRF     |
-| memory_store                 | KV store with namespace, TTL, and AGM conflict_policy (arXiv:2603.17244) |
-| memory_retrieve              | Get entry by agent_id + namespace + key                                  |
-| memory_list                  | List all memory entries for an agent                                     |
-| memory_history               | List superseded values (version_and_keep / invalidate policies)          |
-| wiki_transaction_submit      | Atomic multi-write with enforced provenance (FACTUM arXiv:2601.05866)    |
-| wiki_transaction_commit      | Commit a pending transaction                                             |
-| wiki_transaction_reject      | Reject a pending transaction with reason                                 |
-| wiki_transaction_list_pending| List pending transactions awaiting review                                |
-| wiki_verify                  | Full integrity sweep: referential, provenance, hash chain, orphans       |
-| contradictions_detect        | Scan notes for candidate contradictions (MemoTime arXiv:2510.13614)      |
-| contradictions_list          | List open contradiction candidates                                       |
-| notes_consolidate            | CLS-inspired consolidation pass; scores, flags, archives. Never deletes. |
-| ingest_document              | Chunk a .txt/.md file into the KG — parent doc note + chunk notes + ChunkOf links. No LLM. |
-| retrieve_context             | Query → hybrid search + BFS graph expansion + context assembly → context string for local LLM. |
+| notes_create | Create note; auto-detects [[wiki-links]] and #tags |
+| notes_read | Read note by ID or title (instruments access log for CLS replay signal) |
+| notes_search | FTS5 full-text search (instruments search hits for CLS replay signal) |
+| notes_list | List notes, filter by tag |
+| notes_graph | Full graph or subgraph around a note (BFS), optional link_type filter |
+| notes_graph_guidance | Google PG Ψ: h-hop neighborhood with edge attributes + suggested actions |
+| notes_search_semantic | Semantic search via sqlite-vec; optional hybrid FTS5+cosine with RRF |
+| memory_store | KV store with namespace, TTL, and AGM conflict_policy (arXiv:2603.17244) |
+| memory_retrieve | Get entry by agent_id + namespace + key |
+| memory_list | List all memory entries for an agent |
+| memory_history | List superseded values (version_and_keep / invalidate policies) |
+| wiki_transaction_submit | Atomic multi-write with enforced provenance (FACTUM arXiv:2601.05866) |
+| wiki_transaction_commit | Commit a pending transaction |
+| wiki_transaction_reject | Reject a pending transaction with reason |
+| wiki_transaction_list_pending| List pending transactions awaiting review |
+| wiki_verify | Full integrity sweep: referential, provenance, hash chain, orphans |
+| contradictions_detect | Scan notes for candidate contradictions (MemoTime arXiv:2510.13614) |
+| contradictions_list | List open contradiction candidates |
+| notes_consolidate | CLS-inspired consolidation pass; scores, flags, archives. Never deletes. |
+| ingest_document | Chunk a .txt/.md file into the KG — parent doc note + chunk notes + ChunkOf links. No LLM. |
+| retrieve_context | Query → hybrid search + BFS graph expansion + context assembly → context string for local LLM. |
 
 **⚠️ MCP transport: stdio is primary.** HTTP endpoint exists at `POST /mcp` via `dispatch_http`.
 
@@ -322,13 +323,15 @@ POST   /api/v1/notes/:id/access           # instrument an external access hit (f
 
 ## Research Anchors (verified arXiv IDs — use these for feature justifications)
 
-| Paper                          | arXiv ID    | Key Finding for Smriti                                   |
+| Paper | arXiv ID | Key Finding for Smriti |
 |-------------------------------|-------------|----------------------------------------------------------|
-| Zep / Graphiti                 | 2501.13956  | Bi-temporal edges (valid_from/valid_until) improve LongMemEval 18.5% |
-| MAGMA multi-graph              | 2601.03236  | Typed graph layers (semantic/temporal/causal) reduce tokens 95% |
-| Graph-Native Belief Revision   | 2603.17244  | AGM conflict resolution → ConflictPolicy on memory_store |
-| Graph-Based Memory Survey      | 2602.05665  | Graph+BM25 hybrid beats pure vector for multi-hop tasks  |
+| Zep / Graphiti | 2501.13956 | Bi-temporal edges (valid_from/valid_until) improve LongMemEval 18.5% |
+| MAGMA multi-graph | 2601.03236 | Typed graph layers (semantic/temporal/causal) reduce tokens 95% |
+| Graph-Native Belief Revision | 2603.17244 | AGM conflict resolution → ConflictPolicy on memory_store |
+| Graph-Based Memory Survey | 2602.05665 | Graph+BM25 hybrid beats pure vector for multi-hop tasks |
 | Complementary Learning Systems | McClelland 1995 / Kumaran 2016 TiCS | Hippocampal episodes → neocortical schemas via replay; basis for consolidation + forgetting curve (Task 9). NOTE: not arXiv. |
+| **Google Procedural Graphs** | **2609.09153** | **Generic edge attributes (Φ) + graph guidance (Ψ) + offline refinement improve task success 23% over memory baselines. Production validation for Smriti's architecture.** |
+| WikiSkill | 2608.27454 | Persistent wiki between traces and procedures; isolate proposals from inference until accepted. Architecture reference — not Trace2Skill/EvoSkill/SkillOpt. |
 
 ---
 
@@ -351,9 +354,15 @@ POST   /api/v1/notes/:id/access           # instrument an external access hit (f
 | 13| Consolidation foundation       | **Task 9 Phase 1** — Migration 009 + src/features/consolidation.rs |
 | 14| notes_consolidate MCP tool     | **Task 9 Phase 2** — src/mcp/handlers.rs + server.rs |
 | 15| Access-log instrumentation     | MCP read/search/graph handlers instrument note_access_log |
-| 16| unwrap() cleanup               | MutexPoisoned variant + 13 lock().unwrap() → map_err across db.rs, verify.rs, contradiction.rs |
+| 16| unwrap() cleanup | MutexPoisoned variant + 13 lock().unwrap() → map_err across db.rs, verify.rs, contradiction.rs |
 | 17| Note struct consolidation fields | NodeType enum, consolidation_score, access_count, last_accessed_at, parent_schema_id |
 | 18| **Path A: Local KG for local LLMs** | `ChunkOf` LinkType + `src/ai/document_ingest.rs` + `ingest_document` MCP tool + `retrieve_context` MCP tool + REST `POST /api/v1/ingest/document` + `POST /api/v1/retrieve` |
+| 19| WikiSkill schema formation (Task 9 Phase 3) | `src/features/schema_formation.rs` — proposals are events until accept; Conservative never auto-commits |
+| 20| Retrieve-context proxy gate | Standard/Aggressive may auto-commit only on held-out `query_context` lift; audit says `not WikiSkill task-accuracy` |
+| 21| Human review CLI + REST + MCP | `smriti proposals/approve/reject`, `/api/v1/consolidation/proposals`, `accept_proposal_id` / `reject_proposal_id` |
+| 22| **Google PG Phase 1: Generic edge attributes (Φ)** | `Link.attributes: Option<serde_json::Value>` + Migration 011 + `insert_link_with_attributes_on_conn()` |
+| 23| **Google PG Phase 1: Graph guidance tool (Ψ)** | `notes_graph_guidance` MCP tool — h-hop BFS with edge attributes + suggested actions (arXiv:2609.09153 §3.2) |
+| 24| **Google PG Phase 1: Rejection memory loop** | Migration 012 `consolidation_rejections` + `record_rejection()` + 90-day suppress in scorer (arXiv:2609.09153 §4.3) |
 
 ## Known Gaps (prioritised — work top-to-bottom)
 
