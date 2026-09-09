@@ -257,6 +257,54 @@ pub fn explain_score(
     Ok(b)
 }
 
+// ── Rejection Memory (Google PG §4.3 offline refinement) ──────────────────
+
+/// Record a rejection in the rejection memory table. Suppresses re-flagging
+/// for `grace_days` (default 90). Research ref: Google PG arXiv:2609.09153 §4.3.
+pub fn record_rejection(
+    conn: &Connection,
+    note_id: &str,
+    score_at_rejection: f32,
+    reason: &str,
+    grace_days: i64,
+) -> AppResult<()> {
+    let now = Utc::now();
+    let suppress_until = now + Duration::days(grace_days);
+    
+    conn.execute(
+        "INSERT INTO consolidation_rejections 
+         (id, note_id, score_at_rejection, reason, rejected_at, suppress_until)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        params![
+            Uuid::new_v4().to_string(),
+            note_id,
+            score_at_rejection,
+            reason,
+            now.to_rfc3339(),
+            suppress_until.to_rfc3339(),
+        ],
+    )?;
+    Ok(())
+}
+
+/// Check if a note is currently suppressed in rejection memory.
+/// Returns true if note was recently rejected and grace period hasn't expired.
+pub fn is_suppressed(conn: &Connection, note_id: &str) -> AppResult<bool> {
+    let now = Utc::now();
+    let suppressed: bool = conn
+        .query_row(
+            "SELECT EXISTS(
+                SELECT 1 FROM consolidation_rejections
+                WHERE note_id = ?1 AND suppress_until > ?2
+             )",
+            params![note_id, now.to_rfc3339()],
+            |r| r.get(0),
+        )
+        .optional()?
+        .unwrap_or(false);
+    Ok(suppressed)
+}
+
 // ── Consolidation pass ────────────────────────────────────────────────────
 
 /// Run a consolidation pass across every episode-type note.
@@ -330,6 +378,11 @@ pub fn run_consolidation_pass(
                 "UPDATE notes SET consolidation_score = ?1 WHERE id = ?2",
                 params![new_score as f64, id],
             )?;
+        }
+
+        // Skip notes in rejection memory (Google PG §4.3 refinement loop)
+        if is_suppressed(conn, &id)? {
+            continue;
         }
 
         // Flagging — all policies flag below-threshold scores.

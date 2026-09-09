@@ -1048,26 +1048,50 @@ pub fn handle_reject_proposal(db: &Database, cluster_id: &str, reason: &str) -> 
         )));
     }
 
-    // Log rejection (rollback without affecting already-committed schemas)
+    // Get current consolidation score for the rejection record
+    let current_score: f32 = db.execute(|conn| {
+        conn.query_row(
+            "SELECT consolidation_score FROM notes WHERE id = ?1",
+            rusqlite::params![cluster_id],
+            |r| r.get(0),
+        )
+        .map_err(|e| e.into())
+    })?;
+
+    // Log rejection + record in rejection memory (90-day suppress)
     db.execute(|conn| {
         use chrono::Utc;
         use uuid::Uuid;
+        
+        // Record rejection event
         conn.execute(
             "INSERT INTO consolidation_events
              (id, note_id, event_type, score_before, score_after, reason, created_at)
-             VALUES (?1, ?2, 'proposal_rejected', NULL, NULL, ?3, ?4)",
+             VALUES (?1, ?2, 'proposal_rejected', ?3, ?3, ?4, ?5)",
             rusqlite::params![
                 Uuid::new_v4().to_string(),
                 cluster_id,
+                current_score,
                 format!("rejected by human: {}", reason),
                 Utc::now().to_rfc3339(),
             ],
         )?;
+        
+        // Add to rejection memory (Google PG §4.3)
+        crate::features::consolidation::record_rejection(
+            conn,
+            cluster_id,
+            current_score,
+            reason,
+            90, // 90-day grace period
+        )?;
+        
         Ok(())
     })?;
 
     println!("✓ Rejected proposal for note {}", cluster_id);
     println!("  Reason: {}", reason);
+    println!("  Suppressed from re-flagging for 90 days");
 
     Ok(())
 }
