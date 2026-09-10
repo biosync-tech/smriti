@@ -366,7 +366,33 @@ impl Database {
              ON llm_audit(tool_name, created_at DESC);",
         );
 
-        // ── Migration 011: Benna-Fusi cascade synapses ───────────────────
+        // ── Migration 011: Generic edge attributes (Google PG Φ) ─────────
+        // Research ref: Google Procedural Graphs arXiv:2609.09153 §3.1
+        // Stores {condition, guidance, pitfalls, ...} as JSON on edges.
+        // Example: {"condition": "runway < 6mo", "guidance": "submit early"}
+        let _ = conn.execute_batch("ALTER TABLE links ADD COLUMN attributes TEXT;");
+
+        // ── Migration 012: Rejection memory (Google PG offline refinement) ─
+        // Research ref: Google Procedural Graphs arXiv:2609.09153 §4.3
+        // When a consolidation proposal is rejected, suppress the note from
+        // re-flagging for a grace period (default 90 days). Prevents annoying
+        // the human reviewer with the same bad proposal repeatedly.
+        let _ = conn.execute_batch(
+            "CREATE TABLE IF NOT EXISTS consolidation_rejections (
+                id TEXT PRIMARY KEY,
+                note_id TEXT NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+                score_at_rejection REAL NOT NULL,
+                reason TEXT NOT NULL,
+                rejected_at TEXT NOT NULL,
+                suppress_until TEXT NOT NULL
+            );",
+        );
+        let _ = conn.execute_batch(
+            "CREATE INDEX IF NOT EXISTS idx_rejections_note_suppress
+             ON consolidation_rejections(note_id, suppress_until DESC);",
+        );
+
+        // ── Migration 013: Benna-Fusi cascade synapses ───────────────────
         // Research ref: Benna & Fusi 2016 — "Computational principles of
         // synaptic memory consolidation," Nature Neuroscience 19, 1697–1706.
         //

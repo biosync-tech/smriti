@@ -1108,10 +1108,27 @@ pub(crate) fn insert_link_on_conn(
     target_id: &str,
     link_type: LinkType,
 ) -> AppResult<Link> {
-    let link = Link::new(source_id.to_string(), target_id.to_string(), link_type);
+    insert_link_with_attributes_on_conn(conn, source_id, target_id, link_type, None)
+}
+
+pub(crate) fn insert_link_with_attributes_on_conn(
+    conn: &Connection,
+    source_id: &str,
+    target_id: &str,
+    link_type: LinkType,
+    attributes: Option<serde_json::Value>,
+) -> AppResult<Link> {
+    let link = if let Some(attrs) = attributes {
+        Link::with_attributes(source_id.to_string(), target_id.to_string(), link_type, attrs)
+    } else {
+        Link::new(source_id.to_string(), target_id.to_string(), link_type)
+    };
+    
+    let attributes_json = link.attributes.as_ref().map(|v| serde_json::to_string(v).ok()).flatten();
+    
     conn.execute(
-        "INSERT OR IGNORE INTO links (id, source_note_id, target_note_id, link_type, created_at, valid_from, valid_until)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        "INSERT OR IGNORE INTO links (id, source_note_id, target_note_id, link_type, created_at, valid_from, valid_until, attributes)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         params![
             link.id,
             link.source_note_id,
@@ -1120,6 +1137,7 @@ pub(crate) fn insert_link_on_conn(
             link.created_at.to_rfc3339(),
             link.valid_from.map(|dt| dt.to_rfc3339()),
             link.valid_until.map(|dt| dt.to_rfc3339()),
+            attributes_json,
         ],
     )?;
     Ok(link)

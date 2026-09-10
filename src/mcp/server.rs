@@ -410,6 +410,24 @@ impl McpServer {
                         },
                         "required": ["query"]
                     }
+                },
+                {
+                    "name": "notes_graph_guidance",
+                    "description": "Google PG-inspired graph guidance tool (Ψ). Returns the h-hop neighborhood around a note with edge attributes (condition, guidance, pitfalls) and suggested next actions. Research ref: Procedural Graphs arXiv:2609.09153 §3.2. Use this to: (1) discover local context before acting on a note, (2) extract situational guidance from edge attributes, (3) identify high-centrality nodes worth reviewing.",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {
+                            "note_id": { 
+                                "type": "string", 
+                                "description": "The note ID to center the neighborhood search on" 
+                            },
+                            "hop_count": { 
+                                "type": "integer", 
+                                "description": "Number of hops to traverse (default: 2). Typical values: 1 for immediate neighbors, 2 for extended context, 3+ for exploratory." 
+                            }
+                        },
+                        "required": ["note_id"]
+                    }
                 }
             ]
         }))
@@ -430,6 +448,7 @@ impl McpServer {
             "notes_search" => handlers::handle_notes_search(&self.db, &arguments),
             "notes_list" => handlers::handle_notes_list(&self.db, &arguments),
             "notes_graph" => handlers::handle_notes_graph(&self.db, &arguments),
+            "notes_graph_guidance" => handlers::handle_notes_graph_guidance(&self.db, &arguments),
             "memory_store" => handlers::handle_memory_store(&self.db, &arguments),
             "memory_retrieve" => handlers::handle_memory_retrieve(&self.db, &arguments),
             "memory_list" => handlers::handle_memory_list(&self.db, &arguments),

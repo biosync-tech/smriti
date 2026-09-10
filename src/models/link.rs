@@ -94,6 +94,12 @@ pub struct Link {
     pub valid_from: Option<DateTime<Utc>>,
     /// When this relationship stopped being valid. NULL = currently valid.
     pub valid_until: Option<DateTime<Utc>>,
+    /// Generic edge attributes (Google PG's Φ).
+    /// Schema: {condition, guidance, pitfalls, ...}
+    /// Research ref: Google Procedural Graphs arXiv:2609.09153 §3.1
+    /// Example: {"condition": "runway < 6mo", "guidance": "submit early", "pitfalls": "no stacking"}
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub attributes: Option<serde_json::Value>,
 }
 
 impl Link {
@@ -107,7 +113,20 @@ impl Link {
             created_at: now,
             valid_from: Some(now),
             valid_until: None,
+            attributes: None,
         }
+    }
+    
+    /// Create a link with attributes (Google PG style).
+    pub fn with_attributes(
+        source: String,
+        target: String,
+        link_type: LinkType,
+        attributes: serde_json::Value,
+    ) -> Self {
+        let mut link = Self::new(source, target, link_type);
+        link.attributes = Some(attributes);
+        link
     }
 
     /// Whether the link is currently valid (valid_until is None or in the future).
