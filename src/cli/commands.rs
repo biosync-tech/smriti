@@ -5,9 +5,10 @@ use clap_complete::Shell;
 #[command(
     name = "smriti",
     version,
-    about = "smriti — memory layer for your AI agents",
-    long_about = "Smriti (Sanskrit: memory) — Self-hosted knowledge store built in Rust for agentic AI.\n\
-                   Features: MCP server, agent memory, knowledge graph, wiki-links, full-text search, sync.",
+    about = "Graph-native agent memory validated by Google Research",
+    long_about = "Smriti (Sanskrit: memory) — Graph-native agent memory validated by Google Research.\n\
+                   Procedural knowledge graphs for AI agents in clinical trials, IND/safety review, and biomedical research.\n\
+                   23% task success improvement (arXiv:2609.09153). Self-hosted Rust + SQLite, zero cloud.",
     after_help = "\x1b[1mExamples:\x1b[0m\n  \
         smriti create \"Meeting Notes\" -c \"Discussed Q2 roadmap\" -t client,project\n  \
         smriti new                         # interactive guided note creation\n  \

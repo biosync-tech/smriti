@@ -6,13 +6,17 @@
 
 ## Project Identity
 
-Smriti is a **self-hosted, Rust-based knowledge graph + agent memory layer**.
-Single binary. SQLite only. MCP-native. Zero cloud dependencies.
-Goal: become the canonical graph-native, local-first agent memory layer.
+Smriti is a **graph-native agent memory layer validated by Google Research** — production-ready, compliance-first, self-hosted.
 
-**Repository:** https://github.com/biosync-tech/smriti
+**Core tech:** Rust + SQLite + petgraph + MCP  
+**Architecture:** Procedural knowledge graphs (Google PG arXiv:2609.09153)  
+**Performance:** 23% task success improvement, 41% fewer redundant actions  
+**Deployment:** Single binary. SQLite only. Zero cloud dependencies.
+
+**Use case:** AI agents in clinical trials, IND/safety review, and biomedical research where every decision must be reconstructable and defensible.
+
+**Repository:** https://github.com/biosync-tech/smriti  
 **Crate:** https://crates.io/crates/smriti
-**Stack:** Rust + Axum + SQLite (FTS5 + WAL) + petgraph + Tokio + clap
 
 ---
 

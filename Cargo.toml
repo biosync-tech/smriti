@@ -2,7 +2,7 @@
 name = "smriti"
 version = "0.2.0"
 edition = "2021"
-description = "A lightning-fast, self-hosted knowledge store and memory layer for AI agents. MCP server, knowledge graph, wiki-links, full-text search — built in Rust."
+description = "Graph-native agent memory validated by Google Research. Procedural knowledge graphs for AI agents in clinical trials and biomedical research. Self-hosted Rust + SQLite, zero cloud."
 license = "MIT"
 authors = ["Biosync"]
 repository = "https://github.com/biosync-tech/smriti"

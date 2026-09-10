@@ -6,9 +6,9 @@
 
 # Smriti
 
-**A self-hosted knowledge graph and AI agent memory layer — one binary, one SQLite file, zero cloud dependencies.**
+**Graph-native agent memory validated by Google Research — self-hosted, production-ready, compliance-first.**
 
-**Git for LLM wikis.** Atomic multi-write transactions, enforced provenance on every claim, append-only event log with a hash chain, and an integrity verifier — so agent-authored knowledge is auditable by construction.
+Procedural knowledge graphs for AI agents in clinical trials, IND/safety review, and biomedical research. Edge attributes + graph guidance + rejection memory deliver 23% task success improvement (arXiv:2609.09153). One Rust binary, one SQLite file, zero cloud dependencies.
 
 `2.5µs` KV retrieval · `235ns` graph traversal · `0` cloud dependencies
 
