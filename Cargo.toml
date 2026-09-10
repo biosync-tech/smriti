@@ -28,7 +28,7 @@ sqlite-vec = "0.1"
 
 # CLI
 clap = { version = "4", features = ["derive"] }
-clap_complete = "4"
+clap_complete = "=4.5.38"  # Exact version to avoid Rust 1.85 requirement
 
 # Interactive CLI (optional, on by default)
 dialoguer = { version = "0.11", features = ["fuzzy-select"], optional = true }
