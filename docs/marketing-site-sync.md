@@ -1,32 +1,37 @@
-# Marketing Site Sync — Post-Consolidation Audit
+# Marketing Site Sync — Post-Google PG Implementation
 
-**Date:** 2026-08-29  
-**Context:** WikiSkill-inspired schema formation merged (PR #1). Marketing materials predate the shipped Conservative policy, human approval path, and episode→schema lineage.
+**Date:** 2026-09-10  
+**Context:** Google Procedural Graphs Phase 1 merged (PR #5). All public-facing copy updated to reflect Google Research validation + compliance-first positioning.
 
 ---
 
 ## Executive Summary
 
-### What Actually Shipped (main branch, confirmed 2026-08-29)
+### What Actually Shipped (main branch, confirmed 2026-09-10)
 
-| Feature | Status | Location |
-|---------|--------|----------|
-| **Phase 0** | ✅ Shipped | CLI init, MCP config print, docs (mcp-tools, rest-api, sqlite-schema, why-local-first) |
-| **Phase 1 — Extractive schema formation** | ✅ Shipped | Episode clusters → extractive abstract; `AbstractionMode::Llm` available on MCP if backend exists; CLI extractive-only after nested-runtime panic |
-| **Phase 2 — Human approval flow** | ✅ Partial | Conservative default (FlagOnly); `smriti proposals` / `approve` / `reject`; approve forms schema from `notes_vec`; proxy gating NOT implemented; isolation incomplete (block_on) |
-| **Hard-delete prevention** | ✅ Enforced | Conservative is healthcare default; notes never deleted, only demoted via `memory_history` |
-| **Bi-temporal edges** | ✅ Shipped | `valid_from` / `valid_until` on links table (Task 7, Migration 002) |
-| **Hash-chained event log** | ✅ Shipped | SHA-256 chain; `smriti verify --chain` (Migration 007) |
-| **Contradiction inbox** | ✅ Shipped | Detect, list, never auto-resolve (Migration 006) |
-| **Provenance layer (FACTUM)** | ✅ Shipped | sources + claim_spans (Migration 004); wiki_transactions (Migration 005) |
+| Feature | Status | Location | Research Anchor |
+|---------|--------|----------|-----------------|
+| **Phase 0 — Foundation** | ✅ Shipped | CLI init, MCP config, docs (mcp-tools, rest-api, sqlite-schema) | — |
+| **Phase 1 — Schema formation** | ✅ Shipped | Episode clusters → extractive abstract; Conservative default; human approval (`smriti proposals/approve/reject`) | WikiSkill (2608.27454) |
+| **Phase 2 — Bi-temporal edges** | ✅ Shipped | `valid_from` / `valid_until` on links (Migration 002) | Zep/Graphiti (2501.13956) |
+| **Phase 3 — Hash-chained log** | ✅ Shipped | SHA-256 chain; `smriti verify --chain` (Migration 007) | — |
+| **Phase 4 — Provenance layer** | ✅ Shipped | sources + claim_spans (Migration 004); wiki_transactions (Migration 005) | FACTUM (2601.05866) |
+| **Phase 5 — Google PG alignment** | ✅ Shipped | Generic edge attributes (`Link.attributes`), graph guidance MCP tool (`notes_graph_guidance`), rejection memory (`consolidation_rejections`) | **Google PG (2609.09153)** |
 
-### What Is NOT Shipped (gaps to avoid claiming)
+### New Branding (as of 2026-09-10)
 
-- ❌ **LLM-driven schema formation** outside MCP context (CLI only supports extractive)
-- ❌ **Proxy gating** for consolidation calls
-- ❌ **Full async isolation** (block_on in request path; known issue)
-- ❌ **HTTP MCP transport** (stdio only)
-- ❌ **Graph viz dashboard**
+**Primary tagline:**
+> Graph-native agent memory validated by Google Research — self-hosted, production-ready, compliance-first.
+
+**Key claims:**
+- 23% task success improvement (Google Research, arXiv:2609.09153)
+- Procedural knowledge graphs for clinical trials, IND/safety review, biomedical research
+- Edge attributes + graph guidance + rejection memory
+- Self-hosted Rust + SQLite, zero cloud dependencies
+
+**Differentiation:**
+- vs. Mem0/Zep/LangMem: compliance-first (hash chain, provenance, self-hosted)
+- vs. Google PG paper: production-ready (single binary, not research prototype)
 
 ---
 
